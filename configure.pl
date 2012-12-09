@@ -93,9 +93,9 @@ print "\n";
 $useDefaultKeystore = (lc $useDefaultKeystoreYN) eq 'yes';
 
 if ($useDefaultKeystore) {
-	$properties{"cloudcoder.submitsvc.ssl.cn"} = 'None';
-	$properties{"cloudcoder.submitsvc.ssl.keystore"} = 'keystore.jks';
-	$properties{"cloudcoder.submitsvc.ssl.keystore.password"} = 'changeit';
+	setprop("cloudcoder.submitsvc.ssl.cn", 'None');
+	setprop("cloudcoder.submitsvc.ssl.keystore", 'keystore.jks');
+	setprop("cloudcoder.submitsvc.ssl.keystore.password", 'changeit');
 } else {
 	askprop("What is the hostname of your institution?",
 		  "cloudcoder.submitsvc.ssl.cn", "None");
@@ -214,10 +214,15 @@ sub askprop {
 
 	my $value = ask($question, $defval);
 
-	push @propertyNames, $property;
-	$properties{$property} = $value;
+	setprop($property, $value);
 
 	print "\n";
+}
+
+sub setprop {
+	my ($property, $value) = @_;
+	push @propertyNames, $property;
+	$properties{$property} = $value;
 }
 
 sub run {

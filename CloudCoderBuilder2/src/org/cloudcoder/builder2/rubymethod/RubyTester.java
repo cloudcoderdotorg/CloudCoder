@@ -23,7 +23,6 @@ import org.cloudcoder.app.shared.model.TestOutcome;
 import org.cloudcoder.app.shared.model.TestResult;
 import org.cloudcoder.builder2.javasandbox.IsolatedTask;
 import org.cloudcoder.builder2.util.TestResultUtil;
-import org.jruby.embed.LocalContextScope;
 import org.jruby.embed.ScriptingContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,13 +41,12 @@ public class RubyTester {
 	 * Execute the test and return the {@link TestResult} indicating whether the
 	 * test passed or failed.
 	 * 
+	 * @param container  the {@link ScriptingContainer}
 	 * @param testSource the Ruby test source code, produced by {@link AddRubyMethodScaffoldingBuildStep}
 	 * @param testCase   the {@link TestCase} to execute
 	 * @return the {@link TestResult} indicating whether the test passed or failed
 	 */
-	public TestResult execute(String testSource, TestCase testCase) {
-		ScriptingContainer container = new ScriptingContainer(LocalContextScope.SINGLETHREAD);
-		
+	public TestResult execute(ScriptingContainer container, String testSource, TestCase testCase) {
 		Object receiver = container.runScriptlet(testSource);
 		//System.out.println("testSource:");
 		//System.out.println(testSource);

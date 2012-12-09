@@ -52,7 +52,7 @@ public class SanitizeHTML extends TagSupport {
 				// Allowed elements
 				.allowElements(
 					"a", "p", "div", "i", "b", "em", "blockquote", "tt", "strong",
-					"br", "ul", "ol", "li", "pre")
+					"br", "ul", "ol", "li", "pre", "code")
 				.toFactory();
 
 	private String html;

@@ -450,9 +450,12 @@ public class DevelopmentPage extends CloudCoderPage {
 							return;
 						}
 						
-						Change change = ChangeFromAceOnChangeEvent.convert(obj, user.getId(), problem.getProblemId());
+						int userId = user.getId();
+						Integer problemId = problem.getProblemId();
+						Change change = ChangeFromAceOnChangeEvent.convert(obj, userId, problemId);
 						changeList.addChange(change);
 					} catch (Exception e) {
+						GWT.log("Exception adding change", e);
 						Window.alert("Caught exception! " + e.getMessage());
 					}
 				}

@@ -32,6 +32,7 @@ import org.cloudcoder.builder2.model.InternalBuilderException;
 import org.cloudcoder.builder2.model.ProgramSource;
 import org.cloudcoder.builder2.util.ArrayUtil;
 import org.cloudcoder.builder2.util.TestResultUtil;
+import org.jruby.Ruby;
 import org.jruby.embed.LocalContextScope;
 import org.jruby.embed.ScriptingContainer;
 
@@ -47,18 +48,15 @@ import org.jruby.embed.ScriptingContainer;
 public class TestRubyMethodBuildStep implements IBuildStep {
 	public static final long TIMEOUT_LIMIT = 5000;
 	
+	private static ScriptingContainer container;
+	
 	// Preload classes that will be needed to test the Ruby submission in the
-	// IsolatedTask.
+	// IsolatedTask, and create the ScriptingContainer.
 	static {
 		new RubyTester();
 		TestResultUtil.createResultForTimeout();
-		
-		// Compile and run a trivial ruby script, so that all needed JRuby classes are loaded
-		ScriptingContainer container = new ScriptingContainer(LocalContextScope.SINGLETHREAD);
-		Object result = container.runScriptlet("true");
-		if (!(result instanceof Boolean) || !(Boolean)result) {
-			throw new InternalBuilderException(TestRubyMethodBuildStep.class, "Failed to execute trivial Ruby script");
-		}
+		container = new ScriptingContainer(LocalContextScope.CONCURRENT);
+		container.runScriptlet("true");
 	}
 
 	@Override
@@ -88,7 +86,7 @@ public class TestRubyMethodBuildStep implements IBuildStep {
 				@Override
 				public TestResult execute() throws Throwable {
 					RubyTester tester = new RubyTester();
-					return tester.execute(testSource, testCase);
+					return tester.execute(container, testSource, testCase);
 				}
 			};
 			tasks.add(task);

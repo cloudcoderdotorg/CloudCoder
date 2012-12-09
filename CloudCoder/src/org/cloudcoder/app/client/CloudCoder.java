@@ -92,6 +92,8 @@ public class CloudCoder implements EntryPoint, Subscriber {
 					// Not logged in, so show LoginPage
 					changePage(new LoginPage());
 				} else {
+					final User user = result;
+					
 					// User is logged in: get Activity
 					RPC.loginService.getActivity(new AsyncCallback<Activity>() {
 						@Override
@@ -102,6 +104,10 @@ public class CloudCoder implements EntryPoint, Subscriber {
 
 						@Override
 						public void onSuccess(Activity result) {
+							// Add user to session
+							session.add(user);
+							
+							// Did we find the user's Activity?
 							if (result == null) {
 								// Don't know what the user's activity was, so take
 								// them to the courses/problems page

@@ -62,19 +62,31 @@
 		<ant inheritall="false" dir="../CloudCoderJetty" target="jar"/>
 	</target>
 	
+	
 	<!--
-		Determine which cloudcoder configuration properties should be included:
-		the real one (in the parent directory) or an automatically-generated dummy one
-		(used for distribution jarfiles.)
+		Depending on whether or not this is a distribution build, decide
+		which cloudcoder.properties to use (dummy or real) and
+		whether or not a keystore should be included (no for dist builds.)
 	-->
-	<target name="whichCloudcoderProperties">
+	<target name="checkDistBuild">
 		<condition property="cloudcoderProperties" value="dummy.properties" else="../cloudcoder.properties">
+			<isset property="distBuild"/>
+		</condition>
+		<condition property="cloudcoderKeystoreSource"
+			value=""
+			else="../${cloudcoder.submitsvc.ssl.keystore}">
+			<isset property="distBuild"/>
+		</condition>
+		<condition property="cloudcoderKeystoreTarget"
+			value=""
+			else="war/WEB-INF/classes/${cloudcoder.submitsvc.ssl.keystore}">
 			<isset property="distBuild"/>
 		</condition>
 	</target>
 	
 	<!--
-		Target to build a "distribution" jarfile containing a dummy cloudcoder.properties file. 
+		Target to build a "distribution" jarfile containing a dummy cloudcoder.properties file
+		and no keystore. 
 	-->
 	<target name="distjar">
 		<!-- Set distBuild property. -->
@@ -93,7 +105,7 @@
 		Target to build a single deployable jarfile containing both
 		the webapp (and required libraries) and Jetty (the web server).
 	-->
-	<target name="jar" depends="whichCloudcoderProperties,build,modelClasses,modelClassesPersistence,modelClassesJSON,webapp">
+	<target name="jar" depends="checkDistBuild,build,modelClasses,modelClassesPersistence,modelClassesJSON,webapp">
 		
 		<!--
 			Build single deployable jarfile containing our launcher code,
@@ -140,8 +152,8 @@
 			
 			<!-- Include keystore for secure communications with builder. -->
 			<zipfileset
-				file="../${cloudcoder.submitsvc.ssl.keystore}"
-				fullpath="war/WEB-INF/classes/${cloudcoder.submitsvc.ssl.keystore}" />
+				file="${cloudcoderKeystoreSource}"
+				fullpath="${cloudcoderKeystoreTarget}" />
 			
 			<!-- Include cloudcoder configuration properties (cloudcoder.properties) -->
 			<zipfileset
@@ -163,6 +175,7 @@
         	<fileset dir="bin" includes="**"/>
         </delete>
     	<delete quiet="true" file="cloudcoderApp.jar"/>
+    	<delete file="dummy.properties"/>
     </target>
 	
 	<!-- Clean this target and all depended-on targets. -->

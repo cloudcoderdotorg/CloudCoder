@@ -254,13 +254,31 @@ public class UserAccountPage extends CloudCoderPage
                passwd2.setName("passwd2");
                holder.add(passwd2);
                
+               String consent=user.getConsent();
+               if (consent.equals(User.GIVEN_CONSENT)) {
+                   holder.add(new Label("You are allowing the anonymous use of your coding history for research purposes. Thank you!"));
+               } else if (consent.equals(User.NO_CONSENT)){
+                   holder.add(new Label("You are currently NOT allowing the anonymous use of your coding history for research purposes."));
+               } else {
+                   holder.add(new Label("You have not yet decided whether we can use your anonymized coding history for research purposes."));
+                   holder.add(new Label("Please select one of the following two options"));
+               }
+
                // radio button for the account type
+               holder.add(new Label(""));
                holder.add(new Label("Allow anonymous collection of your coding data:"));
-               final RadioButton studentAccountButton = new RadioButton("consent","Allow");
-               studentAccountButton.setValue(true);
-               final RadioButton instructorAccountButton = new RadioButton("consent","Do NOT allow");
-               holder.add(studentAccountButton);
-               holder.add(instructorAccountButton);
+               final RadioButton consentButton = new RadioButton("consent","Allow");
+               final RadioButton noConsentButton = new RadioButton("consent","Do NOT allow");
+               if (consent.equals(User.GIVEN_CONSENT)) {
+                   consentButton.setValue(true);
+               } else if (consent.equals(User.NO_CONSENT)){
+                   noConsentButton.setValue(true);
+               }
+               
+               holder.add(consentButton);
+               holder.add(noConsentButton);
+               
+               
                
                form.add(holder);
                vp.add(form);
@@ -274,27 +292,41 @@ public class UserAccountPage extends CloudCoderPage
                        //we're not submitting it to a server-side servlet
                        GWT.log("edit user submit clicked");
                        final User user=getSession().get(User.class);
-                       String username = user.getUsername();
                        
-                       if (!user.getUsername().equals(username) ||
-                               user.getFirstname().equals(firstname.getValue()) ||
+                       String consent="";
+                       if (consentButton.getValue()) {
+                           consent=User.GIVEN_CONSENT;
+                       } else if (noConsentButton.getValue()) {
+                           consent=User.NO_CONSENT;
+                       }
+                       
+                       if (user.getFirstname().equals(firstname.getValue()) ||
                                user.getLastname().equals(lastname.getValue()) ||
                                user.getEmail().equals(email.getValue()) ||
+                               user.getConsent().equals(consent) ||
                                passwd.getValue().length()>0)
                        {
                            if (!passwd.getValue().equals(passwd2.getValue())) {
+                               // TODO: User Daveho's warning system
                                Window.alert("Passwords do no match");
                                return;
+                           }
+                           if (passwd.getValue().length()==60) {
+                               Window.alert("Passwords cannot be 60 characters long");
+                               return;
+                           }
+                           // set the new fields to be saved into the DB
+                           user.setFirstname(firstname.getValue());
+                           user.setLastname(lastname.getValue());
+                           user.setEmail(email.getValue());
+                           user.setConsent(consent);
+                           if (passwd.getValue().length()>0) {
+                               user.setPasswordHash(passwd.getValue());
                            }
                            // at least one field was edited
                            GWT.log("user id is "+user.getId());
                            GWT.log("username from the session is "+user.getUsername());
-                           RPC.usersService.editUser(user.getId(), 
-                                   username, 
-                                   firstname.getValue(), 
-                                   lastname.getValue(), 
-                                   email.getValue(), 
-                                   passwd.getValue(),
+                           RPC.usersService.editUser(user,
                                    new AsyncCallback<Boolean>()
                            { 
                                @Override

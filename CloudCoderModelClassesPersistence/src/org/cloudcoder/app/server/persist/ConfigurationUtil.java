@@ -242,6 +242,15 @@ public class ConfigurationUtil
     
     static void updateUserById(Connection conn, User user) throws SQLException
     {
+        if (user.getPasswordHash().length()!=60 && !user.getPasswordHash().startsWith("$2")) {
+            //XXX hack alert!  Not sure how to know if we've been
+            // given a hashed password or a fresh password to be
+            // hashed.  So I'm relying on two things:
+            // 1) hashed passwords are of length 60
+            // 2) hashed passwords start with $2a$12$
+            user.setPasswordHash(BCrypt.hashpw(user.getPasswordHash(), BCrypt.gensalt(12)));
+        }
+        
         String update="update " + User.SCHEMA.getDbTableName() +
         " set " + DBUtil.getUpdatePlaceholdersNoId(User.SCHEMA) +
         " where id = ? ";

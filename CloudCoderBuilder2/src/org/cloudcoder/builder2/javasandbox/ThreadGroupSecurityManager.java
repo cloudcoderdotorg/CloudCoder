@@ -86,10 +86,10 @@ public class ThreadGroupSecurityManager extends SecurityManager
         if (isCheckedThreadGroup()) {
         	String threadName = Thread.currentThread().getName();
         	
-        	if (threadName.startsWith("RubyTest_")) {
-        		// FIXME: is this really necessary?
-        		return;
-        	}
+//        	if (threadName.startsWith("RubyTest_")) {
+//        		// FIXME: is this really necessary?
+//        		return;
+//        	}
         	
             throw new SecurityException("Cannot create classloader");
         }
@@ -111,20 +111,20 @@ public class ThreadGroupSecurityManager extends SecurityManager
         return false;
     }
     
-    private static Set<String> JRUBY_PERMS_ALLOW = new HashSet<String>();
-    static {
-    	// Various benign and scary permissions that are required to
-    	// execute code in JRuby
-    	// FIXME: is this necessary?
-    	JRUBY_PERMS_ALLOW.addAll(Arrays.asList(
-    			"os.name",
-    			"os.arch",
-    			"suppressAccessChecks",
-    			"java.util.logging.manager",
-    			"user.dir",
-    			"getProtectionDomain"
-    	));
-    }
+//    private static Set<String> JRUBY_PERMS_ALLOW = new HashSet<String>();
+//    static {
+//    	// Various benign and scary permissions that are required to
+//    	// execute code in JRuby
+//    	// FIXME: is this necessary?
+//    	JRUBY_PERMS_ALLOW.addAll(Arrays.asList(
+//    			"os.name",
+//    			"os.arch",
+//    			"suppressAccessChecks",
+//    			"java.util.logging.manager",
+//    			"user.dir",
+//    			"getProtectionDomain"
+//    	));
+//    }
     
     private void check(Permission perm) {
         // allow reading the line separator
@@ -136,20 +136,20 @@ public class ThreadGroupSecurityManager extends SecurityManager
         }
         
         if (isCheckedThreadGroup()) {
-            String threadName = Thread.currentThread().getName();
-    		if (threadName.startsWith("RubyTest_")) {
-    			// Ruby-specific access checks
-    	    	// FIXME: is this necessary?
-    			if (perm instanceof FilePermission && perm.getName().endsWith(".jar")) {
-    				return;
-    			}
-    			if (JRUBY_PERMS_ALLOW.contains(perm.getName())) {
-    				return;
-    			}
-    			if (perm instanceof PropertyPermission) {
-    				return;
-    			}
-            }
+//            String threadName = Thread.currentThread().getName();
+//    		if (threadName.startsWith("RubyTest_")) {
+//    			// Ruby-specific access checks
+//    	    	// FIXME: is this necessary?
+//    			if (perm instanceof FilePermission && perm.getName().endsWith(".jar")) {
+//    				return;
+//    			}
+//    			if (JRUBY_PERMS_ALLOW.contains(perm.getName())) {
+//    				return;
+//    			}
+//    			if (perm instanceof PropertyPermission) {
+//    				return;
+//    			}
+//            }
 
             throw new SecurityException(
             		"Student code does not have permission to: " +

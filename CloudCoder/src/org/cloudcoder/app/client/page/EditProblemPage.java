@@ -77,6 +77,7 @@ public class EditProblemPage extends CloudCoderPage {
 	}
 	
 	private class UI extends ResizeComposite implements SessionObserver {
+		private static final double CENTER_PANEL_V_SEP_PX = 10.0;
 		private static final double SAVE_BUTTON_HEIGHT_PX = 32.0;
 
 		private DockLayoutPanel dockLayoutPanel;
@@ -117,13 +118,19 @@ public class EditProblemPage extends CloudCoderPage {
 			});
 			northPanel.add(saveButton);
 			northPanel.setWidgetLeftWidth(saveButton, 0.0, Unit.PX, 140.0, Unit.PX);
-			northPanel.setWidgetBottomHeight(saveButton, 0.0, Unit.PX, SAVE_BUTTON_HEIGHT_PX, Unit.PX);
+			northPanel.setWidgetBottomHeight(saveButton, CENTER_PANEL_V_SEP_PX, Unit.PX, SAVE_BUTTON_HEIGHT_PX, Unit.PX);
 			
-			dockLayoutPanel.addNorth(northPanel, PageNavPanel.HEIGHT_PX + SAVE_BUTTON_HEIGHT_PX);
+			dockLayoutPanel.addNorth(northPanel, PageNavPanel.HEIGHT_PX + SAVE_BUTTON_HEIGHT_PX + CENTER_PANEL_V_SEP_PX);
 			
-			// At bottom of page, show a StatusMessageView
+			// At bottom of page, show a StatusMessageView.
+			// Put it in a LayoutPanel so we can add a bit of vertical space to
+			// separate it from the center panel.
 			this.statusMessageView = new StatusMessageView();
-			dockLayoutPanel.addSouth(statusMessageView, StatusMessageView.HEIGHT_PX);
+			LayoutPanel southPanel = new LayoutPanel();
+			southPanel.add(statusMessageView);
+			southPanel.setWidgetLeftRight(statusMessageView, 0.0, Unit.PX, 0.0, Unit.PX);
+			southPanel.setWidgetBottomHeight(statusMessageView, 0.0, Unit.PX, StatusMessageView.HEIGHT_PX, Unit.PX);
+			dockLayoutPanel.addSouth(southPanel, StatusMessageView.HEIGHT_PX + CENTER_PANEL_V_SEP_PX);
 			
 			// Create UI for editing problem and test cases
 			problemFieldEditorList = new ArrayList<EditModelObjectField<IProblem, ?>>();
@@ -136,7 +143,9 @@ public class EditProblemPage extends CloudCoderPage {
 				centerPanel.add(editor.getUI());
 			}
 			
-			dockLayoutPanel.add(new ScrollPanel(centerPanel));
+			ScrollPanel scrollPanel = new ScrollPanel(centerPanel);
+			scrollPanel.setStyleName("cc-editProblemPanel", true);
+			dockLayoutPanel.add(scrollPanel);
 			
 			initWidget(dockLayoutPanel);
 		}

@@ -814,6 +814,30 @@ public class JDBCDatabase implements IDatabase {
 	}
 	
 	@Override
+	public void editUser(final User user)
+	{
+	    databaseRun(new AbstractDatabaseRunnableNoAuthException<Boolean>() {
+            /* (non-Javadoc)
+             * @see org.cloudcoder.app.server.persist.DatabaseRunnable#run(java.sql.Connection)
+             */
+            @Override
+            public Boolean run(Connection conn) throws SQLException {
+                logger.info("Editing user "+user.getId()+" "+user.getUsername());
+                ConfigurationUtil.updateUserById(conn, user);
+                return true;
+            }
+            
+            /* (non-Javadoc)
+             * @see org.cloudcoder.app.server.persist.DatabaseRunnable#getDescription()
+             */
+            @Override
+            public String getDescription() {
+                return "Updating user record";
+            }
+        });
+	}
+	
+	@Override
     public void editUser(final int userId, final String username, final String firstname, 
         final String lastname, final String email, final String passwd)
     {

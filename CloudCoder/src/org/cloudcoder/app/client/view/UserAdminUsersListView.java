@@ -45,6 +45,12 @@ public class UserAdminUsersListView extends ResizeComposite implements Subscribe
 {
     private DataGrid<User> grid;
     private Session session;
+    private User selected;
+    private User loggedUser;
+    
+    public User getSelectedUser() {
+        return selected;
+    }
     
     /**
      * Constructor.
@@ -86,18 +92,16 @@ public class UserAdminUsersListView extends ResizeComposite implements Subscribe
     public void activate(final Session session, SubscriptionRegistrar subscriptionRegistrar)
     {
         this.session = session;
-        session.subscribe(Session.Event.ADDED_OBJECT, this, subscriptionRegistrar);
-        
+        this.session.subscribe(Session.Event.ADDED_OBJECT, this, subscriptionRegistrar);
+        this.loggedUser=this.session.get(User.class);
         // Set selection model.
         // When a User record is selected, it will be added to the Session.
         final SingleSelectionModel<User> selectionModel = new SingleSelectionModel<User>();
         selectionModel.addSelectionChangeHandler(new Handler() {
             @Override
             public void onSelectionChange(SelectionChangeEvent event) {
-                User selected = selectionModel.getSelectedObject();
-                if (selected != null) {
-                    session.add(selected);
-                }
+                selected = selectionModel.getSelectedObject();
+                session.add(loggedUser);
             }
         });
         grid.setSelectionModel(selectionModel);

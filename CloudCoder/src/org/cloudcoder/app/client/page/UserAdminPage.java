@@ -61,7 +61,7 @@ import com.google.gwt.user.client.ui.Widget;
  * @author jspacco
  * 
  * TODO
- *    Button for bulk registration with a "browse for files" widget
+ *    Fix the slowness of bulk registration 
  *
  */
 public class UserAdminPage extends CloudCoderPage
@@ -435,9 +435,9 @@ public class UserAdminPage extends CloudCoderPage
                
                // radio button for the account type
                holder.add(new Label("Account type"));
-               final RadioButton studentAccountButton = new RadioButton("student","student");
+               final RadioButton studentAccountButton = new RadioButton("type","student");
                studentAccountButton.setValue(true);
-               final RadioButton instructorAccountButton = new RadioButton("instructor","instructor");
+               final RadioButton instructorAccountButton = new RadioButton("type","instructor");
                holder.add(studentAccountButton);
                holder.add(instructorAccountButton);
                
@@ -452,7 +452,8 @@ public class UserAdminPage extends CloudCoderPage
                        //This is more like a fake form
                        //we're not submitting it to a server-side servlet
                        GWT.log("edit user submit clicked");
-                       final User user=getSession().get(User.class);
+                       //final User user=getSession().get(User.class);
+                       final User user=userAdminUsersListView.getSelectedUser();
                        
                        //TODO add support for editing registration type
                        CourseRegistrationType type=CourseRegistrationType.STUDENT;
@@ -463,7 +464,7 @@ public class UserAdminPage extends CloudCoderPage
                        int section=101;
                        
                        if (!user.getUsername().equals(username.getValue()) ||
-                               user.getFirstname().equals(username.getValue()) ||
+                               user.getFirstname().equals(firstname.getValue()) ||
                                user.getLastname().equals(lastname.getValue()) ||
                                user.getEmail().equals(email.getValue()) ||
                                passwd.getValue().length()>0)
@@ -472,15 +473,28 @@ public class UserAdminPage extends CloudCoderPage
                                Window.alert("Passwords do no match");
                                return;
                            }
+                           if (passwd.getValue().length()==60) {
+                               Window.alert("Passwords cannot be 60 characters long");
+                               return;
+                           }
+                           // set the new fields to be saved into the DB
+                           user.setUsername(username.getValue());
+                           user.setFirstname(firstname.getValue());
+                           user.setLastname(lastname.getValue());
+                           user.setEmail(email.getValue());
+                           if (passwd.getValue().length()>0) {
+                               // it's sort of a hack but if a new password is set
+                               // the backend will figure out that it's not a hash
+                               // and then hash it to storage into the DB.
+                               // The backend figures this out by checking
+                               // if the password is exactly 60 characters long,
+                               // which is why 60 char long passwords are illegal.
+                               user.setPasswordHash(passwd.getValue());
+                           }
                            // at least one field was edited
                            GWT.log("user id is "+user.getId());
                            GWT.log("username from the session is "+user.getUsername());
-                           RPC.usersService.editUser(user.getId(), 
-                                   username.getValue(), 
-                                   firstname.getValue(), 
-                                   lastname.getValue(), 
-                                   email.getValue(), 
-                                   passwd.getValue(),
+                           RPC.usersService.editUser(user, 
                                    new AsyncCallback<Boolean>()
                            { 
                                @Override
@@ -601,7 +615,8 @@ public class UserAdminPage extends CloudCoderPage
         
         private void handleEditUser(ClickEvent event) {
             GWT.log("handle edit user");
-            final User chosen = getSession().get(User.class);
+            //final User chosen = getSession().get(User.class);
+            final User chosen = userAdminUsersListView.getSelectedUser();
             final Course course = getSession().get(Course.class);
             //TODO get the course type?
             //TODO wtf is the in the user record and how does it get there?
@@ -643,7 +658,11 @@ public class UserAdminPage extends CloudCoderPage
         
         private void handleUserProgress(ClickEvent event) {
             GWT.log("handle user progress");
-            final User chosen = getSession().get(User.class);
+            //final User chosen = getSession().get(User.class);
+            final User chosen = userAdminUsersListView.getSelectedUser();
+            if (chosen==null) {
+                return;
+            }
             final Course course = getSession().get(Course.class);
             
             GWT.log("handling user "+chosen.getUsername());

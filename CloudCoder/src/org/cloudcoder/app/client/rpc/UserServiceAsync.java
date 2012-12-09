@@ -31,8 +31,7 @@ public interface UserServiceAsync
     void getUsers(int courseId, AsyncCallback<User[]> callback);
     void addUserToCourse(User user, int courseId, CourseRegistrationType type, 
         int section, AsyncCallback<Boolean> callback);
-    void editUser(int id, String username, String firstname, String lastname,
-        String email, String passwd,AsyncCallback<Boolean> asyncCallback);
+    void editUser(User user, AsyncCallback<Boolean> asyncCallback);
     void editCourseRegistrationType(int userId, int courseId, CourseRegistrationType type,
         AsyncCallback<Void> callback); 
         

@@ -270,6 +270,7 @@ public interface IDatabase {
      * Edit a user record in the database.  Any blank fields will
      * remain unchanged.
      * 
+     * @param id
      * @param username
      * @param firstname
      * @param lastname
@@ -278,6 +279,12 @@ public interface IDatabase {
      */
     public void editUser(int id, String username, String firstname, String lastname,
         String email, String passwd);
+    
+    /**
+     * 
+     * @param user
+     */
+    public void editUser(User user);
 
     /**
      * Edit the registration type for the user record indicated by the

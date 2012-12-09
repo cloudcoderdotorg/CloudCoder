@@ -348,7 +348,7 @@ public class CourseAdminPage extends CloudCoderPage {
 			// Get the selected problem
 			final Problem chosen = getSession().get(Problem.class);
 			
-			String URL = GWT.getHostPageBaseURL()+"cloudcoder/admin/problems/"+chosen.getCourseId()+"/"+chosen.getProblemId();			
+			String URL = GWT.getHostPageBaseURL()+"/admin/problems/"+chosen.getCourseId()+"/"+chosen.getProblemId();			
 			com.google.gwt.user.client.Window.open(URL, "_blank", "");
 		}
 

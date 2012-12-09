@@ -46,22 +46,14 @@ public interface UserService extends RemoteService
     Boolean addUserToCourse(User user, int courseId, CourseRegistrationType type, int section) throws CloudCoderAuthenticationException;
     
     /**
-     * Edit the fields of the {@link User} record indicated by the
-     * given id.
+     * Edit the fields of the {@link User} record with the new values.
+     * Use the id field in the given record to locate the record to update.
      * 
-     * @param id
-     * @param username
-     * @param firstname
-     * @param lastname
-     * @param email
-     * @param passwd
-     * @param type
-     * @param section
+     * @param user
      * @return
      */
-    Boolean editUser(int id, String username, String firstname, String lastname,
-        String email, String passwd)
-    throws CloudCoderAuthenticationException;
+    Boolean editUser(User user) throws CloudCoderAuthenticationException;
+    
     
     void editCourseRegistrationType(int userId, int courseId, CourseRegistrationType type) throws CloudCoderAuthenticationException;
 }

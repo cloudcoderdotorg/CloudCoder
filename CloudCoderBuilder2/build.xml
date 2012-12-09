@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." default="jar" name="CloudCoderBuilder2">
+    <property environment="env"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.6"/>
+    <property name="source" value="1.6"/>
+    <property name="model.class.jar" value="../CloudCoderModelClasses/cloudcoderModelClasses.jar"/>
+
+	<!-- Read CloudCoder global configuration properties. -->
+	<property file="../cloudcoder.properties"/>
+	
+	<!-- Name of the single executable jarfile used for deployment. -->
+	<property name="jarname" value="cloudcoderBuilder.jar"/>
+
+    <path id="CloudCoderBuilder2.classpath">
+		<pathelement location="${model.class.jar}"/>
+		<pathelement location="bin"/>
+		<fileset dir="lib" includes="**/*.jar"/>
+    	<fileset dir="../CloudCoderLogging/lib" includes="*.jar"/>
+    </path>
+
+    <target name="init">
+        <mkdir dir="bin"/>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="src">
+                <exclude name="**/*.launch"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+
+    <!-- make sure model classes jar file is built -->
+    <target name="modelClasses">
+    	<ant inheritall="false" dir="../CloudCoderModelClasses" target="jar" />
+    </target>
+
+    <target depends="init,modelClasses" name="build">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}">
+            <src path="src"/>
+            <classpath refid="CloudCoderBuilder2.classpath"/>
+        </javac>
+    </target>
+	
+	<!--
+		Depending on whether or not this is a distribution build, decide
+		which cloudcoder.properties to use (dummy or real) and
+		whether or not a keystore should be included (no for dist builds.)
+	-->
+	<target name="checkDistBuild">
+		<condition property="cloudcoderProperties" value="dummy.properties" else="../cloudcoder.properties">
+			<isset property="distBuild"/>
+		</condition>
+		<condition property="cloudcoderKeystoreSource"
+			value=""
+			else="../${cloudcoder.submitsvc.ssl.keystore}">
+			<isset property="distBuild"/>
+		</condition>
+		<condition property="cloudcoderKeystoreTarget"
+			value=""
+			else="${cloudcoder.submitsvc.ssl.keystore}">
+			<isset property="distBuild"/>
+		</condition>
+	</target>
+	
+	<!--
+		Target to build a "distribution" jarfile containing a dummy cloudcoder.properties file
+		and no keystore. 
+	-->
+	<target name="distjar">
+		<!-- Set distBuild property. -->
+		<property name="distBuild" value="true"/>
+		
+		<!-- Ensure that the dummy properties file exists. -->
+		<propertyfile file="dummy.properties">
+			<entry key="dummy" value="true"/>
+		</propertyfile>
+		
+		<!-- Now we can call the normal jar target. -->
+		<antcall target="jar"/>
+	</target>
+	
+	<!--
+		Build a single executable jarfile.
+	-->
+	<target name="jar" depends="checkDistBuild,build">
+		<jar destfile="${jarname}">
+			<zipgroupfileset dir="lib" includes="**.jar"/>
+			<zipgroupfileset dir="../CloudCoderLogging/lib" includes="*.jar"/>
+			<zipgroupfileset file="${model.class.jar}" />
+
+			<fileset dir="bin" includes="**"/>
+			
+			<!-- Include keystore for secure communications with webapp. -->
+			<zipfileset file="${cloudcoderKeystoreSource}" fullpath="${cloudcoderKeystoreTarget}" />
+			
+			<!-- Inlcude cloudcoder configuration properties (cloudcoder.properties) -->
+			<zipfileset file="${cloudcoderProperties}" fullpath="cloudcoder.properties"/>
+			
+			<manifest>
+				<attribute name="Main-Class" value="org.cloudcoder.builder2.server.Builder2DaemonController"/>
+			</manifest>
+		</jar>
+	</target>
+
+    <target name="clean">
+        <delete quiet="true">
+        	<fileset dir="bin" includes="**"/>
+        </delete>
+    	<delete file="${jarname}"/>
+    	<delete file="dummy.properties"/>
+    </target>
+	
+	<!-- Clean everything (including projects on which this target depends -->
+	<target name="depclean" depends="clean">
+		<ant inheritall="false" dir="../CloudCoderModelClasses" target="clean"/>
+	</target>
+</project>

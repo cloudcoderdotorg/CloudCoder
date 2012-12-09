@@ -34,6 +34,7 @@ public class User implements Serializable, IModelObject<User> {
 	private String email;
 	private String passwordHash;
 	private String website;
+	private String consent;
 
 	public static final ModelObjectField<? super User, Integer> ID = new ModelObjectField<User, Integer>("id", Integer.class, 0, ModelObjectIndexType.IDENTITY) {
 		public void set(User obj, Integer value) { obj.setId(value); }
@@ -70,6 +71,11 @@ public class User implements Serializable, IModelObject<User> {
 		public String get(User obj) { return obj.getWebsite(); }
 	};
 	
+	public static final ModelObjectField<? super User, String> CONSENT = new ModelObjectField<User, String>("consent", String.class, 3) {
+        public void set(User obj, String value) { obj.setConsent(value); }
+        public String get(User obj) { return obj.getConsent(); }
+    };
+	
 	/**
 	 * Description of fields (schema version 0).
 	 */
@@ -89,15 +95,27 @@ public class User implements Serializable, IModelObject<User> {
 		.finishDelta();
 	
 	/**
+     * Description of fields (schema version 1).
+     */
+    public static final ModelObjectSchema<User> SCHEMA_V2 = ModelObjectSchema.basedOn(SCHEMA_V1)
+        .addAfter(WEBSITE, CONSENT)
+        .finishDelta();
+	
+	/**
 	 * Description of fields (current schema version).
 	 */
-	public static final ModelObjectSchema<User> SCHEMA = SCHEMA_V1;
+	public static final ModelObjectSchema<User> SCHEMA = SCHEMA_V2;
+
+	public static final String GIVEN_CONSENT = "Y";
+	public static final String NO_CONSENT = "N";
+	public static final String PENDING_CONSENT = "";
 
 	/**
 	 * Constructor.
 	 */
 	public User() {
 	    this.website="";
+	    this.consent="";
 	}
 	
 	@Override
@@ -194,4 +212,12 @@ public class User implements Serializable, IModelObject<User> {
     public void setWebsite(String website) {
 		this.website = website;
 	}
+
+    public String getConsent() {
+        return consent;
+    }
+
+    public void setConsent(String consent) {
+        this.consent = consent;
+    }
 }

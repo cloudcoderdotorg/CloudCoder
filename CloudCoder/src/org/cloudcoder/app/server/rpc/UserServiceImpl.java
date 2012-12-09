@@ -68,13 +68,12 @@ public class UserServiceImpl extends RemoteServiceServlet implements UserService
         return true;
     }
     
-    public Boolean editUser(int id, String username, String firstname, String lastname,
-        String email, String passwd)
+    public Boolean editUser(User user)
     throws CloudCoderAuthenticationException
     {
-        logger.warn("Editing userid "+id+", username "+username);
+        logger.warn("Editing userid "+user.getId()+", username "+user.getUsername());
         User authenticatedUser = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
-        Database.getInstance().editUser(id, username, firstname, lastname, email, passwd);
+        Database.getInstance().editUser(user);
         return true;
     }
     

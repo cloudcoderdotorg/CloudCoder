@@ -146,6 +146,11 @@
 	background-color: green;
 }
 
+/* Give the edit problem center scroll panel a distinctive background. */
+.cc-editProblemPanel {
+	background: #ccf;
+}
+
 /*
  * Styles for model object field editor widgets.
  */
