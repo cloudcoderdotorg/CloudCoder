@@ -82,6 +82,15 @@
 			else="war/WEB-INF/classes/${cloudcoder.submitsvc.ssl.keystore}">
 			<isset property="distBuild"/>
 		</condition>
+
+		<!-- for gwt-2.5.0, we need requestfactory-server.jar:
+			see: http://code.google.com/p/google-web-toolkit/issues/detail?id=7527 -->
+		<condition property="requestFactorySource" value="${gwt.sdk}/requestfactory-server.jar" else="">
+			<contains string="${gwt.sdk}" substring="gwt-2.5.0" />
+		</condition>
+		<condition property="requestFactoryTarget" value="war/WEB-INF/lib/requestfactory-server.jar" else="">
+			<contains string="${gwt.sdk}" substring="gwt-2.5.0" />
+		</condition>
 	</target>
 	
 	<!--
@@ -149,6 +158,9 @@
 			<zipfileset
 				file="../CloudCoderModelClassesJSON/lib/json-simple-1.1.1.jar"
 				fullpath="war/WEB-INF/lib/json-simple-1.1.1.jar"/>
+
+			<!-- Include GWT requestfactory-server.jar if needed. -->
+			<zipfileset file="${requestFactorySource}" fullpath="${requestFactoryTarget}"/>
 			
 			<!-- Include keystore for secure communications with builder. -->
 			<zipfileset
