@@ -397,7 +397,8 @@ public class ProblemData implements Serializable, IProblemData {
 				&& ModelObjectUtil.equals(this.authorEmail, other.authorEmail)
 				&& ModelObjectUtil.equals(this.authorWebsite, other.authorWebsite)
 				&& this.timestampUTC == other.timestampUTC
-				&& ModelObjectUtil.equals(this.license, other.license);
+				&& ModelObjectUtil.equals(this.license, other.license)
+				&& ModelObjectUtil.equals(this.parentHash, other.parentHash);
 	}
 
 	/*

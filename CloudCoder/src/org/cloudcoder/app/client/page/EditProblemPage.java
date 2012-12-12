@@ -48,6 +48,7 @@ import org.cloudcoder.app.shared.model.ProblemType;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.util.SubscriptionRegistrar;
 
+import com.google.gwt.core.shared.GWT;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ClickEvent;
@@ -166,7 +167,7 @@ public class EditProblemPage extends CloudCoderPage {
 			saveProblem(problemAndTestCaseList, course);
 		}
 
-		public void saveProblem(
+		protected void saveProblem(
 				final ProblemAndTestCaseList problemAndTestCaseList,
 				final Course course) {
 			RPC.getCoursesAndProblemsService.storeProblemAndTestCaseList(problemAndTestCaseList, course, new AsyncCallback<ProblemAndTestCaseList>() {
@@ -354,17 +355,19 @@ public class EditProblemPage extends CloudCoderPage {
 		private void leavePage(final Runnable action) {
 			// Commit all changes made in the editors to the model objects.
 			boolean successfulCommit = commitAll();
+			boolean problemModified = isProblemModified();
 			
 			// If the Problem has not been modified, then it's fine to leave the page
 			// without a prompt.
-			if (successfulCommit && !isProblemModified()) {
+			if (successfulCommit && !problemModified) {
 				action.run();
 				return;
 			}
 			
-			if (successfulCommit) {
+			if (!successfulCommit) {
 				getSession().add(StatusMessage.error("One or more values is invalid"));
 			}
+			GWT.log("Problem " + (problemModified ? "has" : "has not") + " been modified");
 			
 			// Prompt user to confirm leaving page (and abandoning changes to Problem)
 			ChoiceDialogBox<Confirm> confirmDialog = new ChoiceDialogBox<Confirm>(
@@ -384,6 +387,9 @@ public class EditProblemPage extends CloudCoderPage {
 		
 		/**
 		 * Commit all changes in the UI to the underlying ProblemAndTestCaseList model object.
+		 * 
+		 * @return true if all committed values were valid, false if at least
+		 *         one editor contains an invalid value
 		 */
 		private boolean commitAll() {
 			for (EditModelObjectField<IProblem, ?> editor : problemFieldEditorList) {

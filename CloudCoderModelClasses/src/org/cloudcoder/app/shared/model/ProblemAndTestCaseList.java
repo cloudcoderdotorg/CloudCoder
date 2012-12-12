@@ -110,6 +110,10 @@ public class ProblemAndTestCaseList implements ActivityObject, IProblemAndTestCa
 
 	/**
 	 * Copy all data in the given ProblemAndTestCaseList object into this one.
+	 * To the extent possible, the {@link Problem} object and {@link TestCase}
+	 * objects in this ProblemAndTestCaseList will be modified in place,
+	 * rather than a new {@link Problem} and {@link TestCase}s being
+	 * created. 
 	 * 
 	 * @param other another ProblemAndTestCaseList object
 	 */
@@ -117,16 +121,30 @@ public class ProblemAndTestCaseList implements ActivityObject, IProblemAndTestCa
 		if (other.problem == null) {
 			this.problem = null;
 		} else {
-			this.problem = new Problem();
+			if (this.problem == null) {
+				this.problem = new Problem();
+			}
 			this.problem.copyFrom(other.problem);
 		}
 
 		if (other.testCaseList == null) {
 			this.testCaseList = null;
 		} else {
-			this.testCaseList = new TestCase[other.testCaseList.length];
+			if (this.testCaseList.length != other.testCaseList.length) {
+				int min = Math.min(this.testCaseList.length, other.testCaseList.length);
+				TestCase[] newTestCaseList = new TestCase[other.testCaseList.length];
+				// Preserve as many existing TestCase objects as possible
+				for (int i = 0; i < min; i++) {
+					newTestCaseList[i] = this.testCaseList[i];
+				}
+				// Create new TestCase objects if the list has been expanded
+				for (int i = min; i < newTestCaseList.length; i++) {
+					newTestCaseList[i] = new TestCase();
+				}
+				this.testCaseList = newTestCaseList;
+			}
+			//this.testCaseList = new TestCase[other.testCaseList.length];
 			for (int i = 0; i < other.testCaseList.length; i++) {
-				this.testCaseList[i] = new TestCase();
 				this.testCaseList[i].copyFrom(other.testCaseList[i]);
 			}
 		}
