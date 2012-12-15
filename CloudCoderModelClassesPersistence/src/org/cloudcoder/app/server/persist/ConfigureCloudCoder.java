@@ -21,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -180,77 +181,94 @@ public class ConfigureCloudCoder
 
 	private Properties config;
 	private boolean configureRepository;
+	private String useProperties;
+	private String editJar;
+	private boolean noBuilder;
 
 	public ConfigureCloudCoder() {
 		this.config = new Properties();
 		this.configureRepository = false;
+		this.useProperties = null;
 	}
 
 	private void execute() throws Exception
 	{
-		// re-write configuration properties
 		Scanner keyboard=new Scanner(System.in);
-		String readFromFile=ConfigurationUtil.ask(keyboard, "Do you want to read new configuration properties from a file?","no");
 
-		if (readFromFile.equalsIgnoreCase("yes")) {
-			String filename=ConfigurationUtil.ask(keyboard, "What is the name of the file containing the new configuration properties?", "cloudcoder.properties");
-			config.load(new FileInputStream(filename));
+		if (useProperties != null) {
+			// Load properties from file specified as command-line argument
+			config.load(new FileReader(useProperties));
 		} else {
-			// read configuration properties from command line
+			// Load properties interactively
 
-			// See if properties already exist
-			Properties origConfig = null;
-			try {
-				origConfig = DBUtil.getConfigProperties();
-			} catch (Exception e) {
-				// ignore
-			}
-			if (origConfig != null) {
-				String reuse = ConfigurationUtil.ask(keyboard, "It looks like you have already configured CloudCoder.\n" + 
-						"Use the previous configuration settings as defaults?", "yes");
-				if (!reuse.trim().toLowerCase().equals("yes")) {
-					// Don't use
-					origConfig = null;
+			String readFromFile=ConfigurationUtil.ask(keyboard, "Do you want to read new configuration properties from a file?","no");
+
+			if (readFromFile.equalsIgnoreCase("yes")) {
+				String filename=ConfigurationUtil.ask(keyboard, "What is the name of the file containing the new configuration properties?", "cloudcoder.properties");
+				config.load(new FileInputStream(filename));
+			} else {
+				// read configuration properties from command line
+
+				// See if properties already exist
+				Properties origConfig = null;
+				try {
+					origConfig = DBUtil.getConfigProperties();
+				} catch (Exception e) {
+					// ignore
 				}
-			}
-
-			for (Setting setting : getSettings()) {
-				if (setting.condition != null && !setting.condition.evaluate()) {
-					continue;
-				}
-
-				if (setting.isSection) {
-					System.out.println();
-					System.out.println("########################################################################");
-					System.out.println(" >>> " + setting.name + " <<<");
-					System.out.println("########################################################################");
-					System.out.println();
-					continue;
+				if (origConfig != null) {
+					String reuse = ConfigurationUtil.ask(keyboard, "It looks like you have already configured CloudCoder.\n" + 
+							"Use the previous configuration settings as defaults?", "yes");
+					if (!reuse.trim().toLowerCase().equals("yes")) {
+						// Don't use
+						origConfig = null;
+					}
 				}
 
-				String defval = origConfig.containsKey(setting.name) ? origConfig.getProperty(setting.name) : setting.defval;
+				for (Setting setting : getSettings()) {
+					if (setting.condition != null && !setting.condition.evaluate()) {
+						continue;
+					}
 
-				String value;
-				if (defval != null) {
-					value = ConfigurationUtil.ask(keyboard, setting.prompt, defval);
-				} else {
-					value = ConfigurationUtil.ask(keyboard, setting.prompt);
+					if (setting.isSection) {
+						System.out.println();
+						System.out.println("########################################################################");
+						System.out.println(" >>> " + setting.name + " <<<");
+						System.out.println("########################################################################");
+						System.out.println();
+						continue;
+					}
+
+					String defval = origConfig.containsKey(setting.name) ? origConfig.getProperty(setting.name) : setting.defval;
+
+					String value;
+					if (defval != null) {
+						value = ConfigurationUtil.ask(keyboard, setting.prompt, defval);
+					} else {
+						value = ConfigurationUtil.ask(keyboard, setting.prompt);
+					}
+
+					config.setProperty(setting.name, value);
 				}
-
-				config.setProperty(setting.name, value);
 			}
 		}
-
+		
+		
+		
 		// Create the new configured jarfile
-		String jarfileName=ConfigurationUtil.ask(keyboard, "What is the name of the jarfile containing all of the code for CloudCoder?", "cloudcoderApp.jar");
-		copyJarfileWithNewProperties(jarfileName, "cloudcoder.properties");
-		System.out.println("Wrote new configuration properties to cloudcoder.properties contained in jarfile "+jarfileName);
+		if (editJar == null) {
+			editJar=ConfigurationUtil.ask(keyboard, "What is the name of the jarfile containing all of the code for CloudCoder?", "cloudcoderApp.jar");
+		}
+		copyJarfileWithNewProperties(editJar, "cloudcoder.properties");
+		System.out.println("Wrote new configuration properties to cloudcoder.properties contained in jarfile "+editJar);
 
-		String configBuilder=ConfigurationUtil.ask(keyboard, "Would you like to set these configuration properties for your CloudCoder builder?",ConfigurationUtil.YES);
-		if (configBuilder.equals(ConfigurationUtil.YES)) {
-			String buildJarfileName=ConfigurationUtil.ask(keyboard, "What is the name of the jarfile containing the code for the CloudCoder builder?", "cloudcoderBuilder.jar");
-			copyJarfileWithNewProperties(buildJarfileName, "cloudcoder.properties");
-			System.out.println("Wrote new configuration properties to cloudcoder.properties contained in jarfile "+buildJarfileName);
+		if (!noBuilder) {
+			String configBuilder=ConfigurationUtil.ask(keyboard, "Would you like to set these configuration properties for your CloudCoder builder?",ConfigurationUtil.YES);
+			if (configBuilder.equals(ConfigurationUtil.YES)) {
+				String buildJarfileName=ConfigurationUtil.ask(keyboard, "What is the name of the jarfile containing the code for the CloudCoder builder?", "cloudcoderBuilder.jar");
+				copyJarfileWithNewProperties(buildJarfileName, "cloudcoder.properties");
+				System.out.println("Wrote new configuration properties to cloudcoder.properties contained in jarfile "+buildJarfileName);
+			}
 		}
 
 	}
@@ -324,8 +342,18 @@ public class ConfigureCloudCoder
 
 	public static void main(String[] args) throws Exception {
 		ConfigureCloudCoder configureCloudCoder = new ConfigureCloudCoder();
-		if (args.length == 1 && args[0].equals("--repo")) {
-			configureCloudCoder.configureRepository = true;
+		for (String arg : args) {
+			if (arg.equals("--repo")) {
+				configureCloudCoder.configureRepository = true;
+			} else if (arg.startsWith("--useProperties=")) {
+				configureCloudCoder.useProperties = arg.substring("--useProperties=".length());
+			} else if (arg.startsWith("--editJar=")) {
+				configureCloudCoder.editJar = arg.substring("--editJar=".length());
+			} else if (arg.equals("--noBuilder")) {
+				configureCloudCoder.noBuilder = true;
+			} else {
+				throw new IllegalArgumentException("Unknown option: " + arg);
+			}
 		}
 		configureCloudCoder.execute();
 	}
