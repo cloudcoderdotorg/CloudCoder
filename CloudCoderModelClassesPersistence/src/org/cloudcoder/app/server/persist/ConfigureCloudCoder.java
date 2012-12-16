@@ -17,24 +17,16 @@
 
 package org.cloudcoder.app.server.persist;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
-import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
 
 /**
  * Configure a CloudCoder executable jarfile, either by reading configuration
@@ -178,179 +170,141 @@ public class ConfigureCloudCoder
 
 				);
 	}
+	
+	private enum Mode {
+		/** Interactive configuration mode. */
+		CONFIGURE_INTERACTIVELY,
+		
+		/** Configure non-interactively by replacing specified jar entries. */
+		REPLACE,
+	}
 
+	private Mode mode;
 	private Properties config;
 	private boolean configureRepository;
-	private String useProperties;
-	private String editJar;
-	private boolean noBuilder;
+	private String jarName;
+	private Map<String, String> replaceMap;
 
 	public ConfigureCloudCoder() {
+		this.mode = Mode.CONFIGURE_INTERACTIVELY;
 		this.config = new Properties();
 		this.configureRepository = false;
-		this.useProperties = null;
+		this.replaceMap = new HashMap<String, String>();
 	}
 
 	private void execute() throws Exception
 	{
+		if (mode == Mode.CONFIGURE_INTERACTIVELY) {
+			configureInteractively();
+		} else if (mode == Mode.REPLACE) {
+			replace();
+		}
+	}
+
+	private void configureInteractively() throws IOException,
+			FileNotFoundException, Exception {
 		Scanner keyboard=new Scanner(System.in);
 
-		if (useProperties != null) {
-			// Load properties from file specified as command-line argument
-			config.load(new FileReader(useProperties));
+		// Load properties interactively
+
+		String readFromFile=ConfigurationUtil.ask(keyboard, "Do you want to read new configuration properties from a file?","no");
+
+		if (readFromFile.equalsIgnoreCase("yes")) {
+			String filename=ConfigurationUtil.ask(keyboard, "What is the name of the file containing the new configuration properties?", "cloudcoder.properties");
+			config.load(new FileInputStream(filename));
 		} else {
-			// Load properties interactively
+			// read configuration properties from command line
 
-			String readFromFile=ConfigurationUtil.ask(keyboard, "Do you want to read new configuration properties from a file?","no");
-
-			if (readFromFile.equalsIgnoreCase("yes")) {
-				String filename=ConfigurationUtil.ask(keyboard, "What is the name of the file containing the new configuration properties?", "cloudcoder.properties");
-				config.load(new FileInputStream(filename));
-			} else {
-				// read configuration properties from command line
-
-				// See if properties already exist
-				Properties origConfig = null;
-				try {
-					origConfig = DBUtil.getConfigProperties();
-				} catch (Exception e) {
-					// ignore
-				}
-				if (origConfig != null) {
-					String reuse = ConfigurationUtil.ask(keyboard, "It looks like you have already configured CloudCoder.\n" + 
-							"Use the previous configuration settings as defaults?", "yes");
-					if (!reuse.trim().toLowerCase().equals("yes")) {
-						// Don't use
-						origConfig = null;
-					}
-				}
-
-				for (Setting setting : getSettings()) {
-					if (setting.condition != null && !setting.condition.evaluate()) {
-						continue;
-					}
-
-					if (setting.isSection) {
-						System.out.println();
-						System.out.println("########################################################################");
-						System.out.println(" >>> " + setting.name + " <<<");
-						System.out.println("########################################################################");
-						System.out.println();
-						continue;
-					}
-
-					String defval = origConfig.containsKey(setting.name) ? origConfig.getProperty(setting.name) : setting.defval;
-
-					String value;
-					if (defval != null) {
-						value = ConfigurationUtil.ask(keyboard, setting.prompt, defval);
-					} else {
-						value = ConfigurationUtil.ask(keyboard, setting.prompt);
-					}
-
-					config.setProperty(setting.name, value);
+			// See if properties already exist
+			Properties origConfig = null;
+			try {
+				origConfig = DBUtil.getConfigProperties();
+			} catch (Exception e) {
+				// ignore
+			}
+			if (origConfig != null) {
+				String reuse = ConfigurationUtil.ask(keyboard, "It looks like you have already configured CloudCoder.\n" + 
+						"Use the previous configuration settings as defaults?", "yes");
+				if (!reuse.trim().toLowerCase().equals("yes")) {
+					// Don't use
+					origConfig = null;
 				}
 			}
+
+			for (Setting setting : getSettings()) {
+				if (setting.condition != null && !setting.condition.evaluate()) {
+					continue;
+				}
+
+				if (setting.isSection) {
+					System.out.println();
+					System.out.println("########################################################################");
+					System.out.println(" >>> " + setting.name + " <<<");
+					System.out.println("########################################################################");
+					System.out.println();
+					continue;
+				}
+
+				String defval = origConfig.containsKey(setting.name) ? origConfig.getProperty(setting.name) : setting.defval;
+
+				String value;
+				if (defval != null) {
+					value = ConfigurationUtil.ask(keyboard, setting.prompt, defval);
+				} else {
+					value = ConfigurationUtil.ask(keyboard, setting.prompt);
+				}
+
+				config.setProperty(setting.name, value);
+			}
 		}
-		
-		
-		
+
+
+
 		// Create the new configured jarfile
-		if (editJar == null) {
-			editJar=ConfigurationUtil.ask(keyboard, "What is the name of the jarfile containing all of the code for CloudCoder?", "cloudcoderApp.jar");
-		}
+		String editJar=ConfigurationUtil.ask(keyboard, "What is the name of the jarfile containing all of the code for CloudCoder?", "cloudcoderApp.jar");
 		copyJarfileWithNewProperties(editJar, "cloudcoder.properties");
 		System.out.println("Wrote new configuration properties to cloudcoder.properties contained in jarfile "+editJar);
 
-		if (!noBuilder) {
-			String configBuilder=ConfigurationUtil.ask(keyboard, "Would you like to set these configuration properties for your CloudCoder builder?",ConfigurationUtil.YES);
-			if (configBuilder.equals(ConfigurationUtil.YES)) {
-				String buildJarfileName=ConfigurationUtil.ask(keyboard, "What is the name of the jarfile containing the code for the CloudCoder builder?", "cloudcoderBuilder.jar");
-				copyJarfileWithNewProperties(buildJarfileName, "cloudcoder.properties");
-				System.out.println("Wrote new configuration properties to cloudcoder.properties contained in jarfile "+buildJarfileName);
-			}
+		String configBuilder=ConfigurationUtil.ask(keyboard, "Would you like to set these configuration properties for your CloudCoder builder?",ConfigurationUtil.YES);
+		if (configBuilder.equals(ConfigurationUtil.YES)) {
+			String buildJarfileName=ConfigurationUtil.ask(keyboard, "What is the name of the jarfile containing the code for the CloudCoder builder?", "cloudcoderBuilder.jar");
+			copyJarfileWithNewProperties(buildJarfileName, "cloudcoder.properties");
+			System.out.println("Wrote new configuration properties to cloudcoder.properties contained in jarfile "+buildJarfileName);
 		}
-
 	}
 
-	/**
-	 * copy input to output stream - available in several StreamUtils or Streams classes 
-	 */    
-	private void copy(InputStream input, OutputStream output)
-			throws IOException
-			{
-		int bytesRead;
-		while ((bytesRead = input.read(BUFFER))!= -1) {
-			output.write(BUFFER, 0, bytesRead);
-		}
-			}
-	private final byte[] BUFFER = new byte[4096 * 1024];
-
 	private void copyJarfileWithNewProperties(String jarfileName, String propertiesFileName)
-			throws Exception
-			{
-		// read in jarfileName, and replace propertiesFileName with newProps
-		ZipFile jarfile = new ZipFile(jarfileName);
-		ByteArrayOutputStream bytes=new ByteArrayOutputStream();
-		ZipOutputStream newJarfileData = new ZipOutputStream(bytes);
-
-		// XXX Hack: zipfiles and jarfiles can apparently have multiple copies
-		// of the SAME file.  The builder has many META-INF/LICENSE files
-		// This should be fixed somehow, probably in the build.xml
-		// by giving the licenses specific names or putting them into
-		// other folders.
-		Set<String> alreadySeen=new HashSet<String>();
-
-		// first, copy contents from existing war
-		Enumeration<? extends ZipEntry> entries = jarfile.entries();
-		while (entries.hasMoreElements()) {
-			ZipEntry e = entries.nextElement();
-			if (alreadySeen.contains(e.getName())) {
-				// skip filenames we've already added
-				continue;
-			}
-			//System.out.println("copy: " + e.getName());
-
-			if (e.getName().equals(propertiesFileName)) {
-				// If we find the file we're interested in, copy it!
-				ZipEntry newEntry = new ZipEntry(propertiesFileName);
-				newJarfileData.putNextEntry(newEntry);
-				config.store(newJarfileData, "");
-			} else {
-				newJarfileData.putNextEntry(e);
-				if (!e.isDirectory()) {
-					copy(jarfile.getInputStream(e), newJarfileData);
-				}
-			}
-			alreadySeen.add(e.getName());
-			newJarfileData.closeEntry();
+			throws Exception {
+		JarRewriter jarRewriter = new JarRewriter(jarfileName);
+		jarRewriter.replaceEntry(propertiesFileName, new JarRewriter.PropertiesEntryData(config));
+		jarRewriter.rewrite();
+	}
+	
+	private void replace() throws IOException {
+		// Replace specified entries in jarfile non-interactively
+		JarRewriter jarRewriter = new JarRewriter(jarName);
+		for (Map.Entry<String, String> entry : replaceMap.entrySet()) {
+			jarRewriter.replaceEntry(entry.getKey(), new JarRewriter.FileEntryData(entry.getValue()));
 		}
-
-		// close
-		newJarfileData.close();
-		bytes.flush();
-		bytes.close();
-		jarfile.close();
-
-		// copy over the file with new version we had just changed
-		FileOutputStream out=new FileOutputStream(jarfileName);
-		ByteArrayInputStream in=new ByteArrayInputStream(bytes.toByteArray());
-		copy(in, out);
-
-		out.close();
-			}
+		jarRewriter.rewrite();
+	}
 
 	public static void main(String[] args) throws Exception {
 		ConfigureCloudCoder configureCloudCoder = new ConfigureCloudCoder();
 		for (String arg : args) {
 			if (arg.equals("--repo")) {
 				configureCloudCoder.configureRepository = true;
-			} else if (arg.startsWith("--useProperties=")) {
-				configureCloudCoder.useProperties = arg.substring("--useProperties=".length());
+				throw new IllegalArgumentException("Unknown option: " + arg);
 			} else if (arg.startsWith("--editJar=")) {
-				configureCloudCoder.editJar = arg.substring("--editJar=".length());
-			} else if (arg.equals("--noBuilder")) {
-				configureCloudCoder.noBuilder = true;
+				arg = arg.substring("--editJar=".length());
+				configureCloudCoder.mode = Mode.REPLACE;
+				configureCloudCoder.jarName = arg;
+			} else if (arg.startsWith("--replace=")) {
+				arg = arg.substring("--replace=".length());
+				int eq = arg.indexOf('=');
+				String entry = arg.substring(0, eq);
+				String fileName = arg.substring(eq + 1);
+				configureCloudCoder.replaceMap.put(entry, fileName);
 			} else {
 				throw new IllegalArgumentException("Unknown option: " + arg);
 			}

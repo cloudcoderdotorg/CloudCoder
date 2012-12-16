@@ -9,7 +9,12 @@ my $program = $0;
 #print "program=$program\n";
 #exit 0;
 
-my $dryRun = 1;
+my $dryRun = 0;
+if (scalar(@ARGV) > 0 && $ARGV[0] eq '-n') {
+	print ">>> Dry run <<<\n";
+	shift @ARGV;
+	$dryRun = 1;
+}
 
 my $mode = 'start';
 
@@ -39,7 +44,9 @@ following prompt:
   sudo password>>
 
 then you will need to type the account password and press
-enter.
+enter.  On some Ubuntu systems, such as Ubuntu server on
+Amazon EC2, no password is required for sudo, so don't be
+concerned if you don't see the prompt.
 GREET
 	
 	my $readyToStart = ask("\nReady to start? (yes/no)");
@@ -75,7 +82,9 @@ GREET
 	# will be required when installing packages.
 	DebconfSetSelections("mysql-server-$mysqlVersion", "mysql-server/root_password", "password $ccMysqlRootPasswd");
 	DebconfSetSelections("mysql-server-$mysqlVersion", "mysql-server/root_password_again", "password $ccMysqlRootPasswd");
-
+	# Install packages. Note that because cloudcoderApp.jar is self-configuring,
+	# we can install the JRE rather than the full JDK, as we won't need
+	# the jar tool.
 	RunAdmin(
 		env => { 'DEBIAN_FRONTEND' => 'noninteractive' },
 		cmd => ["apt-get", "-y", "install", "openjdk-6-jre-headless", "mysql-client-$mysqlVersion",
@@ -135,7 +144,7 @@ sub Step2 {
 	chdir "/home/cloud" || die "Couldn't change directory to /home/cloud: $!\n";
 
 	# Get configuration properties passed from start step
-	my %props = split(/,|=/, @ARGV[0]);
+	my %props = split(/,|=/, $ARGV[0]);
 	foreach my $name (keys %props) {
 		print "$name=$props{$name}\n";
 	}
@@ -148,21 +157,25 @@ sub Step2 {
 	# Download webapp distribution jarfile
 	# ----------------------------------------------------------------------
 	# TODO: automatically determine latest version
-	my $appJar = "cloudcoderApp-v0.0.1.jar";
+	#my $appJar = "cloudcoderApp-v0.0.1.jar";
+	my $appJar = "cloudcoderApp.jar";
 	section("Downloading $appJar...");
-	my $appUrl = "https://s3.amazonaws.com/cloudcoder-binaries/$appJar";
+	#my $appUrl = "https://s3.amazonaws.com/cloudcoder-binaries/$appJar";
+	my $appUrl = "http://faculty.ycp.edu/~dhovemey/$appJar";
 	Run("wget", $appUrl);
 
 	# ----------------------------------------------------------------------
-	# Configure webapp distribution jarfile
+	# Configure webapp distribution jarfile with
+	# generated cloudcoder.properties and keystore
 	# ----------------------------------------------------------------------
 	section("Configuring $appJar...");
 	# Generate cloudcoder.properties
 	print "Creating cloudcoder.properties...\n";
 	my $pfh = new FileHandle(">cloudcoder.properties");
+	my $ccMysqlCCPasswd = $props{ccMysqlCCPasswd};
 	print $pfh <<"ENDPROPERTIES";
 cloudcoder.db.user=cloudcoder
-cloudcoder.db.passwd=$props{ccMysqlCCPasswd}
+cloudcoder.db.passwd=$ccMysqlCCPasswd
 cloudcoder.db.databaseName=cloudcoderdb
 cloudcoder.db.host=localhost
 cloudcoder.db.portStr=
@@ -179,18 +192,30 @@ cloudcoder.webserver.localhostonly=true
 ENDPROPERTIES
 	$pfh->close();
 
+	# Create a keystore
+	print "Creating a keystore for communication between webapp and builder...\n";
+	Run('keytool', '-genkey', '-noprompt',
+		'-alias', 'cloudcoder',
+		'-storepass', 'changeit',
+		'-keystore', 'keystore.jks',
+		'-validity', '3600',
+		'-keypass', 'changeit',
+		'-dname', "CN=None, OU=None, L=None, ST=None, C=None");
+
 	# Configure webapp jarfile to use the generated cloudcoder.properties
+	# and keystore
 	print "Configuring $appJar...\n";
 	Run("java", "-jar", $appJar, "configure",
-		"--useProperties=cloudcoder.properties",
 		"--editJar=$appJar",
-		"--noBuilder");
+		"--replace=cloudcoder.properties=cloudcoder.properties",
+		"--replace=war/WEB-INF/classes/keystore.jks=keystore.jks");
+	Run('rm', '-f', 'cloudcoder.properties', 'keystore.jks');
 
 	# ----------------------------------------------------------------------
 	# Create the cloudcoderdb database
 	# ----------------------------------------------------------------------
 	section("Creating cloudcoderdb database...");
-	# TODO
+	Run("java", "-jar", $appJar, "createdb", "--props=$ARGV[0],ccRepoUrl=https://cloudcoder.org/repo");
 
 	# At this point, it should be possible to start the webapp!
 	
@@ -239,7 +264,8 @@ sub RunAdmin {
 
 	my @sudo = ('sudo', '-p', 'sudo password>> ');
 	my @cmd;
-	if (exists $params{'asUser'}) {
+	my $asUser = exists $params{'asUser'};
+	if ($asUser) {
 		@cmd = (@sudo, '-u', $params{'asUser'}, @{$params{'cmd'}});
 	} else {
 		@cmd = (@sudo, @{$params{'cmd'}});
@@ -258,7 +284,10 @@ sub RunAdmin {
 		$ENV{$var} = $origEnv{$var};
 	}
 
-	die "Admin command $cmd[3] failed\n" if (!$result);
+	if (!$result) {
+		my $prog = $cmd[$asUser ? 5 : 3];
+		die "Admin command $prog failed\n";
+	}
 }
 
 sub Run {
@@ -310,10 +339,10 @@ sub EditApache2DefaultSsl {
 		chomp;
 		print $out "$_\n";
 		if (/^\s*<VirtualHost/) {
-			print $out <<"SERVERNAME";
+			print $out <<"ENDSERVERNAME";
 	# Modified by CloudCoder bootstrap.pl
 	ServerName $ccHostname
-SERVERNAME
+ENDSERVERNAME
 			$modCount++;
 		} elsif (/^\s*ServerAdmin/) {
 			print $out <<"ENDPROXY";

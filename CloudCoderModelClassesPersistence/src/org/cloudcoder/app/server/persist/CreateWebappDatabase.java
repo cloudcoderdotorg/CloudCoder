@@ -65,11 +65,67 @@ public class CreateWebappDatabase {
 		User.SCHEMA,
 	};
 	
+	private static class Props {
+
+		public String ccUserName;
+		public String ccPassword;
+		public String ccFirstname;
+		public String ccLastname;
+		public String ccEmail;
+		public String ccWebsite;
+		public String ccInstitutionName;
+		public String ccRepoUrl;
+		
+	}
+	
 	public static void main(String[] args) throws Exception {
 		ConfigurationUtil.configureLog4j();
 		
 		try {
-			createWebappDatabase();
+			Props props = null;
+			
+			for (String arg : args) {
+				if (arg.startsWith("--props=")) {
+					// Properties specified by bootstrap.pl: allows non-interactive
+					// creation of the database
+					props = new Props();
+					arg = arg.substring("--props=".length());
+					String[] arr = arg.split(",");
+					for (String prop : arr) {
+						int eq = prop.indexOf('=');
+						String name = prop.substring(0, eq);
+						String val = prop.substring(eq + 1);
+						
+						if (name.equals("ccUser")) {
+							props.ccUserName = val;
+						} else if (name.equals("ccPassword")) {
+							props.ccPassword = val;
+						} else if (name.equals("ccFirstName")) {
+							props.ccFirstname = val;
+						} else if (name.equals("ccLastName")) {
+							props.ccLastname = val;
+						} else if (name.equals("ccEmail")) {
+							props.ccEmail = val;
+						} else if (name.equals("ccWebsite")) {
+							props.ccWebsite = val;
+						} else if (name.equals("ccInstitutionName")) {
+							props.ccInstitutionName = val;
+						} else if (name.equals("ccRepoUrl")) {
+							props.ccRepoUrl = val;
+						}
+					}
+				} else {
+					throw new IllegalArgumentException("Unknown option: " + arg);
+				}
+			}
+			
+			if (props != null) {
+				// Non-interactive configuration (probably from bootstrap.pl)
+				doCreateWebappDatabase(props);
+			} else {
+				// Interactive configuration
+				createWebappDatabase();
+			}
 		} catch (SQLException e) {
 			// Handle SQLException by printing an error message:
 			// these are likely to be meaningful to the user
@@ -87,15 +143,22 @@ public class CreateWebappDatabase {
 		
 		Scanner keyboard = new Scanner(System.in);
 		
-		String ccUserName = ConfigurationUtil.ask(keyboard, "Enter a username for your CloudCoder account: ");
-		String ccPassword = ConfigurationUtil.ask(keyboard, "Enter a password for your CloudCoder account");
-		String ccFirstname = ConfigurationUtil.ask(keyboard, "What is your first name?");
-		String ccLastname= ConfigurationUtil.ask(keyboard, "What is your last name?");
-		String ccEmail= ConfigurationUtil.ask(keyboard, "What is your email address?");
-		String ccWebsite = ConfigurationUtil.ask(keyboard, "What is your website URL?");
-		String ccInstitutionName = ConfigurationUtil.ask(keyboard, "What is your institution name (e.g, 'Unseen University')?");
-		String ccRepoUrl = ConfigurationUtil.ask(keyboard, "Enter the URL of the exercise repository", "https://cloudcoder.org/repo");
+		Props props = new Props();
 		
+		props.ccUserName = ConfigurationUtil.ask(keyboard, "Enter a username for your CloudCoder account: ");
+		props.ccPassword = ConfigurationUtil.ask(keyboard, "Enter a password for your CloudCoder account");
+		props.ccFirstname = ConfigurationUtil.ask(keyboard, "What is your first name?");
+		props.ccLastname= ConfigurationUtil.ask(keyboard, "What is your last name?");
+		props.ccEmail= ConfigurationUtil.ask(keyboard, "What is your email address?");
+		props.ccWebsite = ConfigurationUtil.ask(keyboard, "What is your website URL?");
+		props.ccInstitutionName = ConfigurationUtil.ask(keyboard, "What is your institution name (e.g, 'Unseen University')?");
+		props.ccRepoUrl = ConfigurationUtil.ask(keyboard, "Enter the URL of the exercise repository", "https://cloudcoder.org/repo");
+		
+		doCreateWebappDatabase(props);
+	}
+
+	private static void doCreateWebappDatabase(Props props)
+			throws ClassNotFoundException, IOException, SQLException {
 		Class.forName("com.mysql.jdbc.Driver");
 
 		Properties config = DBUtil.getConfigProperties();
@@ -129,8 +192,8 @@ public class CreateWebappDatabase {
 		// Set institution name (and any other configuration settings)
 		System.out.println("Adding configuration settings...");
 
-		DBUtil.storeConfigurationSetting(conn, ConfigurationSettingName.PUB_TEXT_INSTITUTION, ccInstitutionName);
-		DBUtil.storeConfigurationSetting(conn, ConfigurationSettingName.PUB_REPOSITORY_URL, ccRepoUrl);
+		DBUtil.storeConfigurationSetting(conn, ConfigurationSettingName.PUB_TEXT_INSTITUTION, props.ccInstitutionName);
+		DBUtil.storeConfigurationSetting(conn, ConfigurationSettingName.PUB_REPOSITORY_URL, props.ccRepoUrl);
 		
 		// Terms
 		System.out.println("Creating terms...");
@@ -148,12 +211,12 @@ public class CreateWebappDatabase {
 		// Create an initial user
 		System.out.println("Creating initial user...");
 		int userId = ConfigurationUtil.createOrUpdateUser(conn, 
-		        ccUserName, 
-		        ccFirstname,
-		        ccLastname,
-		        ccEmail,
-		        ccPassword,
-		        ccWebsite);
+				props.ccUserName, 
+				props.ccFirstname,
+				props.ccLastname,
+				props.ccEmail,
+				props.ccPassword,
+				props.ccWebsite);
 		
 		// Register the user as an instructor in the demo course
 		System.out.println("Registering initial user for demo course...");
