@@ -20,10 +20,10 @@ http://repo1.maven.org/maven2/commons-io/commons-io/2.1/commons-io-2.1.jar
 http://repo1.maven.org/maven2/org/python/jython-standalone/2.5.2/jython-standalone-2.5.2.jar
   CloudCoderBuilder/lib/jython.jar
   CloudCoderBuilder2/lib/jython.jar
-https://github.com/downloads/daveho/Daemon/daemon-0.1.jar
-  CloudCoderJetty/lib/daemon/daemon.jar
-  CloudCoderBuilder2/lib/daemon.jar
-  CloudCoderBuilder/lib/daemon.jar
+https://s3.amazonaws.com/org.cloudcoder.daemon.binaries/daemon-0.2.jar
+  CloudCoderJetty/lib/daemon/daemon-0.2.jar
+  CloudCoderBuilder2/lib/daemon-0.2.jar
+  CloudCoderBuilder/lib/daemon-0.2.jar
 http://jruby.org.s3.amazonaws.com/downloads/1.7.0/jruby-complete-1.7.0.jar
   CloudCoderBuilder2/lib/jruby-complete-1.7.0.jar
 http://repo1.maven.org/maven2/org/eclipse/jetty/jetty-ajp/7.4.4.v20110707/jetty-ajp-7.4.4.v20110707.jar

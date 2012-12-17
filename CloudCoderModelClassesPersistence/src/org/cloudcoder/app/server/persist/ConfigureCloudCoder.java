@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
 
+import org.cloudcoder.daemon.JarRewriter;
+
 /**
  * Configure a CloudCoder executable jarfile, either by reading configuration
  * settings interactively, or loading an existing cloudcoder.properties file.

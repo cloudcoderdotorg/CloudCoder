@@ -70,10 +70,13 @@ GREET
 	# Install/configure required packages
 	# ----------------------------------------------------------------------
 	section("Installing required packages...");
+
+	# Run apt-get update so that repository metadata is current
 	RunAdmin(
 		env => { 'DEBIAN_FRONTEND' => 'noninteractive' },
 		cmd => ["apt-get", "update"]
 	);
+
 	# Determine which mysql-server version we will use
 	my $mysqlVersion = FindMysqlVersion();
 	print "Mysql version is $mysqlVersion\n";
@@ -82,6 +85,7 @@ GREET
 	# will be required when installing packages.
 	DebconfSetSelections("mysql-server-$mysqlVersion", "mysql-server/root_password", "password $ccMysqlRootPasswd");
 	DebconfSetSelections("mysql-server-$mysqlVersion", "mysql-server/root_password_again", "password $ccMysqlRootPasswd");
+
 	# Install packages. Note that because cloudcoderApp.jar is self-configuring,
 	# we can install the JRE rather than the full JDK, as we won't need
 	# the jar tool.
@@ -154,21 +158,25 @@ sub Step2 {
 	chdir "webapp" || die "Couldn't change directory to webapp directory: $!\n";
 
 	# ----------------------------------------------------------------------
-	# Download webapp distribution jarfile
+	# Download webapp and builder distribution jarfiles
 	# ----------------------------------------------------------------------
 	# TODO: automatically determine latest version
 	#my $appJar = "cloudcoderApp-v0.0.1.jar";
 	my $appJar = "cloudcoderApp.jar";
-	section("Downloading $appJar...");
+	my $builderJar = "cloudcoderBuilder.jar";
+	section("Downloading $appJar and $builderJar...");
 	#my $appUrl = "https://s3.amazonaws.com/cloudcoder-binaries/$appJar";
 	my $appUrl = "http://faculty.ycp.edu/~dhovemey/$appJar";
+	my $builderUrl = "http://faculty.ycp.edu/~dhovemey/$builderJar";
 	Run("wget", $appUrl);
+	Run("wget", $builderUrl);
 
 	# ----------------------------------------------------------------------
 	# Configure webapp distribution jarfile with
 	# generated cloudcoder.properties and keystore
 	# ----------------------------------------------------------------------
-	section("Configuring $appJar...");
+	section("Configuring $appJar and $builderJar...");
+
 	# Generate cloudcoder.properties
 	print "Creating cloudcoder.properties...\n";
 	my $pfh = new FileHandle(">cloudcoder.properties");
@@ -209,6 +217,15 @@ ENDPROPERTIES
 		"--editJar=$appJar",
 		"--replace=cloudcoder.properties=cloudcoder.properties",
 		"--replace=war/WEB-INF/classes/keystore.jks=keystore.jks");
+
+	# Configure builder jarfile to use the same cloudcoder.properties
+	# and keystore
+	print "Configuring $builderJar...\n";
+	Run("java", "-jar", $builderJar, "configure",
+		"--editJar=$builderJar",
+		"--replace=cloudcoder.properties=cloudcoder.properties",
+		"--replace=keystore.jks=keystore.jks");
+
 	Run('rm', '-f', 'cloudcoder.properties', 'keystore.jks');
 
 	# ----------------------------------------------------------------------
@@ -217,7 +234,31 @@ ENDPROPERTIES
 	section("Creating cloudcoderdb database...");
 	Run("java", "-jar", $appJar, "createdb", "--props=$ARGV[0],ccRepoUrl=https://cloudcoder.org/repo");
 
-	# At this point, it should be possible to start the webapp!
+	# ----------------------------------------------------------------------
+	# Start the webapp!
+	# ----------------------------------------------------------------------
+	section("Starting the CloudCoder web application");
+	Run("java", "-jar", $appJar, "start");
+
+	# ----------------------------------------------------------------------
+	# We're done!
+	# ----------------------------------------------------------------------
+	section("CloudCoder installation successful!");
+	my $ccHostname = $props{'ccHostname'};
+	print <<"SUCCESS";
+It looks like CloudCoder was installed successfully.
+
+You should be able to test your new installation by opening the
+following web page:
+
+  https://$ccHostname/cloudcoder
+
+Note that no builders are running, so you won't be able to
+test submissions yet.  The builder jar file ($builderJar)
+is in the /home/cloud/webapp directory: you will need to copy
+it to the server(s) which will be responsible for building
+and testing submissions.
+SUCCESS
 	
 }
 

@@ -10,7 +10,7 @@
 			<attribute name="javadoc_location" value="http://commons.apache.org/io/api-release/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/daemon.jar" sourcepath="lib/daemon.jar"/>
+	<classpathentry kind="lib" path="lib/daemon-0.2.jar" sourcepath="lib/daemon-0.2.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/CloudCoderModelClasses"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/CloudCoderLogging"/>
 	<classpathentry kind="output" path="bin"/>

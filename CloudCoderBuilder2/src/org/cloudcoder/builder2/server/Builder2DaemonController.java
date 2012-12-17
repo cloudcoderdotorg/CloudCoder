@@ -17,8 +17,11 @@
 
 package org.cloudcoder.builder2.server;
 
+import java.io.IOException;
+
 import org.cloudcoder.daemon.DaemonController;
 import org.cloudcoder.daemon.IDaemon;
+import org.cloudcoder.daemon.JarRewriter;
 
 /**
  * {@link DaemonController} implementation for the Builder.
@@ -59,8 +62,28 @@ public class Builder2DaemonController extends DaemonController {
 		};
 	}
 
-	public static void main(String[] args) {
-		Builder2DaemonController controller = new Builder2DaemonController();
-		controller.exec(args);
+	public static void main(String[] args) throws IOException {
+		if (args.length >= 1 && args[0].equals("configure")) {
+			// Allow the builder jarfile to be updated
+			// (e.g., to add/replace cloudcoder.properties or keystore.jks)
+			JarRewriter jarRewriter = null;
+			for (int i = 1; i < args.length; i++) {
+				String arg = args[i];
+				if (arg.startsWith("--editJar=")) {
+					arg = arg.substring("--editJar=".length());
+					jarRewriter = new JarRewriter(arg);
+				} else if (arg.startsWith("--replace=")) {
+					arg = arg.substring("--replace=".length());
+					int eq = arg.indexOf('=');
+					String entry = arg.substring(0, eq);
+					String fileName = arg.substring(eq + 1);
+					jarRewriter.replaceEntry(entry, new JarRewriter.FileEntryData(fileName));
+				}
+			}
+			jarRewriter.rewrite();
+		} else {
+			Builder2DaemonController controller = new Builder2DaemonController();
+			controller.exec(args);
+		}
 	}
 }
