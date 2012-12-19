@@ -6,7 +6,7 @@ use FileHandle;
 # Bootstrap CloudCoder on an Ubuntu server
 
 # Download site
-my $DOWNLOAD_SITE = 'http://faculty.ycp.edu/~dhovemey'; # TODO: use S3 URL
+my $DOWNLOAD_SITE = 'https://s3.amazonaws.com/cloudcoder-binaries';
 
 my $program = $0;
 #print "program=$program\n";
@@ -68,6 +68,10 @@ GREET
 	my $ccMysqlRootPasswd = ask("What password do you want for the MySQL root user?");
 	my $ccMysqlCCPasswd = ask("What password do you want for the MySQL cloudcoder user?");
 	my $ccHostname = ask("What is the hostname of this server?");
+
+	print "\n";
+	my $startInstall = ask("Are you ready to start the installation? (yes/no)");
+	exit 0 if ((lc $startInstall) ne 'yes');
 	
 	# ----------------------------------------------------------------------
 	# Install/configure required packages
@@ -130,7 +134,10 @@ GREET
 	print "Restarting...\n";
 	RunAdmin(cmd => ['service', 'apache2', 'restart']);
 
-	# Continue as the cloud user to complete the installation
+	# ----------------------------------------------------------------------
+	# Continue as the cloud user to download and configure
+	# webapp and builder jarfiles.
+	# ----------------------------------------------------------------------
 	section("Continuing as cloud user...");
 	Run("cp", $program, "/tmp/bootstrap.pl");
 	Run("chmod", "a+x", "/tmp/bootstrap.pl");
@@ -141,6 +148,36 @@ GREET
 			"ccLastName=$ccLastName,ccEmail=$ccEmail,ccWebsite=$ccWebsite," .
 			"ccInstitutionName=$ccInstitutionName," .
 			"ccMysqlCCPasswd=$ccMysqlCCPasswd,ccHostname=$ccHostname"]);
+
+	# ----------------------------------------------------------------------
+	# Copy the configured builder jarfile into the home directory of the current user.
+	# ----------------------------------------------------------------------
+	my $version = GetLatestVersion();
+	my $home = $ENV{'HOME'};
+	my $user = $ENV{'USER'};
+	print "Copying configured builder jarfile into $home...\n";
+	RunAdmin("cp", "/home/cloud/cloudcoderBuilder-$version.jar", $home);
+	RunAdmin("chown", $user, "cloudcoderBuilder-$version.jar");
+
+	# ----------------------------------------------------------------------
+	# We're done!
+	# ----------------------------------------------------------------------
+	section("CloudCoder installation successful!");
+	my $builderJar = "cloudcoderBuilder-$version.jar";
+	print <<"SUCCESS";
+It looks like CloudCoder was installed successfully.
+
+You should be able to test your new installation by opening the
+following web page:
+
+  https://$ccHostname/cloudcoder
+
+Note that no builders are running, so you won't be able to
+test submissions yet.  The builder jar file ($builderJar)
+is in the /home/$user directory: you will need to copy
+it to the server(s) which will be responsible for building
+and testing submissions.
+SUCCESS
 }
 
 sub Step2 {
@@ -242,26 +279,6 @@ ENDPROPERTIES
 	# ----------------------------------------------------------------------
 	section("Starting the CloudCoder web application");
 	Run("java", "-jar", $appJar, "start");
-
-	# ----------------------------------------------------------------------
-	# We're done!
-	# ----------------------------------------------------------------------
-	section("CloudCoder installation successful!");
-	my $ccHostname = $props{'ccHostname'};
-	print <<"SUCCESS";
-It looks like CloudCoder was installed successfully.
-
-You should be able to test your new installation by opening the
-following web page:
-
-  https://$ccHostname/cloudcoder
-
-Note that no builders are running, so you won't be able to
-test submissions yet.  The builder jar file ($builderJar)
-is in the /home/cloud/webapp directory: you will need to copy
-it to the server(s) which will be responsible for building
-and testing submissions.
-SUCCESS
 	
 }
 
