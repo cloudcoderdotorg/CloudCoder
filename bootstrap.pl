@@ -153,17 +153,17 @@ GREET
 	# Copy the configured builder jarfile into the home directory of the current user.
 	# ----------------------------------------------------------------------
 	my $version = GetLatestVersion();
+	my $builderJar = "cloudcoderBuilder-v$version.jar";
 	my $home = $ENV{'HOME'};
 	my $user = $ENV{'USER'};
 	print "Copying configured builder jarfile into $home...\n";
-	RunAdmin("cp", "/home/cloud/cloudcoderBuilder-$version.jar", $home);
-	RunAdmin("chown", $user, "cloudcoderBuilder-$version.jar");
+	RunAdmin(cmd => ["cp", "/home/cloud/webapp/$builderJar", $home]);
+	RunAdmin(cmd => ["chown", $user, "$builderJar"]);
 
 	# ----------------------------------------------------------------------
 	# We're done!
 	# ----------------------------------------------------------------------
 	section("CloudCoder installation successful!");
-	my $builderJar = "cloudcoderBuilder-$version.jar";
 	print <<"SUCCESS";
 It looks like CloudCoder was installed successfully.
 
@@ -174,7 +174,7 @@ following web page:
 
 Note that no builders are running, so you won't be able to
 test submissions yet.  The builder jar file ($builderJar)
-is in the /home/$user directory: you will need to copy
+is in the $home directory: you will need to copy
 it to the server(s) which will be responsible for building
 and testing submissions.
 SUCCESS
@@ -203,8 +203,8 @@ sub Step2 {
 
 	# Find out what the most recent release version is
 	my $version = GetLatestVersion();
-	my $appJar = "cloudcoderApp-$version.jar";
-	my $builderJar = "cloudcoderBuilder-$version.jar";
+	my $appJar = "cloudcoderApp-v$version.jar";
+	my $builderJar = "cloudcoderBuilder-v$version.jar";
 
 	# Download webapp and builder release jarfiles
 	section("Downloading $appJar and $builderJar...");
