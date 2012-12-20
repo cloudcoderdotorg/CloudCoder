@@ -221,11 +221,12 @@ sub Step2 {
 	print "Creating cloudcoder.properties...\n";
 	my $pfh = new FileHandle(">cloudcoder.properties");
 	my $ccMysqlCCPasswd = $props{ccMysqlCCPasswd};
+	my $ccHostname = $props{ccHostname};
 	print $pfh <<"ENDPROPERTIES";
 cloudcoder.db.user=cloudcoder
 cloudcoder.db.passwd=$ccMysqlCCPasswd
 cloudcoder.db.databaseName=cloudcoderdb
-cloudcoder.db.host=localhost
+cloudcoder.db.host=$ccHostname
 cloudcoder.db.portStr=
 cloudcoder.login.service=database
 cloudcoder.submitsvc.oop.host=localhost
