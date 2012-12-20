@@ -226,10 +226,10 @@ sub Step2 {
 cloudcoder.db.user=cloudcoder
 cloudcoder.db.passwd=$ccMysqlCCPasswd
 cloudcoder.db.databaseName=cloudcoderdb
-cloudcoder.db.host=$ccHostname
+cloudcoder.db.host=localhost
 cloudcoder.db.portStr=
 cloudcoder.login.service=database
-cloudcoder.submitsvc.oop.host=localhost
+cloudcoder.submitsvc.oop.host=$ccHostname
 cloudcoder.submitsvc.oop.numThreads=2
 cloudcoder.submitsvc.oop.port=47374
 cloudcoder.submitsvc.ssl.cn=None
