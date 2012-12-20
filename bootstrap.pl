@@ -443,7 +443,7 @@ sub GetLatestVersion {
 	my $fh = new FileHandle("wget --quiet --output-document=- $DOWNLOAD_SITE/LATEST|");
 	my $version;
 	while (<$fh>) {
-		if (/^\s*(\d+(\.\d+)*)\s*$/) {
+		if (/^\s*(\d+(\.\d+)*)\s*$/ || /^\s*v(\d+(\.\d+)*)\s*$/) {
 			$version = $1;
 			last;
 		}
