@@ -43,9 +43,13 @@ public class AddCFunctionScaffoldingBuildStep implements IBuildStep {
 	@Override
 	public void execute(BuilderSubmission submission) {
 
-		ProgramSource programSource = submission.getArtifact(ProgramSource.class);
-		if (programSource == null) {
-			throw new InternalBuilderException(this.getClass(), "No ProgramSource");
+		ProgramSource[] programSourceList = submission.getArtifact(ProgramSource[].class);
+		if (programSourceList == null) {
+			throw new InternalBuilderException(this.getClass(), "No ProgramSource list");
+		}
+		
+		if (programSourceList.length != 1) {
+			throw new InternalBuilderException(this.getClass(), "C_FUNCTION problems only support a single source file");
 		}
 
 		TestCase[] testCaseList = submission.getArtifact(TestCase[].class);
@@ -58,7 +62,7 @@ public class AddCFunctionScaffoldingBuildStep implements IBuildStep {
 			throw new InternalBuilderException(this.getClass(), "No Problem");
 		}
 
-		String programText = programSource.getProgramText();
+		String programText = programSourceList[0].getProgramText();
 		if (!programText.endsWith("\n")) {
 			programText = programText + "\n";
 		}
@@ -112,7 +116,7 @@ public class AddCFunctionScaffoldingBuildStep implements IBuildStep {
 
 		// Create new ProgramSource artifact with scaffolded source
 		ProgramSource scaffoldedProgramSource = new ProgramSource(result, prologueLength, epilogueLength);
-		submission.addArtifact(scaffoldedProgramSource);
+		submission.addArtifact(new ProgramSource[]{scaffoldedProgramSource});
 	}
 
 }

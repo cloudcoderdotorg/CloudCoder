@@ -30,6 +30,7 @@ import org.cloudcoder.app.shared.model.ProblemAuthorship;
 import org.cloudcoder.app.shared.model.ProblemLicense;
 import org.cloudcoder.app.shared.model.ProblemType;
 import org.cloudcoder.app.shared.model.Term;
+import org.cloudcoder.app.shared.model.TestCase;
 
 /**
  * Create sample data.
@@ -58,19 +59,19 @@ public class CreateSampleData {
 		return course.getId();
 	}
 
-	static void populateSampleTestCase(ITestCase testCase, Integer problemId) {
+	public static void populateSampleTestCase(ITestCase testCase, Integer problemId) {
 		testCase.setProblemId(problemId);
 		CreateSampleData.populateSampleTestCaseData(testCase);
 	}
 
-	static void populateSampleTestCaseData(ITestCaseData testCase) {
+	public static void populateSampleTestCaseData(ITestCaseData testCase) {
 		testCase.setTestCaseName("hello");
 		testCase.setInput("");
 		testCase.setOutput("^\\s*Hello\\s*,\\s*world\\s*$i");
 		testCase.setSecret(false);
 	}
 
-	static void populateSampleProblem(IProblem problem, int courseId) {
+	public static void populateSampleProblem(IProblem problem, int courseId) {
 		problem.setCourseId(courseId);
 		problem.setWhenAssigned(System.currentTimeMillis());
 		problem.setWhenDue(problem.getWhenAssigned() + (24L*60*60*1000));
@@ -79,7 +80,7 @@ public class CreateSampleData {
 		CreateSampleData.populateSampleProblemData(problem);
 	}
 
-	static void populateSampleProblemData(IProblemData problemData) {
+	public static void populateSampleProblemData(IProblemData problemData) {
 		problemData.setProblemType(ProblemType.C_PROGRAM);
 		problemData.setTestname("hello");
 		problemData.setBriefDescription("Print hello, world");
@@ -102,6 +103,64 @@ public class CreateSampleData {
 		problemData.setTimestampUtc(1349008031587L);
 		problemData.setLicense(ProblemLicense.CC_ATTRIB_SHAREALIKE_3_0);
 		problemData.setParentHash("");
+	}
+	
+	public static void populateSampleCFunctionProblem(IProblem problem, int courseId) {
+		problem.setCourseId(courseId);
+		problem.setWhenAssigned(System.currentTimeMillis());
+		problem.setWhenDue(problem.getWhenAssigned() + (24L*60*60*1000));
+		problem.setVisible(true);
+		problem.setProblemAuthorship(ProblemAuthorship.ORIGINAL);
+		populateSampleCFunctionProblemData(problem);
+	}
+
+	private static void populateSampleCFunctionProblemData(IProblemData problemData) {
+		problemData.setProblemType(ProblemType.C_FUNCTION);
+		problemData.setTestname("addIntegers");
+		problemData.setBriefDescription("Add two integers");
+		problemData.setDescription(
+				"<p>Complete the <code>addIntegers</code> function so that it\n" +
+				"returns the sum of the two integer parameters (<code>a</code>\n" +
+				"and <code>b</code>) passed to it.</p>"
+		);
+	
+		problemData.setSkeleton(
+				"int addIntegers(int a, int b) {\n" +
+				"\t//TODO - add your code here\n" +
+				"}"
+				);
+		problemData.setSchemaVersion(Problem.SCHEMA.getVersion());
+		problemData.setAuthorName("David Hovemeyer");
+		problemData.setAuthorEmail("dhovemey@ycp.edu");
+		problemData.setAuthorWebsite("http://faculty.ycp.edu/~dhovemey");
+		problemData.setTimestampUtc(1356125346562L);
+		problemData.setLicense(ProblemLicense.CC_ATTRIB_SHAREALIKE_3_0);
+		problemData.setParentHash("");
+	}
+	
+	public static void populateSampleCFunctionTestCases(ITestCase[] testCases, int problemId) {
+		for (ITestCase tc : testCases) {
+			tc.setProblemId(problemId);
+		}
+		populateSampleCFunctionTestCaseData(testCases);
+	}
+
+	public static void populateSampleCFunctionTestCaseData(ITestCaseData[] testCases) {
+		if (testCases.length != 3) {
+			throw new IllegalArgumentException();
+		}
+		testCases[0].setTestCaseName("t0");
+		testCases[0].setInput("2, 3");
+		testCases[0].setOutput("5");
+		testCases[0].setSecret(false);
+		testCases[1].setTestCaseName("t1");
+		testCases[1].setInput("-3, -11");
+		testCases[1].setOutput("-14");
+		testCases[1].setSecret(false);
+		testCases[2].setTestCaseName("t2");
+		testCases[2].setInput("0, 7");
+		testCases[2].setOutput("7");
+		testCases[2].setSecret(false);
 	}
 
 }

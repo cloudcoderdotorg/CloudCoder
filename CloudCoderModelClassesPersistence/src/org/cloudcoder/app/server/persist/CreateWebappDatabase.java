@@ -222,19 +222,30 @@ public class CreateWebappDatabase {
 		System.out.println("Registering initial user for demo course...");
 		ConfigurationUtil.registerUser(conn, userId, courseId, CourseRegistrationType.INSTRUCTOR, 101);
 		
-		// Create a Problem
-		System.out.println("Creating hello, world problem in demo course...");
+		// Create sample Problems
+		System.out.println("Creating sample problems in demo course...");
 		Problem problem = new Problem();
 		CreateSampleData.populateSampleProblem(problem, courseId);
 		DBUtil.storeModelObject(conn, problem);
 		Integer problemId = problem.getProblemId();
 		
 		// Add a TestCase
-		System.out.println("Creating test case for hello, world problem...");
 		TestCase testCase = new TestCase();
 		CreateSampleData.populateSampleTestCase(testCase, problemId);
-
 		DBUtil.storeModelObject(conn, testCase);
+
+		// Create sample C_FUNCTION problem
+		Problem cFunctionProblem = new Problem();
+		CreateSampleData.populateSampleCFunctionProblem(cFunctionProblem, courseId);
+		DBUtil.storeModelObject(conn, cFunctionProblem);
+		Integer cFunctionProblemId = cFunctionProblem.getProblemId();
+		
+		// Create TestCases for sample C_FUNCTION problem
+		TestCase[] cFunctionProblemTestCases = new TestCase[]{new TestCase(), new TestCase(), new TestCase()};
+		CreateSampleData.populateSampleCFunctionTestCases(cFunctionProblemTestCases, cFunctionProblemId);
+		for (TestCase tc : cFunctionProblemTestCases) {
+			DBUtil.storeModelObject(conn, tc);
+		}
 
 		conn.close();
 		
