@@ -113,9 +113,27 @@ public class TestResultUtil {
 			return createTestResultForCoreDump(p, testCase);
 		case TIMED_OUT:
 			return createTestResultForTimeout(p, testCase);
+		case FILE_SIZE_LIMIT_EXCEEDED:
+			return createTestResultForLimitExceeded(p, testCase);
 		default:
 			throw new IllegalArgumentException("Invalid process status: " + p.getStatus());
 		}
+	}
+
+	/**
+	 * Create a {@link TestResult} for a test that failed because a runtime
+	 * limit was exceeded. 
+	 * 
+	 * @param p         the {@link CommandResult}
+	 * @param testCase  the {@link TestCase}
+	 * @return the {@link TestResult}
+	 */
+	public static TestResult createTestResultForLimitExceeded(CommandResult p, TestCase testCase) {
+		return new TestResult(
+				TestOutcome.FAILED_BY_SECURITY_MANAGER,
+				"File size limit exceeded - " + p.getStatusMessage(),
+				"",
+				"");
 	}
 
 	/**

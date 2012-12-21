@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -304,10 +305,15 @@ public class ProcessRunner {
 	 * @return the {@link ProcessStatus}
 	 */
 	public ProcessStatus getStatus() {
-		// Special case: if the process was killed by signals 9 (KILL) or 24 (XCPU),
-		// treat as a timeout.
-		if (status == ProcessStatus.KILLED_BY_SIGNAL && (exitCode == 9 || exitCode == 24)) {
-			return ProcessStatus.TIMED_OUT;
+		if (status == ProcessStatus.KILLED_BY_SIGNAL) {
+			if (exitCode == 9 || exitCode == 24) {
+				// Special case: if the process was killed by signals 9 (KILL) or 24 (XCPU),
+				// treat as a timeout.
+				return ProcessStatus.TIMED_OUT;
+			} else if (exitCode == 25) {
+				// Special case: process killed with SIGXFSZ, file size limit exceeded.
+				return ProcessStatus.FILE_SIZE_LIMIT_EXCEEDED;
+			}
 		}
 		return status;
 	}
@@ -350,7 +356,14 @@ public class ProcessRunner {
 	 * @return the standard error written by the process as a List of strings
 	 */
 	public List<String> getStderrAsList() {
-		return stderrCollector.getCollectedOutput();
+		// Special case: if the process was killed because it exceeded
+		// a resource limit, its stderr is probably not useful.
+		ProcessStatus status = getStatus();
+		if (status == ProcessStatus.TIMED_OUT || status == ProcessStatus.FILE_SIZE_LIMIT_EXCEEDED) {
+			return Collections.emptyList();
+		} else {
+			return stderrCollector.getCollectedOutput();
+		}
 	}
 
 	/**

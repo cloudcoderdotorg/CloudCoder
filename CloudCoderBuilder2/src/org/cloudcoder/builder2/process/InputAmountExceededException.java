@@ -1,6 +1,6 @@
 // CloudCoder - a web-based pedagogical programming environment
-// Copyright (C) 2011-2012, Jaime Spacco <jspacco@knox.edu>
-// Copyright (C) 2011-2012, David H. Hovemeyer <david.hovemeyer@gmail.com>
+// Copyright (C) 2011, Jaime Spacco <jspacco@knox.edu>
+// Copyright (C) 2011, David H. Hovemeyer <dhovemey@ycp.edu>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -15,29 +15,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package org.cloudcoder.builder2.model;
+package org.cloudcoder.builder2.process;
+
+import java.io.IOException;
 
 /**
- * Enum to describe possible process statuses.
+ * Exception indicating that a {@link LimitedInputStream} has exceeded
+ * its specified maximum amount of input.
  * 
  * @author David Hovemeyer
  */
-public enum ProcessStatus {
-	/** Process status not known yet. */
-	UNKNOWN,
-	
-	/** Process exited normally. */
-	EXITED,
-	
-	/** Process timed out. */
-	TIMED_OUT,
-	
-	/** Process was killed by a signal. */
-	KILLED_BY_SIGNAL,
-	
-	/** Process could not be started. */
-	COULD_NOT_START,
-	
-	/** File size limit exceeded. */
-	FILE_SIZE_LIMIT_EXCEEDED,
+public class InputAmountExceededException extends IOException {
+	private static final long serialVersionUID = 1L;
+
+	public InputAmountExceededException(String msg) {
+		super(msg);
+	}
 }

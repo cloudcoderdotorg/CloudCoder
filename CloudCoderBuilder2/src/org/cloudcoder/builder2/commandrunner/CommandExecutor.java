@@ -18,9 +18,12 @@
 package org.cloudcoder.builder2.commandrunner;
 
 import org.cloudcoder.builder2.model.Command;
+import org.cloudcoder.builder2.model.CommandExecutionPreferences;
 import org.cloudcoder.builder2.model.CommandInput;
+import org.cloudcoder.builder2.model.CommandLimit;
 import org.cloudcoder.builder2.model.CommandResult;
 import org.cloudcoder.builder2.model.ProcessStatus;
+import org.cloudcoder.builder2.process.LimitedProcessRunner;
 import org.cloudcoder.builder2.process.ProcessRunner;
 import org.cloudcoder.builder2.util.ArrayUtil;
 import org.slf4j.Logger;
@@ -39,6 +42,8 @@ public class CommandExecutor implements Runnable {
 
 	private Command command;
 	private CommandInput commandInput;
+	private CommandExecutionPreferences prefs;
+	
 	private Thread thread;
 	private CommandResult commandResult;
 
@@ -49,13 +54,10 @@ public class CommandExecutor implements Runnable {
 	public static final int POLL_INTERVAL_IN_MILLIS = 500;
 
 	/**
-	 * Maximum number of seconds to allow a test case process to run.
-	 * Note that the test process will be limited by the OS to at most
-	 * 5 seconds of CPU time; this limit is to avoid a test process
-	 * hanging around for a long time by, for example, sleeping or
-	 * blocking on I/O.
+	 * Maximum number of seconds (wall time) to allow a command process to run
+	 * by default.
 	 */
-	public static final int MAX_TIME_IN_SECONDS = 8;
+	public static final int DEFAULT_MAX_TIME_IN_SECONDS = 8;
 
 	/**
 	 * Constructor.
@@ -66,6 +68,15 @@ public class CommandExecutor implements Runnable {
 	public CommandExecutor(Command command, CommandInput commandInput) {
 		this.command = command;
 		this.commandInput = commandInput;
+	}
+	
+	/**
+	 * Set {@link CommandExecutionPreferences} (process limits).
+	 * 
+	 * @param prefs the {@link CommandExecutionPreferences} to set
+	 */
+	public void setPrefs(CommandExecutionPreferences prefs) {
+		this.prefs = prefs;
 	}
 
 	/**
@@ -80,9 +91,20 @@ public class CommandExecutor implements Runnable {
 	 */
 	@Override
 	public void run() {
-		// FIXME: allow creation of LimitedProcessRunner
 		// FIXME: allow use of a SECCOMP sandbox
-		ProcessRunner processRunner = new ProcessRunner();
+		
+		int maxWaitTimeSec;
+		
+		ProcessRunner processRunner;
+		if (prefs != null) {
+			LimitedProcessRunner processRunner_ = new LimitedProcessRunner();
+			processRunner_.setPreferences(prefs);
+			processRunner = processRunner_;
+			maxWaitTimeSec = prefs.getLimit(CommandLimit.CPU_TIME_SEC) * 2;
+		} else {
+			processRunner = new ProcessRunner();
+			maxWaitTimeSec = DEFAULT_MAX_TIME_IN_SECONDS;
+		}
 
 		processRunner.setStdin(commandInput.getInput());
 
@@ -90,7 +112,7 @@ public class CommandExecutor implements Runnable {
 		processRunner.runAsynchronous(command.getDir(), cmd);
 
 		int elapsed = 0;
-		while (processRunner.isRunning() && elapsed < CommandExecutor.MAX_TIME_IN_SECONDS * 1000) {
+		while (processRunner.isRunning() && elapsed < maxWaitTimeSec * 1000) {
 			try {
 				Thread.sleep(CommandExecutor.POLL_INTERVAL_IN_MILLIS);
 			} catch (InterruptedException e) {

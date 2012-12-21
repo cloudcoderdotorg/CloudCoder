@@ -28,6 +28,7 @@ import org.cloudcoder.builder2.cfunction.CreateCFunctionTestCommandsBuildStep;
 import org.cloudcoder.builder2.cfunction.CreateSecretSuccessAndFailureCodesBuildStep;
 import org.cloudcoder.builder2.commandrunner.CheckCommandResultsUsingRegexBuildStep;
 import org.cloudcoder.builder2.commandrunner.CreateCommandInputsForEachTestCaseBuildStep;
+import org.cloudcoder.builder2.commandrunner.CreateLimitedCommandExecutionPreferencesBuildStep;
 import org.cloudcoder.builder2.commandrunner.ExecuteCommandForEachCommandInputBuildStep;
 import org.cloudcoder.builder2.commandrunner.NativeExecutableToCommandForEachCommandInputBuildStep;
 import org.cloudcoder.builder2.javacompiler.BytecodeToBytecodeExecutableBuildStep;
@@ -66,6 +67,7 @@ public abstract class TesterFactory {
 	 */
 	private static final IBuildStep[] C_PROGRAM_TESTER_STEPS = {
 		new CCompilerBuildStep(),
+		new CreateLimitedCommandExecutionPreferencesBuildStep(),
 		new CreateCommandInputsForEachTestCaseBuildStep(),
 		new NativeExecutableToCommandForEachCommandInputBuildStep(),
 		new ExecuteCommandForEachCommandInputBuildStep(),
@@ -80,6 +82,7 @@ public abstract class TesterFactory {
 	private static final IBuildStep[] C_FUNCTION_TESTER_STEPS = {
 		new AddCFunctionScaffoldingBuildStep(),
 		new CCompilerBuildStep(),
+		new CreateLimitedCommandExecutionPreferencesBuildStep(),
 		new CreateSecretSuccessAndFailureCodesBuildStep(),
 		new CreateCFunctionTestCommandsBuildStep(),
 		new ExecuteCommandForEachCommandInputBuildStep(),

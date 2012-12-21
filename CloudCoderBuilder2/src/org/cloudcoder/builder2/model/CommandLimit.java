@@ -26,40 +26,63 @@ public enum CommandLimit {
 	/**
 	 * Maximum size of file child process is allowed to write.
 	 */
-	FILE_SIZE_KB,
+	FILE_SIZE_KB("-f"),
 	
 	/**
 	 * Maximum stack size.
 	 */
-	STACK_SIZE_KB,
+	STACK_SIZE_KB("-s"),
 	
 	/**
 	 * Maximum CPU time allowed.
 	 */
-	CPU_TIME_SEC,
+	CPU_TIME_SEC("-t"),
 	
 	/**
 	 * Maximum number of processes.
 	 */
-	PROCESSES,
+	PROCESSES("-u"),
 	
 	/**
 	 * Maximum virtual memory.
 	 */
-	VM_SIZE_KB,
+	VM_SIZE_KB("-v"),
 	
 	/**
 	 * Maximum bytes of output allowed.
 	 */
-	OUTPUT_MAX_BYTES,
+	OUTPUT_MAX_BYTES(null),
 	
 	/**
 	 * Maximum lines of output that will be captured.
 	 */
-	OUTPUT_MAX_LINES,
+	OUTPUT_MAX_LINES(null),
 	
 	/**
 	 * Maximum number of characters that will be captured for any single line of output.
 	 */
-	OUTPUT_LINE_MAX_CHARS,
+	OUTPUT_LINE_MAX_CHARS(null);
+	
+	private final String flag;
+	
+	private CommandLimit(String flag) {
+		this.flag = flag;
+	}
+	
+	/**
+	 * @return true if this limit has a ulimit flag, false if not
+	 */
+	public boolean isUlimitFlag() {
+		return flag != null;
+	}
+	
+	/**
+	 * Get the ulimit flag for this limit; returns null
+	 * if this limit is not handled by ulimit.
+	 * 
+	 * @return the ulimit flag, or null if there is no ulimit flag for this limit
+	 */
+	public String getFlag() {
+		return flag;
+	}
 }

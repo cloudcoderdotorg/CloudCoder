@@ -17,6 +17,7 @@
 
 package org.cloudcoder.builder2.model;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -64,5 +65,14 @@ public class CommandExecutionPreferences {
 	 */
 	public int getLimit(CommandLimit limitType) {
 		return limitMap.get(limitType).intValue();
+	}
+
+	/**
+	 * Get map of {@link CommandLimit}s to their values.
+	 * 
+	 * @return map of {@link CommandLimit}s to their values
+	 */
+	public Map<CommandLimit, Integer> getMap() {
+		return Collections.unmodifiableMap(limitMap);
 	}
 }

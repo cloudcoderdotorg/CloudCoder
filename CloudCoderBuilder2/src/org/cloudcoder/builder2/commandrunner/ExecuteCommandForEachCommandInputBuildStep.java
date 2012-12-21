@@ -19,6 +19,7 @@ package org.cloudcoder.builder2.commandrunner;
 
 import org.cloudcoder.builder2.model.BuilderSubmission;
 import org.cloudcoder.builder2.model.Command;
+import org.cloudcoder.builder2.model.CommandExecutionPreferences;
 import org.cloudcoder.builder2.model.CommandInput;
 import org.cloudcoder.builder2.model.CommandResult;
 import org.cloudcoder.builder2.model.IBuildStep;
@@ -48,10 +49,16 @@ public class ExecuteCommandForEachCommandInputBuildStep implements IBuildStep {
 			throw new InternalBuilderException(this.getClass(), "No CommandInput list");
 		}
 		
+		// See if there is a CommandExecutionPreferences
+		CommandExecutionPreferences prefs = submission.getArtifact(CommandExecutionPreferences.class);
+		
 		// Create and start a CommandExecutor for each CommandInput
 		CommandExecutor[] commandExecutorList = new CommandExecutor[commandInputList.length];
 		for (int i = 0; i < commandInputList.length; i++) {
 			commandExecutorList[i] = new CommandExecutor(commandList[i], commandInputList[i]);
+			if (prefs != null) {
+				commandExecutorList[i].setPrefs(prefs);
+			}
 			commandExecutorList[i].start();
 		}
 		
