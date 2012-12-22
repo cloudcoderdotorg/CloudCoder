@@ -33,6 +33,7 @@ import org.cloudcoder.app.shared.model.CompilationResult;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.SubmissionResult;
 import org.cloudcoder.app.shared.model.TestCase;
+import org.cloudcoder.app.shared.model.TestResult;
 import org.cloudcoder.builder2.model.BuilderSubmission;
 import org.cloudcoder.builder2.model.InternalBuilderException;
 import org.cloudcoder.builder2.model.ProgramSource;
@@ -135,7 +136,15 @@ public class Builder2 implements Runnable {
 			}
 	}
 
-	private SubmissionResult testSubmission(Problem problem,List<TestCase> testCaseList, String programText) {
+	/**
+	 * Test a submission.
+	 * 
+	 * @param problem       the {@link Problem}
+	 * @param testCaseList  the list of {@link TestCase}s
+	 * @param programText   the submitted program text
+	 * @return a {@link SubmissionResult} for the submission
+	 */
+	private SubmissionResult testSubmission(Problem problem, List<TestCase> testCaseList, String programText) {
 		SubmissionResult result;
 		try {
 			// Based on the ProblemType, find a Tester
@@ -156,25 +165,29 @@ public class Builder2 implements Runnable {
 				
 				// Get the SubmissionResult
 				result = submission.getArtifact(SubmissionResult.class);
+				if (result == null) {
+					throw new InternalBuilderException("Tester did not create a SubmissionResult");
+				}
 			} finally {
 				// Clean up all temporary resources created during building/testing
 				submission.executeAllCleanupActions();
 			}
 		} catch (Throwable e) {
 			CompilationResult compres = new CompilationResult(CompilationOutcome.BUILDER_ERROR);
-			logger.error("Builder error", e);
-			result=new SubmissionResult(compres);
+			logger.error("Internal error building and testing submission", e);
+			result = new SubmissionResult(compres);
+			result.setTestResults(new TestResult[0]);
 		}
+		
 		logger.info("Sending SubmissionResult back to server");
-		if (result==null) {
-			logger.error("null SubmissionResult");
+		
+		if (result.getTestResults() == null) {
+			logger.error("Null TestResult - should not happen");
+			result.setTestResults(new TestResult[0]);
 		} else {
-			if (result.getTestResults()==null) {
-				logger.error("null TestResult");
-			} else {
-				logger.info(result.getTestResults().length+" results");
-			}
+			logger.info("{} results", result.getTestResults().length);
 		}
+			
 		return result;
 	}
 

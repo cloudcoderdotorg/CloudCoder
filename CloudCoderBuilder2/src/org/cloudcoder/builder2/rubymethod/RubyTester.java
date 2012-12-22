@@ -42,15 +42,11 @@ public class RubyTester {
 	 * test passed or failed.
 	 * 
 	 * @param container  the {@link ScriptingContainer}
-	 * @param testSource the Ruby test source code, produced by {@link AddRubyMethodScaffoldingBuildStep}
+	 * @param receiver   the test scriptlet receiver object
 	 * @param testCase   the {@link TestCase} to execute
 	 * @return the {@link TestResult} indicating whether the test passed or failed
 	 */
-	public TestResult execute(ScriptingContainer container, String testSource, TestCase testCase) {
-		Object receiver = container.runScriptlet(testSource);
-		//System.out.println("testSource:");
-		//System.out.println(testSource);
-		
+	public TestResult execute(ScriptingContainer container, Object receiver, TestCase testCase) {
 		Object result_ = container.callMethod(receiver, "_test", testCase.getTestCaseName());
 		if (!(result_ instanceof Boolean)) {
 			return new TestResult(TestOutcome.INTERNAL_ERROR, "_test method did not return a Boolean result");

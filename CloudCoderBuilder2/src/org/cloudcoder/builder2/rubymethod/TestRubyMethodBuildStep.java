@@ -20,6 +20,9 @@ package org.cloudcoder.builder2.rubymethod;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.cloudcoder.app.shared.model.CompilationOutcome;
+import org.cloudcoder.app.shared.model.CompilationResult;
+import org.cloudcoder.app.shared.model.CompilerDiagnostic;
 import org.cloudcoder.app.shared.model.ProblemType;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.TestResult;
@@ -32,9 +35,11 @@ import org.cloudcoder.builder2.model.InternalBuilderException;
 import org.cloudcoder.builder2.model.ProgramSource;
 import org.cloudcoder.builder2.util.ArrayUtil;
 import org.cloudcoder.builder2.util.TestResultUtil;
-import org.jruby.Ruby;
 import org.jruby.embed.LocalContextScope;
+import org.jruby.embed.ParseFailedException;
 import org.jruby.embed.ScriptingContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Build step to test a {@link ProblemType#RUBY_METHOD} submission.
@@ -46,6 +51,8 @@ import org.jruby.embed.ScriptingContainer;
  * @author Jaime Spacco
  */
 public class TestRubyMethodBuildStep implements IBuildStep {
+	private static Logger logger = LoggerFactory.getLogger(TestRubyMethodBuildStep.class);
+	
 	public static final long TIMEOUT_LIMIT = 5000;
 	
 	private static ScriptingContainer container;
@@ -77,7 +84,23 @@ public class TestRubyMethodBuildStep implements IBuildStep {
 			throw new InternalBuilderException(this.getClass(), "No TestCase list");
 		}
 		
-		// TODO: it would be nice to check whether or not the code will compile
+		// Compile the test scriptlet
+		// TODO: do this in a sandbox?
+		final Object receiver;
+		try {
+			System.out.println("Test source:");
+			System.out.println(testSource);
+			receiver = container.runScriptlet(testSource);
+			System.out.println("Object returned by compilation: " + receiver);
+		} catch (ParseFailedException e) {
+			CompilerDiagnostic diag = createRubyCompilerDiagnostic(e);
+			failedCompilation(submission, diag);
+			return;
+		} catch (RuntimeException e) {
+			CompilerDiagnostic diag = new CompilerDiagnostic(1, 1, 1, 1, "Unexpected compilation error");
+			failedCompilation(submission, diag);
+			return;
+		}
 		
 		// Create a RubyTester in an IsolatedTask for each TestCase
 		List<IsolatedTask<TestResult>> tasks = new ArrayList<IsolatedTask<TestResult>>();
@@ -86,7 +109,7 @@ public class TestRubyMethodBuildStep implements IBuildStep {
 				@Override
 				public TestResult execute() throws Throwable {
 					RubyTester tester = new RubyTester();
-					return tester.execute(container, testSource, testCase);
+					return tester.execute(container, receiver, testCase);
 				}
 			};
 			tasks.add(task);
@@ -111,6 +134,43 @@ public class TestRubyMethodBuildStep implements IBuildStep {
 
 		// Add array of TestResults as submission artifact
 		submission.addArtifact(ArrayUtil.toArray(testResults, TestResult.class));
+	}
+
+	private void failedCompilation(BuilderSubmission submission,
+			CompilerDiagnostic diag) {
+		CompilationResult compres = new CompilationResult(CompilationOutcome.FAILURE);
+		compres.setCompilerDiagnosticList(new CompilerDiagnostic[]{diag});
+		submission.addArtifact(compres);
+		submission.addArtifact(new TestResult[0]);
+	}
+
+	private CompilerDiagnostic createRubyCompilerDiagnostic(ParseFailedException e) {
+		String msg = e.getMessage();
+		
+		try {
+			int colon = msg.indexOf(':');
+			if (colon >= 0) {
+				int nextColon = msg.indexOf(':', colon + 1);
+				if (nextColon >= 0) {
+					int lineNumber = Integer.parseInt(msg.substring(colon+1, nextColon));
+					
+					// TODO
+					// In the second/third lines of the message there is information
+					// (source text and a line with a caret)
+					// about where in the source line the error occurs.
+					// Could use this to compute the column.
+					// For now, just discard it.
+					int nl = msg.indexOf('\n', nextColon + 1);
+					String desc = (nl >= 0) ? msg.substring(nextColon+1, nl) : msg.substring(nextColon+1);
+					
+					return new CompilerDiagnostic(lineNumber, lineNumber, 1, 1, desc);
+				}
+			}
+		} catch (NumberFormatException ex) {
+			logger.error("Error converting Ruby error message to compiler diagnostic", ex);
+		}
+		
+		return new CompilerDiagnostic(1, 1, 1, 1, "Unknown compilation error");
 	}
 
 }
