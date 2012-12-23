@@ -17,7 +17,9 @@
 
 package org.cloudcoder.app.shared.model;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -30,13 +32,13 @@ public class ProblemAndTestCaseList implements ActivityObject, IProblemAndTestCa
 	private static final long serialVersionUID = 1L;
 	
 	private Problem problem;
-	private TestCase[] testCaseList;
+	private List<TestCase> testCaseList;
 	
 	/**
 	 * Constructor.
 	 */
 	public ProblemAndTestCaseList() {
-		testCaseList = new TestCase[0];
+		testCaseList = new ArrayList<TestCase>();
 	}
 	
 	/**
@@ -60,14 +62,15 @@ public class ProblemAndTestCaseList implements ActivityObject, IProblemAndTestCa
 	 * @param testCaseList the list of TestCases
 	 */
 	public void setTestCaseList(TestCase[] testCaseList) {
-		this.testCaseList = testCaseList;
+		this.testCaseList.clear();
+		this.testCaseList.addAll(Arrays.asList(testCaseList));
 	}
 	
 	/**
 	 * @return the list of TestCases
 	 */
 	public TestCase[] getTestCaseList() {
-		return testCaseList;
+		return testCaseList.toArray(new TestCase[testCaseList.size()]);
 	}
 	
 	@Override
@@ -75,7 +78,7 @@ public class ProblemAndTestCaseList implements ActivityObject, IProblemAndTestCa
 		if (testCaseList == null) {
 			throw new IllegalStateException();
 		}
-		return Arrays.asList(testCaseList);
+		return Collections.unmodifiableList(testCaseList);
 	}
 
 	/**
@@ -84,28 +87,16 @@ public class ProblemAndTestCaseList implements ActivityObject, IProblemAndTestCa
 	 * @param testCase the TestCase to add
 	 */
 	public void addTestCase(TestCase testCase) {
-		// FIXME: probably we should just use a List to store the TestCases
-		TestCase[] larger = new TestCase[testCaseList.length + 1];
-		System.arraycopy(testCaseList, 0, larger, 0, testCaseList.length);
-		larger[testCaseList.length] = testCase;
-		testCaseList = larger;
+		testCaseList.add(testCase);
 	}
-
+	
 	/**
-	 * Remove a TestCase.
+	 * Remove test case with given index.
 	 * 
-	 * @param testCase the TestCase to remove
+	 * @param index the index
 	 */
-	public void removeTestCase(TestCase testCase) {
-		// FIXME: probably we should just use a List to store the TestCases
-		TestCase[] smaller = new TestCase[testCaseList.length - 1];
-		int index = 0;
-		for (TestCase tc : testCaseList) {
-			if (tc != testCase) {
-				smaller[index++] = tc;
-			}
-		}
-		testCaseList = smaller;
+	public void removeTestCase(int index) {
+		testCaseList.remove(index);
 	}
 
 	/**
@@ -127,25 +118,24 @@ public class ProblemAndTestCaseList implements ActivityObject, IProblemAndTestCa
 			this.problem.copyFrom(other.problem);
 		}
 
-		if (other.testCaseList == null) {
-			this.testCaseList = null;
-		} else {
-			if (this.testCaseList.length != other.testCaseList.length) {
-				int min = Math.min(this.testCaseList.length, other.testCaseList.length);
-				TestCase[] newTestCaseList = new TestCase[other.testCaseList.length];
-				// Preserve as many existing TestCase objects as possible
-				for (int i = 0; i < min; i++) {
-					newTestCaseList[i] = this.testCaseList[i];
-				}
-				// Create new TestCase objects if the list has been expanded
-				for (int i = min; i < newTestCaseList.length; i++) {
-					newTestCaseList[i] = new TestCase();
-				}
-				this.testCaseList = newTestCaseList;
+		if (other.testCaseList.size() >= this.testCaseList.size()) {
+			// Other test case list is at least as large: copy
+			// as many test cases as possible in place, and then add
+			// additional new test cases as needed
+			for (int i = 0; i < this.testCaseList.size(); i++) {
+				this.testCaseList.get(i).copyFrom(other.testCaseList.get(i));
 			}
-			//this.testCaseList = new TestCase[other.testCaseList.length];
-			for (int i = 0; i < other.testCaseList.length; i++) {
-				this.testCaseList[i].copyFrom(other.testCaseList[i]);
+			for (int i = this.testCaseList.size(); i < other.testCaseList.size(); i++) {
+				TestCase tc = new TestCase();
+				tc.copyFrom(other.testCaseList.get(i));
+				this.testCaseList.add(tc);
+			}
+		} else {
+			// Other test case list is smaller: truncate this test case list
+			// and then copy each test case in-place
+			this.testCaseList.subList(other.testCaseList.size(), this.testCaseList.size()).clear();
+			for (int i = 0; i < other.testCaseList.size(); i++) {
+				this.testCaseList.get(i).copyFrom(other.testCaseList.get(i));
 			}
 		}
 	}
@@ -159,6 +149,6 @@ public class ProblemAndTestCaseList implements ActivityObject, IProblemAndTestCa
 		ProblemAndTestCaseList other = (ProblemAndTestCaseList) obj;
 		
 		return ModelObjectUtil.equals(this.problem, other.problem)
-				&& ModelObjectUtil.arrayEquals(this.testCaseList, other.testCaseList);
+				&& this.testCaseList.equals(other.testCaseList);
 	}
 }

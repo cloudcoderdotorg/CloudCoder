@@ -422,7 +422,24 @@ public class EditProblemPage extends CloudCoderPage {
 		 * @param testCaseEditor the TestCaseEditor
 		 */
 		protected void handleDeleteTestCase(TestCaseEditor testCaseEditor) {
-			getSession().get(ProblemAndTestCaseList.class).removeTestCase(testCaseEditor.getTestCase());
+			//getSession().get(ProblemAndTestCaseList.class).removeTestCase(testCaseEditor.getTestCase());
+			int index = -1;
+			for (int i = 0; i < testCaseEditorList.size(); i++) {
+				if (testCaseEditor == testCaseEditorList.get(i)) {
+					index = i;
+					break;
+				}
+			}
+			
+			if (index < 0) {
+				GWT.log("Could not find TestCaseEditor?");
+				return;
+			}
+			
+			GWT.log("Deleting test case " + index);
+			
+			getSession().get(ProblemAndTestCaseList.class).removeTestCase(index);
+			
 			centerPanel.remove(testCaseEditor.getUI());
 			testCaseEditorList.remove(testCaseEditor);
 		}
@@ -435,10 +452,19 @@ public class EditProblemPage extends CloudCoderPage {
 			getSession().get(ProblemAndTestCaseList.class).addTestCase(testCase);
 
 			// Add a new TestCase editor and its UI widget
-			TestCaseEditor testCaseEditor = new TestCaseEditor();
+			final TestCaseEditor testCaseEditor = new TestCaseEditor();
 			testCaseEditorList.add(testCaseEditor);
 			centerPanel.insert(testCaseEditor.getUI(), centerPanel.getWidgetIndex(addTestCaseButtonPanel));
 			testCaseEditor.setTestCase(testCase);
+			testCaseEditor.setDeleteHandler(new Runnable() {
+				/* (non-Javadoc)
+				 * @see java.lang.Runnable#run()
+				 */
+				@Override
+				public void run() {
+					handleDeleteTestCase(testCaseEditor);
+				}
+			});
 		}
 	}
 	
