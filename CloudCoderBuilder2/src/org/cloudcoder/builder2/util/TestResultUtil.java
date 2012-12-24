@@ -181,7 +181,7 @@ public class TestResultUtil {
 		buf.append(outcome.getShortMessage());
 
 		if (!testCase.isSecret()) {
-			buf.append(" for input (" + testCase.getInput() + ")");
+			buf.append(" for input (" + testCase.getInput() + "), expected output=" + testCase.getOutput());
 		}
 
 		TestResult testResult = new TestResult(outcome, buf.toString());

@@ -25,6 +25,7 @@ import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.TestOutcome;
 import org.cloudcoder.app.shared.model.TestResult;
 import org.cloudcoder.builder2.javasandbox.IsolatedTask;
+import org.cloudcoder.builder2.util.TestResultUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,9 +53,9 @@ public class IsolatedTaskRunner implements IsolatedTask<TestResult>
             Method m = theClass.getMethod(testCase.getTestCaseName());
             Boolean result = (Boolean) m.invoke(null);
             if (result) {
-                return new TestResult(TestOutcome.PASSED, "Passed! input=(" + testCase.getInput() + ") output=" + testCase.getOutput());
+            	return TestResultUtil.createResultForPassedTest(testCase);
             } else {
-                return new TestResult(TestOutcome.FAILED_ASSERTION, "Failed for input=(" + testCase.getInput() + ") expected=" + testCase.getOutput());
+            	return TestResultUtil.createResultForFailedTest(testCase);
             }
         } catch (InvocationTargetException e) {
             if (e.getCause() instanceof SecurityException) {
