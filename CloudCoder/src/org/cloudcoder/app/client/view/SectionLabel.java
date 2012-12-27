@@ -29,7 +29,7 @@ public class SectionLabel extends Composite {
 	/**
 	 * A SectionLabel should be this many pixels high when positioned absolutely.
 	 */
-	public static final double HEIGHT_PX = 32.0;
+	public static final double HEIGHT_PX = 36.0;
 
 	/**
 	 * Constructor.

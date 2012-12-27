@@ -81,6 +81,11 @@ public class CoursesAndProblemsPage2 extends CloudCoderPage {
 		private static final double COURSE_AND_USER_ADMIN_BUTTON_HEIGHT_PX = 27.0;
 		
 		/**
+		 * Width of "Refresh" button (to refresh problem list).
+		 */
+		private static final double REFRESH_PROBLEM_LIST_BUTTON_WIDTH_PX = 100.0;
+		
+		/**
 		 * Separation between east/west panels and center panel.
 		 */
 		private static final double SEP_PX = 10.0;
@@ -182,6 +187,16 @@ public class CoursesAndProblemsPage2 extends CloudCoderPage {
 			problemListPanel.add(problemListView2);
 			problemListPanel.setWidgetTopBottom(problemListView2, SectionLabel.HEIGHT_PX, Unit.PX, 0.0, Unit.PX);
 			problemListPanel.setWidgetLeftRight(problemListView2, 0.0, Unit.PX, 0.0, Unit.PX);
+			Button refreshProblemListButton = new Button("Refresh");
+			refreshProblemListButton.addClickHandler(new ClickHandler() {
+				@Override
+				public void onClick(ClickEvent event) {
+					handleRefreshProblemListButtonClicked();
+				}
+			});
+			problemListPanel.add(refreshProblemListButton);
+			problemListPanel.setWidgetTopHeight(refreshProblemListButton, 0, Unit.PX, COURSE_AND_USER_ADMIN_BUTTON_HEIGHT_PX, Unit.PX);
+			problemListPanel.setWidgetRightWidth(refreshProblemListButton, 0, Unit.PX, REFRESH_PROBLEM_LIST_BUTTON_WIDTH_PX, Unit.PX);
 			centerSplit.add(problemListPanel);
 
 			centerPanel.add(centerSplit);
@@ -325,9 +340,6 @@ public class CoursesAndProblemsPage2 extends CloudCoderPage {
 			} else if (key == Session.Event.ADDED_OBJECT && hint instanceof Course) {
 				Course course = (Course) hint;
 
-				// Load problems
-				SessionUtil.loadProblemAndSubmissionReceiptsInCourse(CoursesAndProblemsPage2.this, course, getSession());
-
 				if (courseAdminButton != null || userAdminButton != null) {
 					// Find the CourseRegistration for this Course
 					CourseAndCourseRegistration[] courseAndRegList = getSession().get(CourseAndCourseRegistration[].class);
@@ -366,6 +378,14 @@ public class CoursesAndProblemsPage2 extends CloudCoderPage {
 			Course course = getSession().get(Course.class);
 			if(course != null) {
 				getSession().notifySubscribers(Session.Event.USER_ACCOUNT, course);
+			}
+		}
+		
+		protected void handleRefreshProblemListButtonClicked() {
+			Course course = getSession().get(Course.class);
+			if (course != null) {
+				// Force a reload of the course
+				getSession().add(course);
 			}
 		}
 	}
