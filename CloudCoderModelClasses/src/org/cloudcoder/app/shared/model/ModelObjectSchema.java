@@ -171,7 +171,12 @@ public class ModelObjectSchema<ModelObjectType> {
 	 * @return the database table name
 	 */
 	public String getDbTableName() {
-		return "cc_" + name + "s";
+		if (name.endsWith("z")) {
+			// Create appropriate plural for "quiz" schema
+			return "cc_" + name + "zes";
+		} else {
+			return "cc_" + name + "s";
+		}
 	}
 
 	/**

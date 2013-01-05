@@ -26,6 +26,7 @@ import org.cloudcoder.app.client.page.DevelopmentPage;
 import org.cloudcoder.app.client.page.EditProblemPage;
 import org.cloudcoder.app.client.page.InitErrorPage;
 import org.cloudcoder.app.client.page.LoginPage;
+import org.cloudcoder.app.client.page.QuizPage;
 import org.cloudcoder.app.client.page.UserAccountPage;
 import org.cloudcoder.app.client.page.UserAdminPage;
 import org.cloudcoder.app.client.rpc.RPC;
@@ -141,6 +142,8 @@ public class CloudCoder implements EntryPoint, Subscriber {
 			return new CourseAdminPage();
 		} else if (name.equals(EditProblemPage.class.getName())) {
 			return new EditProblemPage();
+		} else if (name.equals(QuizPage.class.getName())) {
+			return new QuizPage();
 		}
 		
 		// This shouldn't happen (can't find page for Activity),
@@ -230,6 +233,8 @@ public class CloudCoder implements EntryPoint, Subscriber {
 			changePage(new EditProblemPage());
 		} else if (key == Session.Event.USER_ACCOUNT) {
 		    changePage(new UserAccountPage());
+		} else if (key == Session.Event.START_QUIZ) {
+			changePage(new QuizPage());
 		}
 	}
 }

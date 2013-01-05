@@ -106,9 +106,10 @@ public class SchemaUtil {
 	/**
 	 * Get the schema version number for given table.
 	 * 
-	 * @param conn
-	 * @param table
-	 * @return
+	 * @param conn the connection
+	 * @param table the table to check
+	 * @return the schema version, or -1 if there is no schema version
+	 *         (which would be the case for a table that doesn't exist yet)
 	 * @throws SQLException
 	 */
 	public static int getDbSchemaVersion(Connection conn, ModelObjectSchema<?> table)
@@ -125,7 +126,8 @@ public class SchemaUtil {
 			
 			resultSet = stmt.executeQuery();
 			if (!resultSet.next()) {
-				throw new SQLException("No entry in cc_schema_version for table " + table.getDbTableName());
+				//throw new SQLException("No entry in cc_schema_version for table " + table.getDbTableName());
+				return -1;
 			}
 			
 			return resultSet.getInt(1);
@@ -156,6 +158,23 @@ public class SchemaUtil {
 				// Table is at most recent version: nothing to do
 				logger.info("Table " + table.getDbTableName() + " is already at latest version (" + dbSchemaVersion + ")");
 				return false;
+			}
+			
+			if (dbSchemaVersion < 0) {
+				// Table doesn't exist yet: create it
+				DBUtil.createTable(conn, table);
+				
+				// Add entry to cc_schema_version table
+				PreparedStatement insertSchemaVersion = null;
+				try {
+					insertSchemaVersion = conn.prepareStatement("insert into cc_schema_version values (?, ?)");
+					insertSchemaVersion.setString(1, table.getDbTableName());
+					insertSchemaVersion.setInt(2, table.getVersion());
+					insertSchemaVersion.executeUpdate();
+				} finally {
+					DBUtil.closeQuietly(insertSchemaVersion);
+				}
+				return true;
 			}
 			
 			// Apply deltas from each schema version more recent than the

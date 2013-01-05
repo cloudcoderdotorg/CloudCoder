@@ -40,13 +40,13 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.cloudcoder.app.client.rpc.GetCoursesAndProblemsService;
 import org.cloudcoder.app.server.persist.Database;
+import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
 import org.cloudcoder.app.shared.model.ConfigurationSetting;
 import org.cloudcoder.app.shared.model.ConfigurationSettingName;
 import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.CourseAndCourseRegistration;
 import org.cloudcoder.app.shared.model.CourseRegistration;
-import org.cloudcoder.app.shared.model.CourseRegistrationType;
-import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
+import org.cloudcoder.app.shared.model.CourseRegistrationList;
 import org.cloudcoder.app.shared.model.OperationResult;
 import org.cloudcoder.app.shared.model.Pair;
 import org.cloudcoder.app.shared.model.Problem;
@@ -54,6 +54,7 @@ import org.cloudcoder.app.shared.model.ProblemAndSubmissionReceipt;
 import org.cloudcoder.app.shared.model.ProblemAndTestCaseList;
 import org.cloudcoder.app.shared.model.ProblemAuthorship;
 import org.cloudcoder.app.shared.model.ProblemList;
+import org.cloudcoder.app.shared.model.Quiz;
 import org.cloudcoder.app.shared.model.SubmissionReceipt;
 import org.cloudcoder.app.shared.model.Term;
 import org.cloudcoder.app.shared.model.TestCase;
@@ -288,8 +289,8 @@ public class GetCoursesAndProblemsServiceImpl extends RemoteServiceServlet
 		
 		// Find user's registration in the course: if user is not instructor,
 		// import is not allowed
-		CourseRegistration reg = Database.getInstance().findCourseRegistration(user, course);
-		if (reg.getRegistrationType().ordinal() < CourseRegistrationType.INSTRUCTOR.ordinal()) {
+		CourseRegistrationList reg = Database.getInstance().findCourseRegistrations(user, course);
+		if (!reg.isInstructor()) {
 			throw new CloudCoderAuthenticationException("Only an instructor can import a problem in a course");
 		}
 		
@@ -355,5 +356,46 @@ public class GetCoursesAndProblemsServiceImpl extends RemoteServiceServlet
 		User user = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
 		boolean result = Database.getInstance().deleteProblem(user, course, problem);
 		return new OperationResult(result, result ? "Problem deleted successfully" : "Could not delete problem");
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.cloudcoder.app.client.rpc.GetCoursesAndProblemsService#startQuiz(org.cloudcoder.app.shared.model.Problem, int)
+	 */
+	@Override
+	public Quiz startQuiz(Problem problem, int section) throws CloudCoderAuthenticationException {
+		// Make sure user is authenticated
+		User user = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
+		return Database.getInstance().startQuiz(user, problem, section);
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.cloudcoder.app.client.rpc.GetCoursesAndProblemsService#findCurrentQuiz(org.cloudcoder.app.shared.model.Problem)
+	 */
+	@Override
+	public Quiz findCurrentQuiz(Problem problem) throws CloudCoderAuthenticationException {
+		// Make sure user is authenticated
+		User user = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
+		
+		// Find current quiz (if any)
+		Quiz quiz = Database.getInstance().findCurrentQuiz(user, problem);
+		
+		if (quiz != null) {
+			// Set the end time to the current time: this allows the client
+			// to compute how long the quiz has been active
+			quiz.setEndTime(System.currentTimeMillis());
+		}
+		
+		return quiz;
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.cloudcoder.app.client.rpc.GetCoursesAndProblemsService#endQuiz(org.cloudcoder.app.shared.model.Quiz)
+	 */
+	@Override
+	public Boolean endQuiz(Quiz quiz) throws CloudCoderAuthenticationException {
+		// Make sure user is authenticated
+		User user = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
+		
+		return Database.getInstance().endQuiz(user, quiz);
 	}
 }

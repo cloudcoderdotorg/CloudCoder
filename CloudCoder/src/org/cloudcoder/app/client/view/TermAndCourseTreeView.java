@@ -71,7 +71,11 @@ public class TermAndCourseTreeView extends Composite {
 				ArrayList<Course> courseListForTermAndYear = new ArrayList<Course>();
 				for (CourseAndCourseRegistration courseAndReg : courseAndRegList) {
 					Course course = courseAndReg.getCourse();
-					if (course.getTermAndYear().equals(termAndYear)) {
+					// Note: because a user may have multiple CourseRegistrations
+					// for the same course (e.g., an instructor who is teaching
+					// multiple sections), we may have duplicate courses.
+					// So, check before adding one to the course list.
+					if (course.getTermAndYear().equals(termAndYear) && !courseListForTermAndYear.contains(course)) {
 						courseListForTermAndYear.add(course);
 					}
 				}

@@ -29,8 +29,11 @@ import org.cloudcoder.app.server.persist.Database;
 import org.cloudcoder.app.shared.model.Change;
 import org.cloudcoder.app.shared.model.ChangeType;
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
+import org.cloudcoder.app.shared.model.Pair;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemText;
+import org.cloudcoder.app.shared.model.Quiz;
+import org.cloudcoder.app.shared.model.QuizEndedException;
 import org.cloudcoder.app.shared.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,20 +57,23 @@ public class EditCodeServiceImpl extends RemoteServiceServlet implements EditCod
 		User user = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
 
 		// Get the problem
-		Problem problem = Database.getInstance().getProblem(user, problemId);
-
-		if (problem != null) {
-			// Store the Problem in the HttpSession - that way, the servlets
-			// that depend on knowing the problem have access to a known-authentic
-			// problem. (I.e., we don't have to trust a problem id sent as
-			// an RPC parameter which might have been forged.)
-			getThreadLocalRequest().getSession().setAttribute(SessionAttributeKeys.PROBLEM_KEY, problem);
-
-			// If appropriate, record that the user has started the problem
-			Database.getInstance().getOrAddLatestSubmissionReceipt(user, problem);
+		Pair<Problem, Quiz> pair = Database.getInstance().getProblem(user, problemId);
+		if (pair == null) {
+			return null;
 		}
 
-		return problem;
+		// Store the Problem and (if there is one) Quiz in the HttpSession -
+		// that way, the servlets that depend on knowing the problem/quiz
+		// have access to a known-authentic problem/quiz. (I.e., we don't have
+		// to trust a problem id sent as an RPC parameter which might have
+		// been forged.)
+		getThreadLocalRequest().getSession().setAttribute(SessionAttributeKeys.PROBLEM_KEY, pair.getLeft());
+		getThreadLocalRequest().getSession().setAttribute(SessionAttributeKeys.QUIZ_KEY, pair.getRight());
+
+		// If appropriate, record that the user has started the problem
+		Database.getInstance().getOrAddLatestSubmissionReceipt(user, pair.getLeft());
+		
+		return pair.getLeft();
 	}
 
     @Override
@@ -84,6 +90,12 @@ public class EditCodeServiceImpl extends RemoteServiceServlet implements EditCod
     	}
 
     	ProblemText text = doLoadCurrentText(user, problem);
+    	
+    	// Check to see if current problem is a quiz
+    	Quiz quiz = (Quiz) getThreadLocalRequest().getSession().getAttribute(SessionAttributeKeys.QUIZ_KEY);
+    	if (quiz != null) {
+    		text.setQuiz(true);
+    	}
     	
     	if (DEBUG_CODE_DELTAS) {
 	    	// Keep a TextDocument in the session for debugging code deltas
@@ -154,11 +166,33 @@ public class EditCodeServiceImpl extends RemoteServiceServlet implements EditCod
 	}
 
 	@Override
-	public Boolean logChange(Change[] changeList, long clientSubmitTime) throws CloudCoderAuthenticationException {
+	public Boolean logChange(Change[] changeList, long clientSubmitTime)
+			throws CloudCoderAuthenticationException, QuizEndedException {
 		long serverSubmitTime = System.currentTimeMillis();
 
 		// make sure client is authenticated
 		User user = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
+		
+		// if there is a quiz, check whether it has ended
+		Quiz quiz = (Quiz) getThreadLocalRequest().getSession().getAttribute(SessionAttributeKeys.QUIZ_KEY);
+		if (quiz != null) {
+			// User is working on a quiz.
+			
+			// Important: reload the object from the database.
+			// The instructor may have ended the quiz by changing the end time
+			// from 0.
+			if (!Database.getInstance().reloadModelObject(quiz)) {
+				logger.error("logChange: could not reload Quiz object");
+				return false;
+			}
+			
+			if (quiz.getEndTime() > 0) { // end time of 0 means open-ended
+				long currentTime = System.currentTimeMillis();
+				if (currentTime > quiz.getEndTime()) {
+					throw new QuizEndedException();
+				}
+			}
+		}
 		
 		// Make sure all Changes have proper user id
 		for (Change change : changeList) {

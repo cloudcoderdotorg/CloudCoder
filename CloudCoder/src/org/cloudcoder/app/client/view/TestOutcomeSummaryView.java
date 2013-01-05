@@ -39,7 +39,7 @@ import com.google.gwt.user.client.ui.HTML;
  */
 public class TestOutcomeSummaryView extends Composite implements SessionObserver, Subscriber {
 	// Keep these in sync with CloudCoder.css
-	public static final double WIDTH_PX = 300.0;
+	public static final double WIDTH_PX = 200.0;
 	public static final double HEIGHT_PX = 28.0; 
 	
 	private static int nextId = 1; // used to generate unique ids

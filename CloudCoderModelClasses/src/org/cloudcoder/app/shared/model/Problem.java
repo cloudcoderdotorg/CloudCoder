@@ -262,6 +262,13 @@ public class Problem extends ProblemData implements IProblem, ActivityObject, IM
 	}
 
 	/**
+	 * @return a "nice" string consisting of the testname and the brief description
+	 */
+	public String toNiceString() {
+		return getTestname() + " - " + getBriefDescription();
+	}
+
+	/**
 	 * Copy all data in the given Problem object into this one.
 	 * 
 	 * @param other another Problem object

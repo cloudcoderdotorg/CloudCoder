@@ -29,6 +29,7 @@ public class ProblemText implements Serializable {
 
 	private String text;
 	private boolean New;
+	private boolean quiz;
 	
 	public ProblemText() {
 		
@@ -65,5 +66,21 @@ public class ProblemText implements Serializable {
 	 */
 	public boolean isNew() {
 		return New;
+	}
+	
+	/**
+	 * Set whether this problem is a quiz.
+	 * 
+	 * @param quiz true if the problem is a quiz, false if not
+	 */
+	public void setQuiz(boolean quiz) {
+		this.quiz = quiz;
+	}
+	
+	/**
+	 * @return true if the problem is a quiz, false if not
+	 */
+	public boolean isQuiz() {
+		return quiz;
 	}
 }

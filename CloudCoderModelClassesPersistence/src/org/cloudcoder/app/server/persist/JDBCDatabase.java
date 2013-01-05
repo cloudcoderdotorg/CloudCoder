@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
 import org.cloudcoder.app.shared.model.Change;
@@ -38,9 +37,11 @@ import org.cloudcoder.app.shared.model.ConfigurationSetting;
 import org.cloudcoder.app.shared.model.ConfigurationSettingName;
 import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.CourseRegistration;
+import org.cloudcoder.app.shared.model.CourseRegistrationList;
 import org.cloudcoder.app.shared.model.CourseRegistrationType;
 import org.cloudcoder.app.shared.model.Event;
 import org.cloudcoder.app.shared.model.IContainsEvent;
+import org.cloudcoder.app.shared.model.IModelObject;
 import org.cloudcoder.app.shared.model.Language;
 import org.cloudcoder.app.shared.model.ModelObjectField;
 import org.cloudcoder.app.shared.model.ModelObjectSchema;
@@ -52,6 +53,7 @@ import org.cloudcoder.app.shared.model.ProblemAndTestCaseList;
 import org.cloudcoder.app.shared.model.ProblemAuthorship;
 import org.cloudcoder.app.shared.model.ProblemList;
 import org.cloudcoder.app.shared.model.ProblemSummary;
+import org.cloudcoder.app.shared.model.Quiz;
 import org.cloudcoder.app.shared.model.RepoProblem;
 import org.cloudcoder.app.shared.model.RepoProblemAndTestCaseList;
 import org.cloudcoder.app.shared.model.RepoProblemSearchCriteria;
@@ -295,20 +297,17 @@ public class JDBCDatabase implements IDatabase {
 	}
 	
 	@Override
-	public Problem getProblem(final User user, final int problemId) {
-		return databaseRun(new AbstractDatabaseRunnableNoAuthException<Problem>() {
+	public Pair<Problem, Quiz> getProblem(final User user, final int problemId) {
+		return databaseRun(new AbstractDatabaseRunnableNoAuthException<Pair<Problem, Quiz>>() {
 			@Override
-			public Problem run(Connection conn) throws SQLException {
+			public Pair<Problem, Quiz> run(Connection conn) throws SQLException {
 				PreparedStatement stmt = prepareStatement(
 						conn,
-						"select p.* from " + Problem.SCHEMA.getDbTableName() + " as p, " + Course.SCHEMA.getDbTableName() + " as c, " + CourseRegistration.SCHEMA.getDbTableName() + " as r " +
+						"select p.*, r.* from " + Problem.SCHEMA.getDbTableName() + " as p, " + Course.SCHEMA.getDbTableName() + " as c, " + CourseRegistration.SCHEMA.getDbTableName() + " as r " +
 						" where p.problem_id = ? " +
 						"   and c.id = p.course_id " +
 						"   and r.course_id = c.id " +
-						"   and r.user_id = ?" +
-						//  An instructor can see any problem in a course.
-						//  A student can only see a problem if it is visible.
-						"   and (r.registration_type >= " + CourseRegistrationType.INSTRUCTOR.ordinal() + " or p.visible <> 0)"
+						"   and r.user_id = ?"
 				);
 				stmt.setInt(1, problemId);
 				stmt.setInt(2, user.getId());
@@ -316,13 +315,38 @@ public class JDBCDatabase implements IDatabase {
 				ResultSet resultSet = executeQuery(stmt);
 				
 				if (!resultSet.next()) {
-					// no such problem, or user is not authorized to see this problem
+					// no such problem, or user is not registered in the course
+					// in which the problem is assigned
 					return null;
 				}
 				
+				// Get Problem and CourseRegistration
 				Problem problem = new Problem();
-				load(problem, resultSet, 1);
-				return problem;
+				CourseRegistration reg = new CourseRegistration();
+				
+				int index = DBUtil.loadModelObjectFields(problem, Problem.SCHEMA, resultSet);
+				index = DBUtil.loadModelObjectFields(reg, CourseRegistration.SCHEMA, resultSet, index);
+				
+				// Check to see if user is authorized to see this problem
+				
+				// Instructors are always allowed to see problems, even if not visible
+				if (reg.getRegistrationType().isInstructor()) {
+					return new Pair<Problem, Quiz>(problem, null);
+				}
+				
+				// Problem is visible?
+				if (problem.isVisible()) {
+					return new Pair<Problem, Quiz>(problem, null);
+				}
+				
+				// See if there is an ongoing quiz
+				Quiz quiz = doFindQuiz(problem.getProblemId(), reg.getSection(), System.currentTimeMillis(), conn, this);
+				if (quiz != null) {
+					System.out.println("Found quiz for problem " + problem.getProblemId());
+					return new Pair<Problem, Quiz>(problem, quiz);
+				}
+				
+				return null;
 			}
 			
 			@Override
@@ -331,7 +355,7 @@ public class JDBCDatabase implements IDatabase {
 			}
 		});
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see org.cloudcoder.app.server.persist.IDatabase#getProblem(int)
 	 */
@@ -532,9 +556,6 @@ public class JDBCDatabase implements IDatabase {
 		});
 	}
 
-	/**
-	 * Description
-	 */
 	@Override
 	public List<ProblemAndSubmissionReceipt> getProblemAndSubscriptionReceiptsInCourse(
 			final User user, final Course course) {
@@ -543,50 +564,78 @@ public class JDBCDatabase implements IDatabase {
 			 * @see org.cloudcoder.app.server.persist.DatabaseRunnable#run(java.sql.Connection)
 			 */
 			@Override
-			public List<ProblemAndSubmissionReceipt> run(Connection conn)
-					throws SQLException {
-				// Get all problems for this user/course
-				List<Problem> problemList = doGetProblemsInCourse(user, course, conn, this);
-				
-				// Get all submission receipts for this user/course.
-				// Note that we join on course_registrations in order to ensure 
-				// that user is authorized to get information about the course.
-				// We also check for each problem that the user is either an instructor
-				// or that the problem is visible, since we don't want to show
-				// information for problems that the student shouldn't have
-				// access to.
+			public List<ProblemAndSubmissionReceipt> run(Connection conn) throws SQLException {
+				// See: https://gist.github.com/4408441
 				PreparedStatement stmt = prepareStatement(
 						conn,
-						"select r.*, e.* from " + SubmissionReceipt.SCHEMA.getDbTableName() + " as r, " + Problem.SCHEMA.getDbTableName() + " as p, " + Event.SCHEMA.getDbTableName() + " as e, " + CourseRegistration.SCHEMA.getDbTableName() + " as cr " +
-						" where cr.user_id = ?" +
-						"   and cr.course_id = ? " +
-						"   and (cr.registration_type >= " + CourseRegistrationType.INSTRUCTOR.ordinal() + " or p.visible <> 0)" +
-						"   and p.course_id = cr.course_id " +
-						"   and e.problem_id = p.problem_id " +
-						"   and p." + Problem.DELETED.getName() + " = 0 " +
-						"   and e.user_id = cr.user_id " +
-						"   and r.event_id = e.id "
+						"select p.*, sr.*, e.*, sr_ids.max_sr_event_id" +
+						"  from cc_problems as p" +
+						" join (select p.problem_id, sm.max_sr_event_id" +
+						"         from cc_problems as p" +
+						"       left join (select e.problem_id as problem_id, max(sr.event_id) as max_sr_event_id" +
+						"                    from cc_submission_receipts as sr, cc_events as e" +
+						"                  where e.id = sr.event_id" +
+						"                    and e.user_id = ?" +
+						"                  group by e.problem_id) as sm on p.problem_id = sm.problem_id" +
+						"        where p.course_id = ?" +
+						"        ) as sr_ids on sr_ids.problem_id = p.problem_id" +
+						" left join cc_submission_receipts as sr on sr.event_id = sr_ids.max_sr_event_id" +
+						" left join cc_events as e on e.id = sr_ids.max_sr_event_id" + 
+						" where p.deleted = 0" +
+						"   and p.problem_id in" +
+						"          (select p.problem_id from cc_problems as p" +
+						"          join cc_course_registrations as cr on cr.course_id = p.course_id and cr.user_id = ?" +
+						"          where" +
+						"             p.course_id = ?" +
+						"             and (   p.visible <> 0" +
+						"                  or cr.registration_type >= ?" +
+						"                  or p.problem_id in (select q.problem_id" +
+						"                                        from cc_quizzes as q, cc_course_registrations as cr" +
+						"                                       where cr.user_id = ?" +
+						"                                         and cr.course_id = ?" +
+						"                                         and q.course_id = cr.course_id" +
+						"                                         and q.section = cr.section" +
+						"                                         and q.start_time <= ?" +
+						"                                         and (q.end_time >= ? or q.end_time = 0))))"
 				);
 				stmt.setInt(1, user.getId());
 				stmt.setInt(2, course.getId());
+				stmt.setInt(3, user.getId());
+				stmt.setInt(4, course.getId());
+				stmt.setInt(5, CourseRegistrationType.INSTRUCTOR.ordinal());
+				stmt.setInt(6, user.getId());
+				stmt.setInt(7, course.getId());
+				long currentTime = System.currentTimeMillis();
+				stmt.setLong(8, currentTime);
+				stmt.setLong(9, currentTime);
 				
-				// Map of problem ids to most recent submission receipt for problem
-				Map<Integer, SubmissionReceipt> problemIdToMostRecentSubmissionReceiptMap = new HashMap<Integer, SubmissionReceipt>();
-				ResultSet resultSet = executeQuery(stmt);
-				while (resultSet.next()) {
-					SubmissionReceipt submissionReceipt = loadSubmissionReceiptAndEvent(resultSet);
-					SubmissionReceipt current = problemIdToMostRecentSubmissionReceiptMap.get(submissionReceipt.getEvent().getProblemId());
-					if (current == null || submissionReceipt.getEventId() > current.getEventId()) {
-						problemIdToMostRecentSubmissionReceiptMap.put(submissionReceipt.getEvent().getProblemId(), submissionReceipt);
-					}
-				}
-				
-				// Match up problems and corresponding submission receipts.
 				List<ProblemAndSubmissionReceipt> result = new ArrayList<ProblemAndSubmissionReceipt>();
-				for (Problem problem : problemList) {
-					SubmissionReceipt receipt = problemIdToMostRecentSubmissionReceiptMap.get(problem.getProblemId());
-					ProblemAndSubmissionReceipt problemAndSubscriptionReceipt = new ProblemAndSubmissionReceipt(problem, receipt);
-					result.add(problemAndSubscriptionReceipt);
+				
+				ResultSet resultSet = executeQuery(stmt);
+				
+				while (resultSet.next()) {
+					Problem problem = new Problem();
+					int index = DBUtil.loadModelObjectFields(problem, Problem.SCHEMA, resultSet);
+					
+					// Is there a submission receipt?
+					SubmissionReceipt receipt;
+					if (resultSet.getObject(index) != null) {
+						// Yes
+						receipt = new SubmissionReceipt();
+						index = DBUtil.loadModelObjectFields(receipt, SubmissionReceipt.SCHEMA, resultSet, index);
+						Event event = new Event();
+						index = DBUtil.loadModelObjectFields(event, Event.SCHEMA, resultSet, index);
+						receipt.setEvent(event);
+					} else {
+						// No
+						receipt = null;
+					}
+					
+					ProblemAndSubmissionReceipt problemAndSubmissionReceipt = new ProblemAndSubmissionReceipt();
+					problemAndSubmissionReceipt.setProblem(problem);
+					problemAndSubmissionReceipt.setReceipt(receipt);
+					
+					result.add(problemAndSubmissionReceipt);
 				}
 				
 				return result;
@@ -1288,13 +1337,13 @@ public class JDBCDatabase implements IDatabase {
 	}
 	
 	@Override
-	public CourseRegistration findCourseRegistration(final User user, final Course course) {
-		return databaseRun(new AbstractDatabaseRunnableNoAuthException<CourseRegistration>() {
+	public CourseRegistrationList findCourseRegistrations(final User user, final Course course) {
+		return databaseRun(new AbstractDatabaseRunnableNoAuthException<CourseRegistrationList>() {
 			@Override
-			public CourseRegistration run(Connection conn) throws SQLException {
+			public CourseRegistrationList run(Connection conn) throws SQLException {
 				int userId = user.getId();
 				int courseId = course.getId();
-				return doGetCourseRegistration(conn, courseId, userId, this);
+				return doGetCourseRegistrations(conn, courseId, userId, this);
 			}
 			@Override
 			public String getDescription() {
@@ -1383,8 +1432,8 @@ public class JDBCDatabase implements IDatabase {
 			@Override
 			public Boolean run(Connection conn) throws SQLException, CloudCoderAuthenticationException {
 				// verify that the user is an instructor in the course
-				CourseRegistration courseReg = doGetCourseRegistration(conn, course.getId(), user.getId(), this);
-				if (courseReg == null || courseReg.getRegistrationType() != CourseRegistrationType.INSTRUCTOR) {
+				CourseRegistrationList courseReg = doGetCourseRegistrations(conn, course.getId(), user.getId(), this);
+				if (!courseReg.isInstructor()) {
 					throw new CloudCoderAuthenticationException("Only instructor can delete a problem");
 				}
 				
@@ -1413,6 +1462,23 @@ public class JDBCDatabase implements IDatabase {
 		});
 	}
 	
+	/**
+	 * Check whether at least one of the {@link CourseRegistration} objects
+	 * is an instructor registration.
+	 * 
+	 * @param courseReg list of {@link CourseRegistration} objects
+	 * @return true if at least one {@link CourseRegistration} is an instructor
+	 *         registration
+	 */
+	protected boolean isInstructor(List<CourseRegistration> courseReg) {
+		for (CourseRegistration reg : courseReg) {
+			if (reg.getRegistrationType().ordinal() >= CourseRegistrationType.INSTRUCTOR.ordinal()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	@Override
 	public OperationResult addUserRegistrationRequest(final UserRegistrationRequest request) {
 		return databaseRun(new AbstractDatabaseRunnableNoAuthException<OperationResult>() {
@@ -1589,6 +1655,173 @@ public class JDBCDatabase implements IDatabase {
 			@Override
 			public String getDescription() {
 				return " suggesting tag names";
+			}
+		});
+	}
+	
+	@Override
+	public Quiz startQuiz(final User user, final Problem problem, final int section) throws CloudCoderAuthenticationException {
+		return databaseRunAuth(new AbstractDatabaseRunnable<Quiz>() {
+			@Override
+			public Quiz run(Connection conn) throws SQLException, CloudCoderAuthenticationException {
+				// Find the user's course registration in the course/section
+				PreparedStatement findReg = prepareStatement(
+						conn,
+						"select cr.* from cc_course_registrations as cr " +
+						" where cr.user_id = ? " +
+						"   and cr.course_id = ? " +
+						"   and cr.section = ? " +
+						"   and cr.registration_type >= ?"
+				);
+				findReg.setInt(1, user.getId());
+				findReg.setInt(2, problem.getCourseId());
+				findReg.setInt(3, section);
+				findReg.setInt(4, CourseRegistrationType.INSTRUCTOR.ordinal());
+				
+				ResultSet resultSet = executeQuery(findReg);
+				
+				if (!resultSet.next()) {
+					throw new CloudCoderAuthenticationException("User is not an instructor in given course/section");
+				}
+				
+				// Delete previous quiz for this problem/section (if any)
+				PreparedStatement delOldQuiz = prepareStatement(
+						conn,
+						"delete from cc_quizzes where problem_id = ? and section = ?"
+				);
+				delOldQuiz.setInt(1, problem.getProblemId());
+				delOldQuiz.setInt(2, section);
+				delOldQuiz.executeUpdate();
+				
+				// Create the quiz record
+				Quiz quiz = new Quiz();
+				quiz.setProblemId(problem.getProblemId());
+				quiz.setCourseId(problem.getCourseId());
+				quiz.setSection(section);
+				quiz.setStartTime(System.currentTimeMillis());
+				quiz.setEndTime(0L);
+				PreparedStatement insertQuiz = prepareStatement(
+						conn,
+						"insert into cc_quizzes values (" +
+						DBUtil.getInsertPlaceholdersNoId(Quiz.SCHEMA) +
+						")",
+						PreparedStatement.RETURN_GENERATED_KEYS
+				);
+				DBUtil.bindModelObjectValuesForInsert(quiz, Quiz.SCHEMA, insertQuiz);
+				
+				insertQuiz.executeUpdate();
+				
+				ResultSet generatedKey = getGeneratedKeys(insertQuiz);
+				if (!generatedKey.next()) {
+					throw new SQLException("Could not get generated key for inserted Quiz");
+				}
+				quiz.setId(generatedKey.getInt(1));
+				
+				return quiz;
+			}
+			@Override
+			public String getDescription() {
+				return " starting quiz";
+			}
+		});
+	}
+	
+	@Override
+	public Quiz findCurrentQuiz(final User user, final Problem problem) {
+		return databaseRun(new AbstractDatabaseRunnableNoAuthException<Quiz>() {
+			@Override
+			public Quiz run(Connection conn) throws SQLException {
+				PreparedStatement stmt = prepareStatement(
+						conn,
+						"select q.* from cc_quizzes as q, cc_course_registrations as cr " +
+						" where cr.user_id = ? " +
+						"   and cr.course_id = ? " +
+						"   and cr.registration_type >= ? " +
+						"   and q.course_id = cr.course_id " +
+						"   and q.problem_id = ? " +
+						"   and q.start_time <= ? " +
+						"   and (q.end_time >= ? or q.end_time = 0)"
+				);
+				stmt.setInt(1, user.getId());
+				stmt.setInt(2, problem.getCourseId());
+				stmt.setInt(3, CourseRegistrationType.INSTRUCTOR.ordinal());
+				stmt.setInt(4, problem.getProblemId());
+				long currentTime = System.currentTimeMillis();
+				stmt.setLong(5, currentTime);
+				stmt.setLong(6, currentTime);
+				
+				ResultSet resultSet = executeQuery(stmt);
+				if (!resultSet.next()) {
+					return null;
+				}
+				
+				Quiz quiz = new Quiz();
+				DBUtil.loadModelObjectFields(quiz, Quiz.SCHEMA, resultSet);
+				return quiz;
+			}
+			@Override
+			public String getDescription() {
+				return " finding current quiz for problem";
+			}
+		});
+	}
+	
+	@Override
+	public Boolean endQuiz(final User user, final Quiz quiz) {
+		return databaseRun(new AbstractDatabaseRunnableNoAuthException<Boolean>() {
+			@Override
+			public Boolean run(Connection conn) throws SQLException {
+				PreparedStatement stmt = prepareStatement(
+						conn,
+						"update cc_quizzes as q" +
+						"  join cc_course_registrations as cr on  cr.course_id = q.course_id" +
+						"                                     and cr.section = q.section" +
+						"                                     and cr.user_id = ?" +
+						"                                     and q.problem_id = ?" +
+						"                                     and q.section = ?" +
+						"                                     and q.course_id = ?" +
+						" set end_time = ?"
+				);
+				stmt.setInt(1, user.getId());
+				stmt.setInt(2, quiz.getProblemId());
+				stmt.setInt(3, quiz.getSection());
+				stmt.setInt(4, quiz.getCourseId());
+				long currentTime = System.currentTimeMillis();
+				stmt.setLong(5, currentTime);
+				
+				int updateCount = stmt.executeUpdate();
+				return updateCount > 0;
+			}
+			@Override
+			public String getDescription() {
+				return " ending quiz";
+			}
+		});
+	}
+	
+	@Override
+	public <E extends IModelObject<E>> boolean reloadModelObject(final E obj) {
+		return databaseRun(new AbstractDatabaseRunnableNoAuthException<Boolean>() {
+			@Override
+			public Boolean run(Connection conn) throws SQLException {
+				ModelObjectField<? super E, ?> idField = obj.getSchema().getUniqueIdField();
+				PreparedStatement stmt = prepareStatement(
+						conn,
+						"select * from " + obj.getSchema().getDbTableName() + " where " + idField.getName() + " = ?"
+				);
+				stmt.setObject(1, idField.get(obj));
+				
+				ResultSet resultSet = executeQuery(stmt);
+				if (!resultSet.next()) {
+					return false;
+				}
+				
+				DBUtil.loadModelObjectFields(obj, obj.getSchema(), resultSet);
+				return true;
+			}
+			@Override
+			public String getDescription() {
+				return " reloading model object";
 			}
 		});
 	}
@@ -2006,7 +2239,7 @@ public class JDBCDatabase implements IDatabase {
 		}
 	}
 
-	protected CourseRegistration doGetCourseRegistration(
+	protected CourseRegistrationList doGetCourseRegistrations(
 			Connection conn,
 			int courseId,
 			int userId,
@@ -2022,13 +2255,15 @@ public class JDBCDatabase implements IDatabase {
 		
 		ResultSet resultSet = abstractDatabaseRunnable.executeQuery(stmt);
 		
-		if (!resultSet.next()) {
-			return null;
+		CourseRegistrationList result = new CourseRegistrationList();
+		
+		while (resultSet.next()) {
+			CourseRegistration reg = new CourseRegistration();
+			DBUtil.loadModelObjectFields(reg, CourseRegistration.SCHEMA, resultSet);
+			result.getList().add(reg);
 		}
 		
-		CourseRegistration reg = new CourseRegistration();
-		DBUtil.loadModelObjectFields(reg, CourseRegistration.SCHEMA, resultSet);
-		return reg;
+		return result;
 	}
 
 	/**
@@ -2067,6 +2302,39 @@ public class JDBCDatabase implements IDatabase {
 		}
 		
 		return true;
+	}
+
+	protected Quiz doFindQuiz(
+			int problemId,
+			int section,
+			long currentTimeMillis,
+			Connection conn,
+			AbstractDatabaseRunnableNoAuthException<?> dbRunnable) throws SQLException {
+		PreparedStatement stmt = dbRunnable.prepareStatement(
+				conn,
+				"select q.* from cc_quizzes as q " +
+				" where q.problem_id = ? " +
+				"   and q.section = ? " +
+				"   and q.start_time <= ? " +
+				"   and (q.end_time >= ? or q.end_time = 0)"
+		);
+		stmt.setInt(1, problemId);
+		stmt.setInt(2, section);
+		stmt.setLong(3, currentTimeMillis);
+		stmt.setLong(4, currentTimeMillis);
+		
+		Quiz result = null;
+		
+		ResultSet resultSet = dbRunnable.executeQuery(stmt);
+		while (resultSet.next()) {
+			Quiz quiz = new Quiz();
+			DBUtil.loadModelObjectFields(quiz, Quiz.SCHEMA, resultSet);
+			if (result == null || quiz.getEndTime() > result.getEndTime()) {
+				result = quiz;
+			}
+		}
+
+		return result;
 	}
 	
 	protected void load(ConfigurationSetting configurationSetting, ResultSet resultSet, int index) throws SQLException {

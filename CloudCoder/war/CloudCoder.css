@@ -114,7 +114,7 @@
 	margin: 0px;
 	border: 0px;
 	padding: 0px;
-	width: 300px;
+	width: 200px;
 	height: 28px;
 	background-color: black;
 }
@@ -195,4 +195,11 @@
 	clear: both;
 }
 .cc-dialogTitle {
+}
+
+/* Timer in QuizPage. */
+.cc-quizTimer {
+	font-weight: bold;
+	font-size: 92px;
+	text-align: right;
 }

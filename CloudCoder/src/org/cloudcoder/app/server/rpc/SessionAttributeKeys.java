@@ -19,6 +19,7 @@ package org.cloudcoder.app.server.rpc;
 
 import org.cloudcoder.app.shared.model.Activity;
 import org.cloudcoder.app.shared.model.Problem;
+import org.cloudcoder.app.shared.model.Quiz;
 
 /**
  * Keys for session attributes.
@@ -45,5 +46,10 @@ public interface SessionAttributeKeys {
 	public static final String FUTURE_SUBMISSION_RESULT_KEY = "future";
 
 	public static final String FULL_TEXT_CHANGE_KEY = "fullText";
+
+	/**
+	 * Key to get the current {@link Quiz}, if any.
+	 */
+	public static final String QUIZ_KEY = "quiz";
 
 }

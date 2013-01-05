@@ -45,7 +45,6 @@ import org.cloudcoder.app.shared.util.SubscriptionRegistrar;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Unit;
-import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.DockLayoutPanel;
@@ -101,8 +100,6 @@ public class CourseAdminPage extends CloudCoderPage {
 	}
 	
 	private class UI extends Composite implements SessionObserver, Subscriber {
-		private static final double PROBLEM_BUTTON_BAR_HEIGHT_PX = 28.0;
-
 		private PageNavPanel pageNavPanel;
 		private Label courseLabel;
 		private ButtonPanel<ProblemAction> buttonPanel;
@@ -205,7 +202,7 @@ public class CourseAdminPage extends CloudCoderPage {
 				break;
 				
 			case QUIZ:
-				Window.alert("Not implemented yet, sorry");
+				handleQuiz();
 				break;
 			}
 		}
@@ -416,6 +413,18 @@ public class CourseAdminPage extends CloudCoderPage {
 			problemAndTestCaseList.setTestCaseList(testCaseList);
 			getSession().add(problemAndTestCaseList);
 			getSession().notifySubscribers(Session.Event.EDIT_PROBLEM, problemAndTestCaseList);
+		}
+		
+		private void handleQuiz() {
+			Problem selected = getSession().get(Problem.class);
+			if (selected != null) {
+				if (selected.isVisible()) {
+					getSession().add(StatusMessage.error("Quiz problems must not be visible to students!"));
+					return;
+				}
+				
+				getSession().notifySubscribers(Session.Event.START_QUIZ, selected);
+			}
 		}
 
 		public void activate(Session session, SubscriptionRegistrar subscriptionRegistrar) {

@@ -23,6 +23,7 @@ import org.cloudcoder.app.shared.model.OperationResult;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemAndSubmissionReceipt;
 import org.cloudcoder.app.shared.model.ProblemAndTestCaseList;
+import org.cloudcoder.app.shared.model.Quiz;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.User;
 
@@ -58,5 +59,11 @@ public interface GetCoursesAndProblemsServiceAsync {
 
 	void deleteProblem(Course course, Problem problem,
 			AsyncCallback<OperationResult> callback);
+
+	void startQuiz(Problem problem, int section, AsyncCallback<Quiz> callback);
+
+	void findCurrentQuiz(Problem problem, AsyncCallback<Quiz> callback);
+
+	void endQuiz(Quiz quiz, AsyncCallback<Boolean> callback);
 
 }

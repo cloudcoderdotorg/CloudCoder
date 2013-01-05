@@ -225,4 +225,33 @@ public class Course implements ActivityObject, IModelObject<Course> {
 	public TermAndYear getTermAndYear() {
 		return new TermAndYear(term, year);
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null || obj.getClass() != this.getClass()) {
+			return false;
+		}
+		Course other = (Course) obj;
+		return this.id == other.id
+				&& this.name.equals(other.name)
+				&& this.title.equals(other.title)
+				&& this.url.equals(other.url)
+				&& this.termId == other.termId
+				&& this.year == other.year;
+	}
+	
+	@Override
+	public int hashCode() {
+		int code = 0;
+		code += id;
+		code *= 37;
+		code += title.hashCode();
+		code *= 37;
+		code += url.hashCode();
+		code *= 37;
+		code += termId;
+		code *= 37;
+		code += year;
+		return code;
+	}
 }

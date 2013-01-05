@@ -18,6 +18,7 @@
 package org.cloudcoder.app.client.rpc;
 
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
+import org.cloudcoder.app.shared.model.QuizEndedException;
 import org.cloudcoder.app.shared.model.SubmissionException;
 import org.cloudcoder.app.shared.model.SubmissionResult;
 
@@ -29,11 +30,12 @@ public interface SubmitService extends RemoteService {
 	/**
 	 * Submit program text for problem with given problem id to server.
 	 * 
-	 * @param problemId
-	 * @param programText
+	 * @param problemId the problem id
+	 * @param programText the program text
 	 * @throws CloudCoderAuthenticationException
+	 * @throws QuizEndedException 
 	 */
-    public void submit(int problemId, String programText) throws CloudCoderAuthenticationException, SubmissionException;
+    public void submit(int problemId, String programText) throws CloudCoderAuthenticationException, SubmissionException, QuizEndedException;
     
     /**
      * Check to see if a {@link SubmissionResult} for the most-recently-submitted

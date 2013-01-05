@@ -27,5 +27,14 @@ public enum CourseRegistrationType {
 	STUDENT,
 	
 	/** User is registered as an instructor. */
-	INSTRUCTOR,
+	INSTRUCTOR,;
+
+	/**
+	 * Is this registration an instructor (or higher) registration?
+	 * 
+	 * @return true if registration is instructor or higher
+	 */
+	public boolean isInstructor() {
+		return this.ordinal() >= INSTRUCTOR.ordinal();
+	}
 }

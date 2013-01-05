@@ -872,6 +872,7 @@ public class DBUtil {
 	 * @param obj        the model object
 	 * @param schema     the model object's schema
 	 * @param resultSet  the {@link ResultSet}
+	 * @return int the index of the field in the result set just past the model object fields
 	 * @throws SQLException
 	 */
 	public static <E> int loadModelObjectFields(E obj,
@@ -887,6 +888,7 @@ public class DBUtil {
 	 * @param schema     the model object's schema
 	 * @param resultSet  the {@link ResultSet}
 	 * @param index      the index of the first model object field in the {@link ResultSet}
+	 * @return int the index of the field in the result set just past the model object fields
 	 * @throws SQLException
 	 */
 	public static <E> int loadModelObjectFields(E obj,

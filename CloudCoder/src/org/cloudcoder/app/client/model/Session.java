@@ -67,6 +67,9 @@ public class Session extends Publisher {
 		
 		/** Instructor has chosen to edit a problem and its test cases. Hint is the {@link ProblemAndTestCaseList}. */
 		EDIT_PROBLEM,
+		
+		/** Start a quiz for currently-selected {@link Problem}. */
+		START_QUIZ,
 	}
 	
 	/**

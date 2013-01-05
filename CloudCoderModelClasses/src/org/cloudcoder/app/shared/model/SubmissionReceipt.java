@@ -38,14 +38,16 @@ public class SubmissionReceipt implements Serializable, IContainsEvent, IModelOb
 	private int numTestsAttempted;
 	private int numTestsPassed;
 	
+	public static final ModelObjectField<SubmissionReceipt, Integer> EVENT_ID = new ModelObjectField<SubmissionReceipt, Integer>("event_id", Integer.class, 0, ModelObjectIndexType.UNIQUE) {
+		public void set(SubmissionReceipt obj, Integer value) { obj.setEventId(value); }
+		public Integer get(SubmissionReceipt obj) { return obj.getEventId(); }
+	};
+	
 	/**
 	 * Description of fields.
 	 */
 	public static final ModelObjectSchema<SubmissionReceipt> SCHEMA = new ModelObjectSchema<SubmissionReceipt>("submission_receipt")
-		.add(new ModelObjectField<SubmissionReceipt, Integer>("event_id", Integer.class, 0, ModelObjectIndexType.UNIQUE) {
-			public void set(SubmissionReceipt obj, Integer value) { obj.setEventId(value); }
-			public Integer get(SubmissionReceipt obj) { return obj.getEventId(); }
-		})
+		.add(EVENT_ID)
 		.add(new ModelObjectField<SubmissionReceipt, Integer>("last_edit_event_id", Integer.class, 0) {
 			public void set(SubmissionReceipt obj, Integer value) { obj.setLastEditEventId(value); }
 			public Integer get(SubmissionReceipt obj) { return obj.getLastEditEventId(); }

@@ -33,6 +33,7 @@ import org.cloudcoder.app.shared.model.CourseRegistrationType;
 import org.cloudcoder.app.shared.model.Event;
 import org.cloudcoder.app.shared.model.ModelObjectSchema;
 import org.cloudcoder.app.shared.model.Problem;
+import org.cloudcoder.app.shared.model.Quiz;
 import org.cloudcoder.app.shared.model.SubmissionReceipt;
 import org.cloudcoder.app.shared.model.Term;
 import org.cloudcoder.app.shared.model.TestCase;
@@ -63,6 +64,7 @@ public class CreateWebappDatabase {
 		TestCase.SCHEMA,
 		TestResult.SCHEMA,
 		User.SCHEMA,
+		Quiz.SCHEMA,
 	};
 	
 	private static class Props {

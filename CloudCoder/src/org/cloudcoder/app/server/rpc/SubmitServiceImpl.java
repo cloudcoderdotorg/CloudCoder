@@ -31,6 +31,8 @@ import org.cloudcoder.app.shared.model.ChangeType;
 import org.cloudcoder.app.shared.model.IContainsEvent;
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
 import org.cloudcoder.app.shared.model.Problem;
+import org.cloudcoder.app.shared.model.Quiz;
+import org.cloudcoder.app.shared.model.QuizEndedException;
 import org.cloudcoder.app.shared.model.SubmissionException;
 import org.cloudcoder.app.shared.model.SubmissionReceipt;
 import org.cloudcoder.app.shared.model.SubmissionResult;
@@ -54,7 +56,7 @@ public class SubmitServiceImpl extends RemoteServiceServlet implements SubmitSer
 	private static final Logger logger=LoggerFactory.getLogger(SubmitServiceImpl.class);
 
 	@Override
-	public void submit(int problemId, String programText) throws CloudCoderAuthenticationException, SubmissionException {
+	public void submit(int problemId, String programText) throws CloudCoderAuthenticationException, SubmissionException, QuizEndedException {
 		// Make sure that client is authenticated and has permission to edit the given problem
 		User user = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
 
@@ -64,6 +66,22 @@ public class SubmitServiceImpl extends RemoteServiceServlet implements SubmitSer
 		Problem problem = (Problem) session.getAttribute(SessionAttributeKeys.PROBLEM_KEY);
 		if (problem == null || problem.getProblemId() != problemId) {
 			throw new CloudCoderAuthenticationException();
+		}
+		
+		// If the user is working on this Problem as a Quiz,
+		// check whether the quiz has ended
+		Quiz quiz = (Quiz) session.getAttribute(SessionAttributeKeys.QUIZ_KEY);
+		if (quiz != null) {
+			// Reload the object from the database
+			if (!Database.getInstance().reloadModelObject(quiz)) {
+				logger.error("Could not reload Quiz object");
+			} else {
+				long currentTime = System.currentTimeMillis();
+				if (quiz.getEndTime() != 0 && currentTime > quiz.getEndTime()) {
+					// Quiz has ended
+					throw new QuizEndedException();
+				}
+			}
 		}
 
 		// Insert a full-text change into the database.

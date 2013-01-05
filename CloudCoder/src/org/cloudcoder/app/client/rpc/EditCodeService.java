@@ -21,13 +21,40 @@ import org.cloudcoder.app.shared.model.Change;
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemText;
+import org.cloudcoder.app.shared.model.QuizEndedException;
 
 import com.google.gwt.user.client.rpc.RemoteService;
 import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
 
 @RemoteServiceRelativePath("editCode")
 public interface EditCodeService extends RemoteService {
+	/**
+	 * Set the {@link Problem} the user wants to work on.
+	 * 
+	 * @param problemId the problem id
+	 * @return the {@link Problem}
+	 * @throws CloudCoderAuthenticationException if the user is not permitted to work on the problem
+	 */
 	public Problem setProblem(int problemId) throws CloudCoderAuthenticationException;
+	
+	/**
+	 * Load the problem text of the user's work on the current {@link Problem}.
+	 * 
+	 * @return the {@link ProblemText}
+	 * @throws CloudCoderAuthenticationException
+	 */
     public ProblemText loadCurrentText() throws CloudCoderAuthenticationException;
-	public Boolean logChange(Change[] changeList, long clientSubmitTime) throws CloudCoderAuthenticationException;
+    
+    /**
+     * Record changes to the problem text of the user's work on the
+     * current {@link Problem}.
+     * 
+     * @param changeList        list of {@link Change}s to record
+     * @param clientSubmitTime  client-side submission timestamp
+     * @return true if successful
+     * @throws CloudCoderAuthenticationException
+     * @throws QuizEndedException if changes are not permitted because a quiz has ended
+     */
+	public Boolean logChange(Change[] changeList, long clientSubmitTime)
+			throws CloudCoderAuthenticationException, QuizEndedException;
 }

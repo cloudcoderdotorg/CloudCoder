@@ -34,22 +34,28 @@ public class Event implements Serializable, IModelObject<Event> {
 	private EventType type;
 	private long timestamp;
 	
+	public static final ModelObjectField<Event, Integer> ID = new ModelObjectField<Event, Integer>("id", Integer.class, 0, ModelObjectIndexType.IDENTITY) {
+		public void set(Event obj, Integer value) { obj.setId(value); }
+		public Integer get(Event obj) { return obj.getId(); }
+	};
+	
+	public static final ModelObjectField<Event, Integer> USER_ID = new ModelObjectField<Event, Integer>("user_id", Integer.class, 0, ModelObjectIndexType.NON_UNIQUE) {
+		public void set(Event obj, Integer value) { obj.setUserId(value); }
+		public Integer get(Event obj) { return obj.getUserId(); }
+	};
+	
+	public static final ModelObjectField<Event, Integer> PROBLEM_ID = new ModelObjectField<Event, Integer>("problem_id", Integer.class, 0, ModelObjectIndexType.NON_UNIQUE) {
+		public void set(Event obj, Integer value) { obj.setProblemId(value); }
+		public Integer get(Event obj) { return obj.getProblemId(); }
+	};
+	
 	/**
 	 * Description of fields.
 	 */
 	public static final ModelObjectSchema<Event> SCHEMA = new ModelObjectSchema<Event>("event")
-		.add(new ModelObjectField<Event, Integer>("id", Integer.class, 0, ModelObjectIndexType.IDENTITY) {
-			public void set(Event obj, Integer value) { obj.setId(value); }
-			public Integer get(Event obj) { return obj.getId(); }
-		})
-		.add(new ModelObjectField<Event, Integer>("user_id", Integer.class, 0, ModelObjectIndexType.NON_UNIQUE) {
-			public void set(Event obj, Integer value) { obj.setUserId(value); }
-			public Integer get(Event obj) { return obj.getUserId(); }
-		})
-		.add(new ModelObjectField<Event, Integer>("problem_id", Integer.class, 0, ModelObjectIndexType.NON_UNIQUE) {
-			public void set(Event obj, Integer value) { obj.setProblemId(value); }
-			public Integer get(Event obj) { return obj.getProblemId(); }
-		})
+		.add(ID)
+		.add(USER_ID)
+		.add(PROBLEM_ID)
 		.add(new ModelObjectField<Event, EventType>("type", EventType.class, 0) {
 			public void set(Event obj, EventType value) { obj.setType(value); }
 			public EventType get(Event obj) { return obj.getType(); }

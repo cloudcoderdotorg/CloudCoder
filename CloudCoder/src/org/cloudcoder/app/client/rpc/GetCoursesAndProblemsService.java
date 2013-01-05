@@ -24,6 +24,7 @@ import org.cloudcoder.app.shared.model.OperationResult;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemAndSubmissionReceipt;
 import org.cloudcoder.app.shared.model.ProblemAndTestCaseList;
+import org.cloudcoder.app.shared.model.Quiz;
 import org.cloudcoder.app.shared.model.SubmissionReceipt;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.User;
@@ -137,4 +138,45 @@ public interface GetCoursesAndProblemsService extends RemoteService {
 	 * The currently-authenticated user must be an instructor in the course.
 	 */
 	public OperationResult deleteProblem(Course course, Problem problem) throws CloudCoderAuthenticationException;
+	
+	/**
+	 * Start a quiz.
+	 * 
+	 * @param problem  the {@link Problem} to administer as a quiz
+	 * @param section  the section in which to administer the quiz
+	 * @return the {@link Quiz}
+	 * @throws CloudCoderAuthenticationException if the current user is not authorized
+	 *         to give a quiz for the {@link Problem}/section
+	 */
+	public Quiz startQuiz(Problem problem, int section) throws CloudCoderAuthenticationException;
+	
+	/**
+	 * Find out if there is a current (ongoing) {@link Quiz} for the
+	 * given {@link Problem} in a section for which the currently-authenticated
+	 * user is an instructor.  Note that there is an implicit assumption
+	 * that instructors of multiple sections will give a quiz in at most
+	 * one section at a time.
+	 * 
+	 * Note that the if a non-null value is returned, the end time field
+	 * of the returned quiz will contain the current server-side time: this
+	 * can be used to compute how long the quiz has been ongoing. 
+	 * 
+	 * @param problem the {@link Problem}
+	 * @return the current (ongoing) {@link Quiz}, or null if there is no
+	 *         quiz, or if the current user is not authorized to administer
+	 *         quizzes in the course
+	 * @throws CloudCoderAuthenticationException if there is no authenticated user in
+	 *         the server-side session
+	 */
+	public Quiz findCurrentQuiz(Problem problem) throws CloudCoderAuthenticationException;
+	
+	/**
+	 * End given {@link Quiz}.
+	 * 
+	 * @param quiz the {@link Quiz} to end
+	 * @return true if successful, false if not (for example, if there is no such quiz)
+	 * @throws CloudCoderAuthenticationException if there is no authenticated user in
+	 *         the server-side session 
+	 */
+	public Boolean endQuiz(Quiz quiz) throws CloudCoderAuthenticationException;
 }

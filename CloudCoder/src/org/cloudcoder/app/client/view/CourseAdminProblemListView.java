@@ -33,6 +33,7 @@ import org.cloudcoder.app.shared.util.Publisher;
 import org.cloudcoder.app.shared.util.Subscriber;
 import org.cloudcoder.app.shared.util.SubscriptionRegistrar;
 
+import com.google.gwt.core.shared.GWT;
 import com.google.gwt.user.cellview.client.DataGrid;
 import com.google.gwt.user.cellview.client.TextColumn;
 import com.google.gwt.user.client.rpc.AsyncCallback;
@@ -153,8 +154,10 @@ public class CourseAdminProblemListView extends ResizeComposite implements Subsc
 		// Otherwise, initiate loading of problems for course.
 		ProblemAndSubmissionReceipt[] problemAndSubmissionReceiptList = session.get(ProblemAndSubmissionReceipt[].class);
 		if (problemAndSubmissionReceiptList != null) {
+			GWT.log("Session contains " + problemAndSubmissionReceiptList.length + " problems");
 			displayProblems(problemAndSubmissionReceiptList);
 		} else {
+			GWT.log("No problems in session...loading...");
 			Course course = session.get(Course.class);
 			loadProblems(session, course);
 		}

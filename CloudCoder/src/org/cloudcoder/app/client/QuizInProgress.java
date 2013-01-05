@@ -15,65 +15,48 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package org.cloudcoder.app.shared.model;
+package org.cloudcoder.app.client;
+
+import org.cloudcoder.app.shared.model.Problem;
+import org.cloudcoder.app.shared.model.Quiz;
+import org.cloudcoder.app.shared.util.Publisher;
 
 /**
- * Generic pair object.
- *
- * @param <L> type of left value in pair
- * @param <R> type of right value in pair
-
+ * Object added to {@link Session} when the {@link Problem}
+ * that the user is working on is a {@link Quiz}.
+ * 
  * @author David Hovemeyer
  */
-public class Pair<L, R> {
-	private L left;
-	private R right;
+public class QuizInProgress extends Publisher {
+	/** Events. */
+	public enum Event {
+		/** The object's state changed. */
+		STATE_CHANGE,
+	}
+	
+	private boolean ended;
 	
 	/**
 	 * Constructor.
 	 */
-	public Pair() {
+	public QuizInProgress() {
 		
 	}
 	
 	/**
-	 * Constructor.
+	 * Set whether or not the quiz has ended.
 	 * 
-	 * @param left   left value
-	 * @param right  right value
+	 * @param ended true if the quiz has ended, false otherwise
 	 */
-	public Pair(L left, R right) {
-		this.left = left;
-		this.right = right;
+	public void setEnded(boolean ended) {
+		this.ended = ended;
+		notifySubscribers(Event.STATE_CHANGE, ended);
 	}
 	
 	/**
-	 * Set left value.
-	 * @param left left value
+	 * @return true if the quiz has ended
 	 */
-	public void setLeft(L left) {
-		this.left = left;
-	}
-	
-	/**
-	 * @return left value in pair
-	 */
-	public L getLeft() {
-		return left;
-	}
-	
-	/**
-	 * Set right value.
-	 * @param right right value
-	 */
-	public void setRight(R right) {
-		this.right = right;
-	}
-	
-	/**
-	 * @return right value in pair
-	 */
-	public R getRight() {
-		return right;
+	public boolean isEnded() {
+		return ended;
 	}
 }

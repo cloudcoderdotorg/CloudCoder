@@ -17,63 +17,44 @@
 
 package org.cloudcoder.app.shared.model;
 
-/**
- * Generic pair object.
- *
- * @param <L> type of left value in pair
- * @param <R> type of right value in pair
+import java.util.ArrayList;
+import java.util.List;
 
+/**
+ * List of {@link CourseRegistration}s.
+ * 
  * @author David Hovemeyer
  */
-public class Pair<L, R> {
-	private L left;
-	private R right;
-	
+public class CourseRegistrationList {
+	private List<CourseRegistration> list;
+
 	/**
 	 * Constructor.
 	 */
-	public Pair() {
-		
+	public CourseRegistrationList() {
+		list = new ArrayList<CourseRegistration>();
 	}
 	
 	/**
-	 * Constructor.
+	 * @return the list of {@link CourseRegistration}s
+	 */
+	public List<CourseRegistration> getList() {
+		return list;
+	}
+	
+	/**
+	 * Return true if any of the {@link CourseRegistration}s are
+	 * instructor registrations.
 	 * 
-	 * @param left   left value
-	 * @param right  right value
+	 * @return true if any of the {@link CourseRegistration}s are
+	 *         instructor registrations, false otherwise
 	 */
-	public Pair(L left, R right) {
-		this.left = left;
-		this.right = right;
-	}
-	
-	/**
-	 * Set left value.
-	 * @param left left value
-	 */
-	public void setLeft(L left) {
-		this.left = left;
-	}
-	
-	/**
-	 * @return left value in pair
-	 */
-	public L getLeft() {
-		return left;
-	}
-	
-	/**
-	 * Set right value.
-	 * @param right right value
-	 */
-	public void setRight(R right) {
-		this.right = right;
-	}
-	
-	/**
-	 * @return right value in pair
-	 */
-	public R getRight() {
-		return right;
+	public boolean isInstructor() {
+		for (CourseRegistration reg : list) {
+			if (reg.getRegistrationType().ordinal() >= CourseRegistrationType.INSTRUCTOR.ordinal()) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

@@ -25,8 +25,10 @@ import org.cloudcoder.app.shared.model.ConfigurationSetting;
 import org.cloudcoder.app.shared.model.ConfigurationSettingName;
 import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.CourseRegistration;
+import org.cloudcoder.app.shared.model.CourseRegistrationList;
 import org.cloudcoder.app.shared.model.CourseRegistrationType;
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
+import org.cloudcoder.app.shared.model.IModelObject;
 import org.cloudcoder.app.shared.model.OperationResult;
 import org.cloudcoder.app.shared.model.Pair;
 import org.cloudcoder.app.shared.model.Problem;
@@ -34,6 +36,7 @@ import org.cloudcoder.app.shared.model.ProblemAndSubmissionReceipt;
 import org.cloudcoder.app.shared.model.ProblemAndTestCaseList;
 import org.cloudcoder.app.shared.model.ProblemList;
 import org.cloudcoder.app.shared.model.ProblemSummary;
+import org.cloudcoder.app.shared.model.Quiz;
 import org.cloudcoder.app.shared.model.RepoProblem;
 import org.cloudcoder.app.shared.model.RepoProblemAndTestCaseList;
 import org.cloudcoder.app.shared.model.RepoProblemSearchCriteria;
@@ -77,7 +80,20 @@ public interface IDatabase {
 	 */
 	public User getUserWithoutAuthentication(String userName);
 	
-	public Problem getProblem(User user, int problemId);
+	/**
+	 * Get the {@link Problem} with given problem id.
+	 * Checks that the {@link User} has permission to see the problem.
+	 * Returns a {@link Pair} containing the problem, and if appropriate
+	 * a {@link Quiz}.  The quiz is returned only if the user has
+	 * permission to see the problem because of an ongoing quiz.
+	 * 
+	 * @param user      the {@link User}
+	 * @param problemId the problem id
+	 * @return the {@link Pair} containing the problem and (maybe) quiz;
+	 *         null if there is no such problem, or if the user is not
+	 *         permitted to see the problem
+	 */
+	public Pair<Problem, Quiz> getProblem(User user, int problemId);
 
 	/**
 	 * Get Problem with given problem id.
@@ -245,13 +261,16 @@ public interface IDatabase {
 	public List<RepoProblemSearchResult> searchRepositoryExercises(RepoProblemSearchCriteria searchCriteria);
 
 	/**
-	 * Find {@link CourseRegistration} for given user in given course.
+	 * Find all {@link CourseRegistration}s for given user in given course.
+	 * There can be more than one: for example, if the user is an instructor
+	 * for multiple sections of the same course.
 	 * 
 	 * @param user    the user
 	 * @param course  the course
-	 * @return the {@link CourseRegistration}, or null if the user is not registered in the course
+	 * @return list of {@link CourseRegistration}s, which will be empty if
+	 *         the user is not registered for the course
 	 */
-	public CourseRegistration findCourseRegistration(User user, Course course);
+	public CourseRegistrationList findCourseRegistrations(User user, Course course);
 
     /**
      * Add a new user record to the database, and register that person
@@ -393,5 +412,48 @@ public interface IDatabase {
 	 * @return list of possible tag names matching the search term
 	 */
 	public List<String> suggestTagNames(String term);
+
+	/**
+	 * Start a {@link Quiz} for given {@link Problem} in given course section.
+	 * 
+	 * @param user    the authenticated {@link User), who must be an instructor
+	 *                in the course/section
+	 * @param problem the {@link Problem} to give as a quiz
+	 * @param section the course section
+	 * @return the {@link Quiz}
+	 * @throws CloudCoderAuthenticationException if the user is not authorized to give a quiz
+	 *         in the course/section
+	 */
+	public Quiz startQuiz(User user, Problem problem, int section) throws CloudCoderAuthenticationException;
+
+	/**
+	 * Find a current (ongoing) quiz being administed for the given
+	 * {@link Problem} in a course section in which the given {@link User}
+	 * is an instructor.
+	 * 
+	 * @param user     the {@link User}
+	 * @param problem  the {@link Problem}
+	 * @return the {@link Quiz}, or null if there is no such quiz
+	 */
+	public Quiz findCurrentQuiz(User user, Problem problem);
+
+	/**
+	 * End given quiz.
+	 * 
+	 * @param user  the authenticated {@link User}, who must be an instructor
+	 *              in the course/section in which the quiz is being administered
+	 * @param quiz  the {@link Quiz}
+	 * @return true if the quiz was successfully ended, false if not
+	 */
+	public Boolean endQuiz(User user, Quiz quiz);
+
+	/**
+	 * Reload a model object's fields from the database
+	 * using its assigned unique id.
+	 * 
+	 * @param obj the model object to reload
+	 * @return true if successful, false if object could not be located by its unique id
+	 */
+	public<E extends IModelObject<E>> boolean reloadModelObject(E obj);
 
 }

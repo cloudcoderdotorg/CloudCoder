@@ -20,6 +20,7 @@ package org.cloudcoder.app.client.page;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.cloudcoder.app.client.QuizInProgress;
 import org.cloudcoder.app.client.model.ChangeFromAceOnChangeEvent;
 import org.cloudcoder.app.client.model.ChangeList;
 import org.cloudcoder.app.client.model.Session;
@@ -31,6 +32,7 @@ import org.cloudcoder.app.client.view.DevActionsPanel;
 import org.cloudcoder.app.client.view.IResultsTabPanelWidget;
 import org.cloudcoder.app.client.view.PageNavPanel;
 import org.cloudcoder.app.client.view.ProblemDescriptionView;
+import org.cloudcoder.app.client.view.QuizIndicatorView;
 import org.cloudcoder.app.client.view.StatusMessageView;
 import org.cloudcoder.app.client.view.TestOutcomeSummaryView;
 import org.cloudcoder.app.client.view.TestResultListView;
@@ -43,6 +45,7 @@ import org.cloudcoder.app.shared.model.CompilerDiagnostic;
 import org.cloudcoder.app.shared.model.Language;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemText;
+import org.cloudcoder.app.shared.model.QuizEndedException;
 import org.cloudcoder.app.shared.model.SubmissionResult;
 import org.cloudcoder.app.shared.model.TestResult;
 import org.cloudcoder.app.shared.model.User;
@@ -102,6 +105,12 @@ public class DevelopmentPage extends CloudCoderPage {
 		 * Logging out.
 		 */
 		LOGOUT,
+		
+		/**
+		 * Editing is disabled because a quiz has ended, or some other
+		 * error has occurred.
+		 */
+		PREVENT_EDITS,
 	}
 	
 	private enum ResetChoice {
@@ -128,6 +137,7 @@ public class DevelopmentPage extends CloudCoderPage {
 		private LayoutPanel centerLayoutPanel;
 		private LayoutPanel buttonsLayoutPanel;
 		private StatusMessageView statusMessageView;
+		private QuizIndicatorView quizIndicatorView;
 		private TestOutcomeSummaryView testOutcomeSummaryView;
 		private TabLayoutPanel resultsTabPanel;
 		private TestResultListView testResultListView;
@@ -169,7 +179,11 @@ public class DevelopmentPage extends CloudCoderPage {
 			this.statusMessageView = new StatusMessageView();
 			southLayoutPanel.add(statusMessageView);
 			southLayoutPanel.setWidgetTopHeight(statusMessageView, 0.0, Unit.PX, StatusMessageView.HEIGHT_PX, Unit.PX);
-			southLayoutPanel.setWidgetLeftRight(statusMessageView, 0.0, Unit.PX, TestOutcomeSummaryView.WIDTH_PX, Unit.PX);
+			southLayoutPanel.setWidgetLeftRight(statusMessageView, 0.0, Unit.PX, TestOutcomeSummaryView.WIDTH_PX + QuizIndicatorView.WIDTH_PX + 16.0, Unit.PX);
+			this.quizIndicatorView = new QuizIndicatorView();
+			southLayoutPanel.add(quizIndicatorView);
+			southLayoutPanel.setWidgetTopHeight(quizIndicatorView, 0.0, Unit.PX, QuizIndicatorView.HEIGHT_PX, Unit.PX);
+			southLayoutPanel.setWidgetRightWidth(quizIndicatorView, TestOutcomeSummaryView.WIDTH_PX + 8.0, Unit.PX, QuizIndicatorView.WIDTH_PX, Unit.PX);
 			this.testOutcomeSummaryView = new TestOutcomeSummaryView();
 			southLayoutPanel.add(testOutcomeSummaryView);
 			southLayoutPanel.setWidgetTopHeight(testOutcomeSummaryView, 2.0, Unit.PX, TestOutcomeSummaryView.HEIGHT_PX, Unit.PX);
@@ -217,6 +231,7 @@ public class DevelopmentPage extends CloudCoderPage {
 			problemDescriptionView.activate(session, subscriptionRegistrar);
 			testResultListView.activate(session, subscriptionRegistrar);
 			statusMessageView.activate(session, subscriptionRegistrar);
+			quizIndicatorView.activate(session, subscriptionRegistrar);
 			testOutcomeSummaryView.activate(session, subscriptionRegistrar);
 			compilerDiagnosticListView.activate(session, subscriptionRegistrar);
 			
@@ -240,6 +255,10 @@ public class DevelopmentPage extends CloudCoderPage {
 			devActionsPanel.setSubmitHandler(new Runnable() {
 				@Override
 				public void run() {
+					if (mode == Mode.PREVENT_EDITS) {
+						// Submitting is prevented if edits are prevented
+						return;
+					}
 					runWhenClean(new Runnable() {
 						@Override
 						public void run() {
@@ -366,6 +385,9 @@ public class DevelopmentPage extends CloudCoderPage {
 								doSubmitRPC(problem, text);
 							}
 						});
+					} else if (caught instanceof QuizEndedException) {
+						// Quiz ended
+						doEndQuiz();
 					} else {
 					    //TODO: Is this where a better message should come if we can't
 					    // find a C/C++ compiler?
@@ -385,7 +407,7 @@ public class DevelopmentPage extends CloudCoderPage {
 		private void doResetProblem() {
 			GWT.log("Resetting problem");
 			
-			// The Problem object should contain the skelton code
+			// The Problem object should contain the skeleton code
 			Problem problem = getSession().get(Problem.class);
 
 			// Temporarily block the editor's onChange handler from
@@ -522,6 +544,11 @@ public class DevelopmentPage extends CloudCoderPage {
 						getSession().get(ChangeList.class).addChange(initialChange);
 					}
 					
+					// Check to see if this problem is a quiz.
+					if (result.isQuiz()) {
+						getSession().add(new QuizInProgress());
+					}
+					
 					// Now we can start editing
 					aceEditor.setText(result.getText());
 					aceEditor.setReadOnly(false);
@@ -559,6 +586,10 @@ public class DevelopmentPage extends CloudCoderPage {
 			this.flushPendingChangeEventsTimer = new Timer() {
 				@Override
 				public void run() {
+					if (mode == Mode.PREVENT_EDITS) {
+						return; // no further edits are allowed
+					}
+					
 					final ChangeList changeList = session.get(ChangeList.class);
 
 					if (changeList == null) {
@@ -573,6 +604,9 @@ public class DevelopmentPage extends CloudCoderPage {
 				}
 
 				protected void logChangeRPC(final ChangeList changeList, final Change[] changeBatch) {
+					if (mode == Mode.PREVENT_EDITS) {
+						return; // no further edits are allowed
+					}
 					RPC.editCodeService.logChange(changeBatch, System.currentTimeMillis(), new AsyncCallback<Boolean>() {
 						@Override
 						public void onFailure(Throwable caught) {
@@ -585,6 +619,9 @@ public class DevelopmentPage extends CloudCoderPage {
 										logChangeRPC(changeList, changeBatch);
 									}
 								});
+							} else if (caught instanceof QuizEndedException) {
+								// Quiz ended
+								doEndQuiz();
 							} else {
 								changeList.endTransmit(false);
 								addSessionObject(StatusMessage.error("Could not save code to server", caught));
@@ -710,6 +747,20 @@ public class DevelopmentPage extends CloudCoderPage {
 				doneWithOnCleanCallback();
 			}
 
+		}
+
+		private void doEndQuiz() {
+			QuizInProgress quizInProgress = getSession().get(QuizInProgress.class);
+			if (quizInProgress == null) {
+				// Should not happen
+				addSessionObject(StatusMessage.error("Unexpected QuizEndedException"));
+			} else {
+				quizInProgress.setEnded(true);
+				addSessionObject(StatusMessage.information("The quiz has ended"));
+			}
+			mode = Mode.PREVENT_EDITS;
+			aceEditor.setReadOnly(true);
+			flushPendingChangeEventsTimer.cancel();
 		}
 	}
 

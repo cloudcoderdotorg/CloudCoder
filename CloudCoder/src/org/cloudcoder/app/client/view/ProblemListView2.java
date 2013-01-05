@@ -181,7 +181,8 @@ public class ProblemListView2 extends ResizeComposite implements SessionObserver
 
 			@Override
 			public void onSuccess(ProblemAndSubmissionReceipt[] result) {
-				displayLoadedProblems(result);
+				//displayLoadedProblems(result);
+				session.add(result);
 			}
 		});
 	}
