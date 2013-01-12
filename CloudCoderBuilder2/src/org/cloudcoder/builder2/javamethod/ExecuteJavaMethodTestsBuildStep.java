@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.cloudcoder.app.shared.model.CompilationOutcome;
 import org.cloudcoder.app.shared.model.CompilationResult;
+import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemType;
 import org.cloudcoder.app.shared.model.SubmissionResult;
 import org.cloudcoder.app.shared.model.TestCase;
@@ -47,6 +48,12 @@ public class ExecuteJavaMethodTestsBuildStep implements IBuildStep {
 
 	@Override
 	public void execute(BuilderSubmission submission) {
+		// Get Problem
+		Problem problem = submission.getArtifact(Problem.class);
+		if (problem == null) {
+			throw new InternalBuilderException(this.getClass(), "No Problem");
+		}
+
 		// Get LoadedClasses
 		LoadedClasses loadedClasses = submission.getArtifact(LoadedClasses.class);
 		if (loadedClasses == null) {
@@ -73,7 +80,7 @@ public class ExecuteJavaMethodTestsBuildStep implements IBuildStep {
         // create a list of tasks to be executed
         List<IsolatedTask<TestResult>> tasks = new ArrayList<IsolatedTask<TestResult>>();
         for (final TestCase t : testCaseList) {
-            tasks.add(new IsolatedTaskRunner(testerCls, t));
+            tasks.add(new IsolatedTaskRunner(testerCls, problem, t));
         }
 
         KillableTaskManager<TestResult> pool = new KillableTaskManager<TestResult>(

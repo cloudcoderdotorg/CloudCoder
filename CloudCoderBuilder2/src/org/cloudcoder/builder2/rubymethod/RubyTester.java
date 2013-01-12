@@ -17,6 +17,7 @@
 
 package org.cloudcoder.builder2.rubymethod;
 
+import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemType;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.TestOutcome;
@@ -43,10 +44,11 @@ public class RubyTester {
 	 * 
 	 * @param container  the {@link ScriptingContainer}
 	 * @param receiver   the test scriptlet receiver object
+	 * @param problem    the {@link Problem}
 	 * @param testCase   the {@link TestCase} to execute
 	 * @return the {@link TestResult} indicating whether the test passed or failed
 	 */
-	public TestResult execute(ScriptingContainer container, Object receiver, TestCase testCase) {
+	public TestResult execute(ScriptingContainer container, Object receiver, Problem problem, TestCase testCase) {
 		Object result_ = container.callMethod(receiver, "_test", testCase.getTestCaseName());
 		if (!(result_ instanceof Boolean)) {
 			return new TestResult(TestOutcome.INTERNAL_ERROR, "_test method did not return a Boolean result");
@@ -55,7 +57,7 @@ public class RubyTester {
 		Boolean result = (Boolean) result_;
 		
 		return result
-				? TestResultUtil.createResultForPassedTest(testCase)
-				: TestResultUtil.createResultForFailedTest(testCase);
+				? TestResultUtil.createResultForPassedTest(problem, testCase)
+				: TestResultUtil.createResultForFailedTest(problem, testCase);
 	}
 }

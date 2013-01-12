@@ -29,17 +29,17 @@ public enum ProblemType {
 	/**
 	 * Problem involving writing a complete Java method.
 	 */
-	JAVA_METHOD,
+	JAVA_METHOD(Language.JAVA, true),
 	
 	/**
 	 * Problem involving writing a complete Python method.
 	 */
-	PYTHON_FUNCTION,
+	PYTHON_FUNCTION(Language.PYTHON, true),
 	
 	/**
 	 * Problem involving writing a complete C function.
 	 */
-	C_FUNCTION,
+	C_FUNCTION(Language.C, true),
 	
 	/**
 	 * Problem involving writing a complete C program,
@@ -49,7 +49,7 @@ public enum ProblemType {
 	 * a regular expression.  If the regexp matches one line,
 	 * then the output is judged to be correct.
 	 */
-	C_PROGRAM,
+	C_PROGRAM(Language.C, false),
 	
 	/**
 	 * Problem involving writing a complete Java program: a top level
@@ -57,13 +57,21 @@ public enum ProblemType {
 	 * as {@link #C_PROGRAM} (read from stdin, write to stdout,
 	 * judge correctness by testing output lines against a regexp.)
 	 */
-	JAVA_PROGRAM,
+	JAVA_PROGRAM(Language.JAVA, false),
 	
 	/**
 	 * Problem involving writing a complete Ruby method.
 	 */
-	RUBY_METHOD,
+	RUBY_METHOD(Language.RUBY, true),
 	;
+	
+	private Language language;
+	private boolean outputLiteral;
+	
+	private ProblemType(Language language, boolean outputLiteral) {
+		this.language = language;
+		this.outputLiteral = outputLiteral;
+	}
 	
 	/**
 	 * Get the Language associated with this ProblemType.
@@ -71,20 +79,19 @@ public enum ProblemType {
 	 * @return the Language associated with this ProblemType
 	 */
 	public Language getLanguage() {
-		switch (this) {
-		case JAVA_METHOD:
-		case JAVA_PROGRAM:
-			return Language.JAVA;
-		case PYTHON_FUNCTION:
-			return Language.PYTHON;
-		case C_FUNCTION:
-			return Language.C;
-		case C_PROGRAM:
-			return Language.C;
-		case RUBY_METHOD:
-			return Language.RUBY;
-		default:
-			throw new IllegalStateException("unknown ProblemType");
-		}
+		return this.language;
+	}
+	
+	/**
+	 * Return whether or not the {@link TestCase}s for this problem type
+	 * specify a literal expected output.  Returns true for function/method
+	 * problem types (where the result of the function/method is compared
+	 * to a literal expected value), and false for problem types where
+	 * output is checked against a regular expression.
+	 * 
+	 * @return
+	 */
+	public boolean isOutputLiteral() {
+		return outputLiteral;
 	}
 }

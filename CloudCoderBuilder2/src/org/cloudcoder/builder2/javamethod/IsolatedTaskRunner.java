@@ -20,6 +20,7 @@ package org.cloudcoder.builder2.javamethod;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemType;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.TestOutcome;
@@ -40,10 +41,12 @@ public class IsolatedTaskRunner implements IsolatedTask<TestResult>
 	private static final Logger logger = LoggerFactory.getLogger(IsolatedTaskRunner.class);
 	
     private Class<?> theClass;
+	private Problem problem;
     private TestCase testCase;
     
-    public IsolatedTaskRunner(Class<?> theClass, TestCase testCase) {
+    public IsolatedTaskRunner(Class<?> theClass, Problem problem, TestCase testCase) {
         this.theClass=theClass;
+        this.problem=problem;
         this.testCase=testCase;
     }
 
@@ -53,9 +56,9 @@ public class IsolatedTaskRunner implements IsolatedTask<TestResult>
             Method m = theClass.getMethod(testCase.getTestCaseName());
             Boolean result = (Boolean) m.invoke(null);
             if (result) {
-            	return TestResultUtil.createResultForPassedTest(testCase);
+            	return TestResultUtil.createResultForPassedTest(problem, testCase);
             } else {
-            	return TestResultUtil.createResultForFailedTest(testCase);
+            	return TestResultUtil.createResultForFailedTest(problem, testCase);
             }
         } catch (InvocationTargetException e) {
             if (e.getCause() instanceof SecurityException) {

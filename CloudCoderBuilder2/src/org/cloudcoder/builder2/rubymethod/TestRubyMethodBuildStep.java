@@ -23,6 +23,7 @@ import java.util.List;
 import org.cloudcoder.app.shared.model.CompilationOutcome;
 import org.cloudcoder.app.shared.model.CompilationResult;
 import org.cloudcoder.app.shared.model.CompilerDiagnostic;
+import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemType;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.TestResult;
@@ -77,6 +78,12 @@ public class TestRubyMethodBuildStep implements IBuildStep {
 			throw new InternalBuilderException(this.getClass(), "Only one source file is expected");
 		}
 		final String testSource = programSourceList[0].getProgramText();
+
+		// Get Problem
+		final Problem problem = submission.getArtifact(Problem.class);
+		if (problem == null) {
+			throw new InternalBuilderException(this.getClass(), "No Problem");
+		}
 		
 		TestCase[] testCaseList = submission.getArtifact(TestCase[].class);
 		
@@ -109,7 +116,7 @@ public class TestRubyMethodBuildStep implements IBuildStep {
 				@Override
 				public TestResult execute() throws Throwable {
 					RubyTester tester = new RubyTester();
-					return tester.execute(container, receiver, testCase);
+					return tester.execute(container, receiver, problem, testCase);
 				}
 			};
 			tasks.add(task);

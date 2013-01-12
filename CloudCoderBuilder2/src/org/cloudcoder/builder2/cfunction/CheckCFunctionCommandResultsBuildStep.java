@@ -17,6 +17,7 @@
 
 package org.cloudcoder.builder2.cfunction;
 
+import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemType;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.TestResult;
@@ -44,6 +45,11 @@ public class CheckCFunctionCommandResultsBuildStep implements IBuildStep {
 			throw new InternalBuilderException(this.getClass(), "No CommandResult list");
 		}
 		
+		Problem problem = submission.getArtifact(Problem.class);
+		if (problem == null) {
+			throw new InternalBuilderException(this.getClass(), "No Problem");
+		}
+		
 		TestCase[] testCaseList = submission.getArtifact(TestCase[].class);
 		if (testCaseList == null) {
 			throw new InternalBuilderException(this.getClass(), "No TestCase list");
@@ -59,14 +65,14 @@ public class CheckCFunctionCommandResultsBuildStep implements IBuildStep {
 		for (int i = 0; i < commandResultList.length; i++) {
 			if (commandResultList[i].getStatus() != ProcessStatus.EXITED) {
 				// Abnormal process exit
-				testResultList[i] = TestResultUtil.createTestResultForAbnormalExit(commandResultList[i], testCaseList[i]);
+				testResultList[i] = TestResultUtil.createTestResultForAbnormalExit(commandResultList[i], problem, testCaseList[i]);
 			} else {
 				// Check exit code
 				int exitCode = commandResultList[i].getExitCode();
 				if (exitCode == codes.getSuccessCode()) {
-					testResultList[i] = TestResultUtil.createTestResultForPassedTest(commandResultList[i], testCaseList[i]);
+					testResultList[i] = TestResultUtil.createTestResultForPassedTest(commandResultList[i], problem, testCaseList[i]);
 				} else {
-					testResultList[i] = TestResultUtil.createTestResultForFailedAssertion(commandResultList[i], testCaseList[i]);
+					testResultList[i] = TestResultUtil.createTestResultForFailedAssertion(commandResultList[i], problem, testCaseList[i]);
 				}
 			}
 		}

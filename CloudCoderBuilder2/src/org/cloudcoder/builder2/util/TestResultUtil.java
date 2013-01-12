@@ -18,6 +18,7 @@
 package org.cloudcoder.builder2.util;
 
 import org.cloudcoder.app.shared.model.ITestCase;
+import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.TestOutcome;
 import org.cloudcoder.app.shared.model.TestResult;
@@ -35,10 +36,11 @@ public class TestResultUtil {
 	 * Create a TestResult for an executed test that timed out.
 	 * 
 	 * @param p         the test output
+	 * @param problem   the {@link Problem}
 	 * @param testCase  the test case that was executed
 	 * @return the TestResult
 	 */
-	public static TestResult createTestResultForTimeout(CommandResult p, ITestCase testCase) {
+	public static TestResult createTestResultForTimeout(CommandResult p, Problem problem, ITestCase testCase) {
 		TestResult testResult = new TestResult(TestOutcome.FAILED_FROM_TIMEOUT, 
 		        "timeout",
 		        StringUtil.merge(p.getStdout()),
@@ -50,33 +52,36 @@ public class TestResultUtil {
 	 * Create a TestResult for an executed test that passed.
 	 * 
 	 * @param p         the test output
+	 * @param problem   the {@link Problem}
 	 * @param testCase  the test case that was executed
 	 * @return the TestResult
 	 */
-	public static TestResult createTestResultForPassedTest(CommandResult p, TestCase testCase) {
-		return createTestResult(p, TestOutcome.PASSED, testCase);
+	public static TestResult createTestResultForPassedTest(CommandResult p, Problem problem, TestCase testCase) {
+		return createTestResult(p, problem, TestOutcome.PASSED, testCase);
 	}
 
 	/**
 	 * Create a TestResult for an executed test that caused a core dump.
 	 * 
 	 * @param p         the test output
+	 * @param problem   the {@link Problem}
 	 * @param testCase  the test case that was executed
 	 * @return the TestResult
 	 */
-	public static TestResult createTestResultForCoreDump(CommandResult p, TestCase testCase) {
-		return createTestResult(p, TestOutcome.FAILED_WITH_EXCEPTION, testCase);
+	public static TestResult createTestResultForCoreDump(CommandResult p, Problem problem, TestCase testCase) {
+		return createTestResult(p, problem, TestOutcome.FAILED_WITH_EXCEPTION, testCase);
 	}
 
 	/**
 	 * Create a TestResult for an executed test that failed due to a failed assertion.
 	 * 
 	 * @param p         the test output
+	 * @param problem   the {@link Problem}
 	 * @param testCase  the test case that was executed
 	 * @return the TestResult
 	 */
-	public static TestResult createTestResultForFailedAssertion(CommandResult p, TestCase testCase) {
-		return createTestResult(p, TestOutcome.FAILED_ASSERTION, testCase);
+	public static TestResult createTestResultForFailedAssertion(CommandResult p, Problem problem, TestCase testCase) {
+		return createTestResult(p, problem, TestOutcome.FAILED_ASSERTION, testCase);
 	}
 
 	/**
@@ -84,10 +89,11 @@ public class TestResultUtil {
 	 * because of an internal error.
 	 * 
 	 * @param p         the ProcessRunner for the TestCase
+	 * @param problem   the {@link Problem}
 	 * @param testCase  the TestCase
 	 * @return the TestResult
 	 */
-	public static TestResult createTestResultForInternalError(CommandResult p, ITestCase testCase) {
+	public static TestResult createTestResultForInternalError(CommandResult p, Problem problem, ITestCase testCase) {
 		TestResult testResult = new TestResult(
 				TestOutcome.INTERNAL_ERROR,
 				"The test failed to execute",
@@ -101,20 +107,21 @@ public class TestResultUtil {
 	 * did not exit normally.
 	 * 
 	 * @param p        the {@link CommandResult}
+	 * @param problem   the {@link Problem}
 	 * @param testCase the {@link TestCase} that was being executed
 	 * @return the {@link TestResult}
 	 */
-	public static TestResult createTestResultForAbnormalExit(CommandResult p, TestCase testCase) {
+	public static TestResult createTestResultForAbnormalExit(CommandResult p, Problem problem, TestCase testCase) {
 		switch (p.getStatus()) {
 		case COULD_NOT_START:
 		case UNKNOWN:
-			return createTestResultForInternalError(p, testCase);
+			return createTestResultForInternalError(p, problem, testCase);
 		case KILLED_BY_SIGNAL:
-			return createTestResultForCoreDump(p, testCase);
+			return createTestResultForCoreDump(p, problem, testCase);
 		case TIMED_OUT:
-			return createTestResultForTimeout(p, testCase);
+			return createTestResultForTimeout(p, problem, testCase);
 		case FILE_SIZE_LIMIT_EXCEEDED:
-			return createTestResultForLimitExceeded(p, testCase);
+			return createTestResultForLimitExceeded(p, problem, testCase);
 		default:
 			throw new IllegalArgumentException("Invalid process status: " + p.getStatus());
 		}
@@ -125,10 +132,11 @@ public class TestResultUtil {
 	 * limit was exceeded. 
 	 * 
 	 * @param p         the {@link CommandResult}
+	 * @param problem   the {@link Problem}
 	 * @param testCase  the {@link TestCase}
 	 * @return the {@link TestResult}
 	 */
-	public static TestResult createTestResultForLimitExceeded(CommandResult p, TestCase testCase) {
+	public static TestResult createTestResultForLimitExceeded(CommandResult p, Problem problem, TestCase testCase) {
 		return new TestResult(
 				TestOutcome.FAILED_BY_SECURITY_MANAGER,
 				"File size limit exceeded - " + p.getStatusMessage(),
@@ -139,21 +147,23 @@ public class TestResultUtil {
 	/**
 	 * Create a generic {@link TestResult} for a passed test.
 	 * 
+	 * @param problem   the {@link Problem}
 	 * @param testCase the {@link TestCase}
 	 * @return the {@link TestResult}
 	 */
-	public static TestResult createResultForPassedTest(TestCase testCase) {
-		return createTestResult(null, TestOutcome.PASSED, testCase);
+	public static TestResult createResultForPassedTest(Problem problem, TestCase testCase) {
+		return createTestResult(null, problem, TestOutcome.PASSED, testCase);
 	}
 
 	/**
 	 * Create a generic {@link TestResult} for a failed test.
 	 * 
+	 * @param problem  the {@link Problem}
 	 * @param testCase the {@link TestCase}
 	 * @return the {@link TestResult}
 	 */
-	public static TestResult createResultForFailedTest(TestCase testCase) {
-		return createTestResult(null, TestOutcome.FAILED_ASSERTION, testCase);
+	public static TestResult createResultForFailedTest(Problem problem, TestCase testCase) {
+		return createTestResult(null, problem, TestOutcome.FAILED_ASSERTION, testCase);
 	}
 
 	/**
@@ -172,16 +182,20 @@ public class TestResultUtil {
 	 * added to the test result.
 	 * 
 	 * @param p         the {@link CommandResult} (null if the test was not executed as a {@link Command})
+	 * @param problem   the {@link Problem}
 	 * @param outcome   the {@link TestOutcome}
 	 * @param testCase  the {@link TestCase}
 	 * @return the {@link TestResult}
 	 */
-	private static TestResult createTestResult(CommandResult p, TestOutcome outcome, TestCase testCase) {
+	private static TestResult createTestResult(CommandResult p, Problem problem, TestOutcome outcome, TestCase testCase) {
 		StringBuilder buf = new StringBuilder();
 		buf.append(outcome.getShortMessage());
 
 		if (!testCase.isSecret()) {
-			buf.append(" for input (" + testCase.getInput() + "), expected output=" + testCase.getOutput());
+			buf.append(" for input (" + testCase.getInput() + ")");
+			if (problem.getProblemType().isOutputLiteral()) {
+				buf.append(" expected output=" + testCase.getOutput());
+			}
 		}
 
 		TestResult testResult = new TestResult(outcome, buf.toString());

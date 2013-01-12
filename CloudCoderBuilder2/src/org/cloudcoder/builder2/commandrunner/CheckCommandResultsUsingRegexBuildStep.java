@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.TestResult;
 import org.cloudcoder.builder2.model.BuilderSubmission;
@@ -27,6 +28,12 @@ public class CheckCommandResultsUsingRegexBuildStep implements IBuildStep {
 
 	@Override
 	public void execute(BuilderSubmission submission) {
+		// Get Problem
+		Problem problem = submission.getArtifact(Problem.class);
+		if (problem == null) {
+			throw new InternalBuilderException(this.getClass(), "No Problem");
+		}
+		
 		// Get TestCase list
 		TestCase[] testCaseList = submission.getArtifact(TestCase[].class);
 		if (testCaseList == null) {
@@ -42,7 +49,7 @@ public class CheckCommandResultsUsingRegexBuildStep implements IBuildStep {
 		// Create a TestResult for each TestCase/CommandResult
 		TestResult[] testResultList = new TestResult[testCaseList.length];
 		for (int i = 0; i < testCaseList.length; i++) {
-			testResultList[i] = createTestResult(commandResultList[i], testCaseList[i]);
+			testResultList[i] = createTestResult(commandResultList[i], problem, testCaseList[i]);
 		}
 		
 		// Add list of TestResults as artifact
@@ -51,10 +58,10 @@ public class CheckCommandResultsUsingRegexBuildStep implements IBuildStep {
 	
 	private static final Pattern REGEX_OPTIONS = Pattern.compile("\\$([ij]+)$");
 
-	private TestResult createTestResult(CommandResult commandResult, TestCase testCase) {
+	private TestResult createTestResult(CommandResult commandResult, Problem problem, TestCase testCase) {
 		// Check whether the command completed normally.
 		if (commandResult.getStatus() != ProcessStatus.EXITED) {
-			return TestResultUtil.createTestResultForAbnormalExit(commandResult, testCase);
+			return TestResultUtil.createTestResultForAbnormalExit(commandResult, problem, testCase);
 		}
 		
 		// Special case: if the stdout is completely empty, it is possible
@@ -107,8 +114,8 @@ public class CheckCommandResultsUsingRegexBuildStep implements IBuildStep {
 		}
 		
 		return foundMatchingOutput
-				? TestResultUtil.createTestResultForPassedTest(commandResult, testCase)
-				: TestResultUtil.createTestResultForFailedAssertion(commandResult, testCase);
+				? TestResultUtil.createTestResultForPassedTest(commandResult, problem, testCase)
+				: TestResultUtil.createTestResultForFailedAssertion(commandResult, problem, testCase);
 	}
 
 }
