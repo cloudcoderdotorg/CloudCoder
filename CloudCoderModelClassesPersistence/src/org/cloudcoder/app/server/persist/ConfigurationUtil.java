@@ -303,53 +303,63 @@ public class ConfigurationUtil
 
     public static int registerStudentsForCourseId(InputStream in, int courseId, Connection conn) throws SQLException
     {
-        Scanner scan=new Scanner(in);
-        int numAdded=0;
-        int numProcessed=0;
-        long totalStart=System.currentTimeMillis();
-        while (scan.hasNextLine()) {
-            String line=scan.nextLine().replaceAll("#.*","").trim();
-            if (line.equals("")) {
-                continue;
-            }
-            numProcessed++;
-            String[] tokens=line.split("\t");
-            String username=tokens[0];
-            String firstname=tokens[1];
-            String lastname=tokens[2];
-            String email=tokens[3];
-            String password=tokens[4];
-            String website = ""; // We don't attempt to set a website URL for students
-            int section = 101; // The default section number
-            if (tokens.length > 5 && tokens[5] != null) {
-                section=Integer.parseInt(tokens[5]);
-            }
-            logger.info("Registering "+username+" for courseId "+courseId);
-            // Look up the user to see if they already exist
-            long start=System.currentTimeMillis();
-            int userId;
-            User u=findUser(conn, username);
-            if (u!=null) {
-                userId=u.getId();
-            } else {
-                // user doesn't already exist, so create a new one
-                userId=createOrUpdateUser(conn, 
-                        username,
-                        firstname,
-                        lastname,
-                        email,
-                        password,
-                        website);
-            }
-            if (registerUser(conn, userId, courseId, CourseRegistrationType.STUDENT, section)) {
-                numAdded++;
-            }
-            long register=System.currentTimeMillis()-start;
-            logger.info(register+" millis to regsiter "+username);
-        }
-        long totalTime=System.currentTimeMillis()-totalStart;
-        logger.warn("Total time to process "+numProcessed+" students was "+totalTime);
-        return numAdded;
+		boolean isAutoCommit = conn.getAutoCommit();
+    	try {
+    		conn.setAutoCommit(false);
+    		
+	        Scanner scan=new Scanner(in);
+	        int numAdded=0;
+	        int numProcessed=0;
+	        long totalStart=System.currentTimeMillis();
+	        while (scan.hasNextLine()) {
+	            String line=scan.nextLine().replaceAll("#.*","").trim();
+	            if (line.equals("")) {
+	                continue;
+	            }
+	            numProcessed++;
+	            String[] tokens=line.split("\t");
+	            String username=tokens[0];
+	            String firstname=tokens[1];
+	            String lastname=tokens[2];
+	            String email=tokens[3];
+	            String password=tokens[4];
+	            String website = ""; // We don't attempt to set a website URL for students
+	            int section = 101; // The default section number
+	            if (tokens.length > 5 && tokens[5] != null) {
+	                section=Integer.parseInt(tokens[5]);
+	            }
+	            logger.info("Registering "+username+" for courseId "+courseId);
+	            // Look up the user to see if they already exist
+	            long start=System.currentTimeMillis();
+	            int userId;
+	            User u=findUser(conn, username);
+	            if (u!=null) {
+	                userId=u.getId();
+	            } else {
+	                // user doesn't already exist, so create a new one
+	                userId=createOrUpdateUser(conn, 
+	                        username,
+	                        firstname,
+	                        lastname,
+	                        email,
+	                        password,
+	                        website);
+	            }
+	            if (registerUser(conn, userId, courseId, CourseRegistrationType.STUDENT, section)) {
+	                numAdded++;
+	            }
+	            
+	            conn.commit();
+	            
+	            long register=System.currentTimeMillis()-start;
+	            logger.info(register+" millis to regsiter "+username);
+	        }
+	        long totalTime=System.currentTimeMillis()-totalStart;
+	        logger.warn("Total time to process "+numProcessed+" students was "+totalTime);
+	        return numAdded;
+    	} finally {
+    		conn.setAutoCommit(isAutoCommit);
+    	}
     }
 
     public static int registerStudentsForCourseId2(InputStream in, int courseId, Connection conn) throws SQLException

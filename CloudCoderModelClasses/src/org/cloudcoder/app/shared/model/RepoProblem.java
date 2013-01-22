@@ -70,9 +70,19 @@ public class RepoProblem extends ProblemData implements IModelObject<RepoProblem
 			.finishDelta();
 	
 	/**
+	 * Description of fields (schema version 2).
+	 * This version incorporates schema changes from version 2
+	 * of {@link ProblemData}'s schema.
+	 */
+	public static final ModelObjectSchema<RepoProblem> SCHEMA_V2 =
+			ModelObjectSchema.basedOn(RepoProblem.SCHEMA_V1)
+			.addDeltasFrom(ProblemData.SCHEMA_V2)
+			.finishDelta();
+	
+	/**
 	 * Description of fields (current schema version).
 	 */
-	public static final ModelObjectSchema<RepoProblem> SCHEMA = SCHEMA_V1;
+	public static final ModelObjectSchema<RepoProblem> SCHEMA = SCHEMA_V2;
 	
 	/** Number of fields. */
 	public static final int NUM_FIELDS = SCHEMA.getNumFields();

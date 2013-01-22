@@ -26,11 +26,13 @@ import java.util.Properties;
 import java.util.Scanner;
 
 import org.cloudcoder.app.shared.model.IModelObject;
+import org.cloudcoder.app.shared.model.ModelObjectField;
 import org.cloudcoder.app.shared.model.ModelObjectIndexType;
 import org.cloudcoder.app.shared.model.ModelObjectSchema;
 import org.cloudcoder.app.shared.model.ModelObjectSchema.Delta;
-import org.cloudcoder.app.shared.model.ModelObjectSchema.FieldDelta;
+import org.cloudcoder.app.shared.model.ModelObjectSchema.AddFieldDelta;
 import org.cloudcoder.app.shared.model.ModelObjectSchema.DeltaType;
+import org.cloudcoder.app.shared.model.ModelObjectSchema.IncreaseFieldSizeDelta;
 import org.cloudcoder.app.shared.model.ModelObjectSchema.PersistModelObjectDelta;
 import org.cloudcoder.app.shared.model.Problem;
 import org.slf4j.Logger;
@@ -185,11 +187,12 @@ public class SchemaUtil {
 			for (int version = dbSchemaVersion + 1; version <= table.getVersion(); version++) {
 				ModelObjectSchema<E> prevSchema = table.getSchemaWithVersion(version);
 				for (Delta<? super E> delta_ : prevSchema.getDeltaList()) {
-					if (delta_ instanceof FieldDelta) {
-						FieldDelta<? super E> delta = (FieldDelta<? super E>)delta_;
-						applyDelta(conn, table.getDbTableName(), prevSchema, delta, version);
+					if (delta_ instanceof AddFieldDelta) {
+						applyDelta(conn, table.getDbTableName(), prevSchema, (AddFieldDelta<? super E>)delta_, version);
 					} else if (delta_ instanceof PersistModelObjectDelta) {
 						applyDelta(conn, (PersistModelObjectDelta<?, ?>)delta_);
+					} else if (delta_ instanceof IncreaseFieldSizeDelta) {
+						applyDelta(conn, table, (IncreaseFieldSizeDelta<? super E>) delta_);
 					}
 				}
 			}
@@ -214,12 +217,36 @@ public class SchemaUtil {
 		}
 	}
 	
+	public static<E> void applyDelta(Connection conn, ModelObjectSchema<E> schema, IncreaseFieldSizeDelta<? super E> delta) throws SQLException {
+		PreparedStatement stmt = null;
+		
+		try {
+			ModelObjectField<? super E, ?> field = delta.getField();
+			
+			StringBuilder buf = new StringBuilder();
+			buf.append("alter table ");
+			buf.append(schema.getDbTableName());
+			buf.append(" modify ");
+			buf.append(field.getName());
+			buf.append(" ");
+			buf.append(DBUtil.getSQLDatatypeWithModifiers(schema, field));
+			
+			String sql = buf.toString();
+			//System.out.println("Modifying column: " + sql);
+			
+			stmt = conn.prepareStatement(sql);
+			stmt.executeUpdate();
+		} finally {
+			DBUtil.closeQuietly(stmt);
+		}
+	}
+	
 	public static<E, M extends IModelObject<M>> void applyDelta(Connection conn, PersistModelObjectDelta<E, M> delta) throws SQLException {
 		M obj = delta.getObj();
 		DBUtil.insertModelObjectExact(conn, obj, obj.getSchema());
 	}
 
-	public static<E> void applyDelta(Connection conn, String dbTableName, ModelObjectSchema<E> schema, FieldDelta<? super E> delta, int version) throws SQLException {
+	public static<E> void applyDelta(Connection conn, String dbTableName, ModelObjectSchema<E> schema, AddFieldDelta<? super E> delta, int version) throws SQLException {
 		if (delta.getType() == DeltaType.ADD_FIELD_AFTER) {
 			Statement stmt = null;
 			StringBuilder buf;
@@ -233,15 +260,7 @@ public class SchemaUtil {
 				buf.append("  add column ");
 				buf.append(delta.getField().getName());
 				buf.append(" ");
-				buf.append(DBUtil.getSQLDatatype(delta.getField()));
-				if (!delta.getField().isAllowNull()) {
-					buf.append(" NOT NULL");
-				}
-				String defaultValue = delta.getField().getDefaultValue();
-				if (defaultValue != null) {
-					buf.append(" DEFAULT ");
-					buf.append(defaultValue);
-				}
+				buf.append(DBUtil.getSQLDatatypeWithModifiers(schema, delta.getField()));
 				buf.append(" after ");
 				buf.append(delta.getPreviousField().getName());
 				

@@ -75,9 +75,15 @@ public class ProblemData implements Serializable, IProblemData {
 		public void set(IProblemData obj, String value) { obj.setDescription(value); }
 		public String get(IProblemData obj) { return obj.getDescription(); }
 	};
+	/** {@link ModelObjectField} for skeleton (schema versions 0-1). */
+	public static final ModelObjectField<IProblemData, String> SKELETON_V0_V1 =
+			new ModelObjectField<IProblemData, String>("skeleton", String.class, 400, ModelObjectIndexType.NONE, ModelObjectField.LITERAL) {
+		public void set(IProblemData obj, String value) { obj.setSkeleton(value); }
+		public String get(IProblemData obj) { return obj.getSkeleton(); }
+	};
 	/** {@link ModelObjectField} for skeleton. */
 	public static final ModelObjectField<IProblemData, String> SKELETON =
-			new ModelObjectField<IProblemData, String>("skeleton", String.class, 400, ModelObjectIndexType.NONE, ModelObjectField.LITERAL) {
+			new ModelObjectField<IProblemData, String>("skeleton", String.class, 2000, ModelObjectIndexType.NONE, ModelObjectField.LITERAL) {
 		public void set(IProblemData obj, String value) { obj.setSkeleton(value); }
 		public String get(IProblemData obj) { return obj.getSkeleton(); }
 	};
@@ -133,7 +139,7 @@ public class ProblemData implements Serializable, IProblemData {
 		.add(TESTNAME)
 		.add(BRIEF_DESCRIPTION)
 		.add(DESCRIPTION)
-		.add(SKELETON)
+		.add(SKELETON_V0_V1)
 		.add(SCHEMA_VERSION)
 		.add(AUTHOR_NAME)
 		.add(AUTHOR_EMAIL)
@@ -146,6 +152,13 @@ public class ProblemData implements Serializable, IProblemData {
 	 */
 	public static final ModelObjectSchema<IProblemData> SCHEMA_V1 = ModelObjectSchema.basedOn(SCHEMA_V0)
 		.addAfter(LICENSE, PARENT_HASH)
+		.finishDelta();
+	
+	/**
+	 * Description of fields (schema version 2).
+	 */
+	public static final ModelObjectSchema<IProblemData> SCHEMA_V2 = ModelObjectSchema.basedOn(SCHEMA_V1)
+		.increaseFieldSize(SKELETON)
 		.finishDelta();
 
 	/**

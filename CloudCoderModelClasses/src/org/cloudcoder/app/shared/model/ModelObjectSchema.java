@@ -42,6 +42,11 @@ public class ModelObjectSchema<ModelObjectType> {
 		 * Persist a model object.
 		 */
 		PERSIST_MODEL_OBJECT,
+		
+		/**
+		 * Increase the size of a field.
+		 */
+		INCREASE_FIELD_SIZE,
 	}
 	
 	/**
@@ -69,23 +74,46 @@ public class ModelObjectSchema<ModelObjectType> {
 	}
 	
 	/**
-	 * A {@link Delta} involving a particular field: for example,
-	 * adding a field or modifying a field.
+	 * A {@link Delta} involving a field.
 	 */
-	public static class FieldDelta<ModelObjectType> extends Delta<ModelObjectType> {
-		private ModelObjectField<? super ModelObjectType, ?> previousField, field;
+	public abstract static class FieldDelta<ModelObjectType> extends Delta<ModelObjectType> {
+		private ModelObjectField<? super ModelObjectType, ?> field;
+		
+		/**
+		 * Constructor.
+		 * 
+		 * @param type           the {@link DeltaType}
+		 * @param field          the field
+		 */
+		public FieldDelta(DeltaType type, ModelObjectField<? super ModelObjectType, ?> field) {
+			super(type);
+			this.field = field;
+		}
+		
+		/**
+		 * @return the field
+		 */
+		public ModelObjectField<? super ModelObjectType, ?> getField() {
+			return field;
+		}
+	}
+	
+	/**
+	 * A {@link Delta} adding a field to the schema.
+	 */
+	public static class AddFieldDelta<ModelObjectType> extends FieldDelta<ModelObjectType> {
+		private ModelObjectField<? super ModelObjectType, ?> previousField;
 		
 		/**
 		 * Constructor.
 		 * 
 		 * @param type           the {@link DeltaType}
 		 * @param previousField  a field in a previous schema version
-		 * @param field          a new field to be added (or modified?)
+		 * @param field          a new field to be added
 		 */
-		public FieldDelta(DeltaType type, ModelObjectField<? super ModelObjectType, ?> previousField, ModelObjectField<? super ModelObjectType, ?> field) {
-			super(type);
+		public AddFieldDelta(ModelObjectField<? super ModelObjectType, ?> previousField, ModelObjectField<? super ModelObjectType, ?> field) {
+			super(DeltaType.ADD_FIELD_AFTER, field);
 			this.previousField = previousField;
-			this.field = field;
 		}
 		
 		/**
@@ -94,12 +122,22 @@ public class ModelObjectSchema<ModelObjectType> {
 		public ModelObjectField<? super ModelObjectType, ?> getPreviousField() {
 			return previousField;
 		}
-		
+	}
+	
+	/**
+	 * A {@link Delta} for increasing the size of a model object field.
+	 * Note that the {@link ModelObjectField} passed to the constructor is assumed to have the
+	 * increased size, and will <em>replace</em> the identically-named field
+	 * from the previous schema version.
+	 */
+	public static class IncreaseFieldSizeDelta<ModelObjectType> extends FieldDelta<ModelObjectType> {
 		/**
-		 * @return the new field to add (or modify?)
+		 * Constructor.
+		 * 
+		 * @param field the field with the updated (larger) size
 		 */
-		public ModelObjectField<? super ModelObjectType, ?> getField() {
-			return field;
+		public IncreaseFieldSizeDelta(ModelObjectField<? super ModelObjectType, ?> field) {
+			super(DeltaType.INCREASE_FIELD_SIZE, field);
 		}
 	}
 	
@@ -349,9 +387,9 @@ public class ModelObjectSchema<ModelObjectType> {
 	}
 	
 	/**
-	 * Get the list of {@link FieldDelta}s relative to the previous schema version.
+	 * Get the list of {@link AddFieldDelta}s relative to the previous schema version.
 	 * 
-	 * @return list of {@link FieldDelta}s
+	 * @return list of {@link AddFieldDelta}s
 	 */
 	public List<Delta<? super ModelObjectType>> getDeltaList() {
 		return deltaList;
@@ -411,7 +449,7 @@ public class ModelObjectSchema<ModelObjectType> {
 			throw new IllegalStateException("This method is only for derived schemas");
 		}
 		
-		deltaList.add(new FieldDelta<ModelObjectType>(DeltaType.ADD_FIELD_AFTER, previousField, fieldToAdd));
+		deltaList.add(new AddFieldDelta<ModelObjectType>(previousField, fieldToAdd));
 		
 		return this;
 	}
@@ -432,9 +470,23 @@ public class ModelObjectSchema<ModelObjectType> {
 	/**
 	 * Add a {@link PersistModelObjectDelta} specifying that the given
 	 * model object should be persisted.
+	 * 
+	 * @param obj the model object to persist
 	 */
 	public<E extends IModelObject<E>> ModelObjectSchema<ModelObjectType> addPersistedModelObject(E obj) {
 		deltaList.add(new PersistModelObjectDelta<ModelObjectType, E>(obj));
+		return this;
+	}
+	
+	/**
+	 * Add a {@link IncreaseFieldSizeDelta} specifying that the size
+	 * of a field should be increased.
+	 * 
+	 * @param field the field with the increased size: will replace identically-named
+	 *              field from previous schema version
+	 */
+	public ModelObjectSchema<ModelObjectType> increaseFieldSize(ModelObjectField<? super ModelObjectType, ?> field) {
+		deltaList.add(new IncreaseFieldSizeDelta<ModelObjectType>(field));
 		return this;
 	}
 
@@ -452,13 +504,26 @@ public class ModelObjectSchema<ModelObjectType> {
 		
 		// Apply all deltas
 		for (Delta<? super ModelObjectType> delta_ : deltaList) {
-			if (delta_ instanceof FieldDelta) {
-				FieldDelta<? super ModelObjectType> delta = (FieldDelta<? super ModelObjectType>)delta_;
-				if (delta.getType() == DeltaType.ADD_FIELD_AFTER) {
+			switch (delta_.getType()) {
+			case ADD_FIELD_AFTER:
+				// Insert the new field.
+				{
+					AddFieldDelta<? super ModelObjectType> delta = (AddFieldDelta<? super ModelObjectType>)delta_;
 					int index = fieldList.indexOf(delta.getPreviousField());
 					fieldList.add(index + 1, delta.getField());
-				} else {
-					throw new IllegalStateException("Unknown delta type: " + delta.getType());
+					break;
+				}
+				
+			case PERSIST_MODEL_OBJECT:
+				// This kind of delta requires no changes to the ModelObjectSchema object
+				break;
+				
+			case INCREASE_FIELD_SIZE:
+				// Replace previous version of the field.
+				{
+					IncreaseFieldSizeDelta<? super ModelObjectType> delta = (IncreaseFieldSizeDelta<? super ModelObjectType>) delta_;
+					int index = fieldList.indexOf(getFieldByName(delta.getField().getName()));
+					fieldList.set(index, delta.getField());
 				}
 			}
 		}

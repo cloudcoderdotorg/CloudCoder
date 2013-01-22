@@ -142,9 +142,19 @@ public class Problem extends ProblemData implements IProblem, ActivityObject, IM
 			.finishDelta();
 	
 	/**
+	 * Description of fields (schema version 5).
+	 * This version incorporates schema changes from version 2
+	 * of {@link ProblemData}'s schema.
+	 */
+	public static final ModelObjectSchema<IProblem> SCHEMA_V5 =
+			ModelObjectSchema.basedOn(Problem.SCHEMA_V4)
+			.addDeltasFrom(ProblemData.SCHEMA_V2)
+			.finishDelta();
+	
+	/**
 	 * Description of fields (current schema version).
 	 */
-	public static final ModelObjectSchema<IProblem> SCHEMA = SCHEMA_V4;
+	public static final ModelObjectSchema<IProblem> SCHEMA = SCHEMA_V5;
 	
 	/**
 	 * Number of fields.

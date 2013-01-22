@@ -79,9 +79,11 @@ public class CourseAdminProblemListView extends ResizeComposite implements Subsc
 		moduleNameColumn.setFieldUpdater(new FieldUpdater<ProblemAndModule, String>() {
 			@Override
 			public void update(int index, ProblemAndModule object, String value) {
-				object.getModule().setName(value);
-				if (editModuleNameCallback != null) {
-					editModuleNameCallback.call(object);
+				if (!value.equals(object.getModule().getName())) {
+					object.getModule().setName(value);
+					if (editModuleNameCallback != null) {
+						editModuleNameCallback.call(object);
+					}
 				}
 			}
 		});

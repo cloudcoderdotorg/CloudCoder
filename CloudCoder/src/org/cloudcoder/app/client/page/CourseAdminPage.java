@@ -167,21 +167,34 @@ public class CourseAdminPage extends CloudCoderPage {
 			// Handle edits to the module name.
 			courseAdminProblemListView.setEditModuleNameCallback(new ICallback<ProblemAndModule>() {
 				public void call(ProblemAndModule value) {
-					RPC.getCoursesAndProblemsService.setModule(value.getProblem(), value.getModule().getName(), new AsyncCallback<Module>() {
-						@Override
-						public void onFailure(Throwable caught) {
-							getSession().add(StatusMessage.error("Could not set module for exercise", caught));
-						}
-
-						@Override
-						public void onSuccess(Module result) {
-							getSession().add(StatusMessage.goodNews("Successfully changed module for exercise"));
-						}
-					});
+					setProblemModuleName(value);
 				}
 			});
 			
 			initWidget(dockLayoutPanel);
+		}
+
+		private void setProblemModuleName(final ProblemAndModule value) {
+			RPC.getCoursesAndProblemsService.setModule(value.getProblem(), value.getModule().getName(), new AsyncCallback<Module>() {
+				@Override
+				public void onFailure(Throwable caught) {
+					if (caught instanceof CloudCoderAuthenticationException) {
+						recoverFromServerSessionTimeout(new Runnable() {
+							@Override
+							public void run() {
+								setProblemModuleName(value);
+							}
+						});
+					} else {
+						getSession().add(StatusMessage.error("Could not set module for exercise", caught));
+					}
+				}
+
+				@Override
+				public void onSuccess(Module result) {
+					getSession().add(StatusMessage.goodNews("Successfully changed module for exercise"));
+				}
+			});
 		}
 
 		/**

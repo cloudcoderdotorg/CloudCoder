@@ -212,19 +212,8 @@ public class DBUtil {
 			sql.append("\n  `");
 			sql.append(field.getName());
 			sql.append("` ");
-			sql.append(getSQLDatatype(field));
 			
-			sql.append(field.isAllowNull() ? " NULL" : " NOT NULL");
-			
-			String defaultValue = field.getDefaultValue();
-			if (defaultValue != null) {
-				sql.append(" DEFAULT ");
-				sql.append(defaultValue);
-			}
-			
-			if (schema.getIndexType(field) == ModelObjectIndexType.IDENTITY) {
-				sql.append(" AUTO_INCREMENT");
-			}
+			sql.append(getSQLDatatypeWithModifiers(schema, field));
 			
 			createDefinitionCount++;
 		}
@@ -312,11 +301,13 @@ public class DBUtil {
 
 	/**
 	 * Get the SQL datatype for a {@link ModelObjectField}.
+	 * Note that the datatype will <em>not</em> include modifiers such
+	 * as NOT NULL, etc.
 	 * 
 	 * @param field the {@link ModelObjectField}
 	 * @return the SQL datatype
 	 */
-	public static Object getSQLDatatype(ModelObjectField<?,?> field) {
+	private static String getSQLDatatype(ModelObjectField<?,?> field) {
 		if (field.getType() == String.class) {
 			// If the field length is Integer.MAX_VALUE, make it a text field.
 			// Otherwise, make it VARCHAR.
@@ -336,6 +327,34 @@ public class DBUtil {
 		} else {
 			throw new IllegalArgumentException("Unknown field type: " + field.getType().getName());
 		}
+	}
+	
+	/**
+	 * Get the SQL datatype for a {@link ModelObjectField}, with modifiers such
+	 * as NOT NULL, AUTO_INCREMENT, DEFAULT, etc.
+	 * 
+	 * @param schema the model class schema
+	 * @param field  the field
+	 * @return the SQL datatype, with modifiers
+	 */
+	public static<E> String getSQLDatatypeWithModifiers(ModelObjectSchema<E> schema, ModelObjectField<? super E,?> field) {
+		StringBuilder buf = new StringBuilder();
+		
+		buf.append(getSQLDatatype(field));
+		
+		buf.append(field.isAllowNull() ? " NULL" : " NOT NULL");
+		
+		String defaultValue = field.getDefaultValue();
+		if (defaultValue != null) {
+			buf.append(" DEFAULT ");
+			buf.append(defaultValue);
+		}
+		
+		if (schema.getIndexType(field) == ModelObjectIndexType.IDENTITY) {
+			buf.append(" AUTO_INCREMENT");
+		}
+		
+		return buf.toString();
 	}
 
 	/**
