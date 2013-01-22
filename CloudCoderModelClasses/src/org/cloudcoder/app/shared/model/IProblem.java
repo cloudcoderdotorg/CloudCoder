@@ -113,4 +113,18 @@ public interface IProblem extends IProblemData {
 	 */
 	public boolean isDeleted();
 
+	/**
+	 * Set the module id.
+	 * 
+	 * @param moduleId the module id to set
+	 */
+	public void setModuleId(int moduleId);
+	
+	/**
+	 * Get the module id.
+	 * 
+	 * @return the module id
+	 */
+	public int getModuleId();
+
 }

@@ -45,6 +45,7 @@ import org.cloudcoder.app.shared.model.IModelObject;
 import org.cloudcoder.app.shared.model.Language;
 import org.cloudcoder.app.shared.model.ModelObjectField;
 import org.cloudcoder.app.shared.model.ModelObjectSchema;
+import org.cloudcoder.app.shared.model.Module;
 import org.cloudcoder.app.shared.model.OperationResult;
 import org.cloudcoder.app.shared.model.Pair;
 import org.cloudcoder.app.shared.model.Problem;
@@ -558,7 +559,7 @@ public class JDBCDatabase implements IDatabase {
 
 	@Override
 	public List<ProblemAndSubmissionReceipt> getProblemAndSubscriptionReceiptsInCourse(
-			final User user, final Course course) {
+			final User user, final Course course, final Module module) {
 		return databaseRun(new AbstractDatabaseRunnableNoAuthException<List<ProblemAndSubmissionReceipt>>() {
 			/* (non-Javadoc)
 			 * @see org.cloudcoder.app.server.persist.DatabaseRunnable#run(java.sql.Connection)
@@ -568,7 +569,7 @@ public class JDBCDatabase implements IDatabase {
 				// See: https://gist.github.com/4408441
 				PreparedStatement stmt = prepareStatement(
 						conn,
-						"select p.*, sr.*, e.*, sr_ids.max_sr_event_id" +
+						"select p.*, m.*, sr.*, e.*, sr_ids.max_sr_event_id" +
 						"  from cc_problems as p" +
 						" join (select p.problem_id, sm.max_sr_event_id" +
 						"         from cc_problems as p" +
@@ -579,6 +580,7 @@ public class JDBCDatabase implements IDatabase {
 						"                  group by e.problem_id) as sm on p.problem_id = sm.problem_id" +
 						"        where p.course_id = ?" +
 						"        ) as sr_ids on sr_ids.problem_id = p.problem_id" +
+						" join cc_modules as m on p.module_id = m.id " +
 						" left join cc_submission_receipts as sr on sr.event_id = sr_ids.max_sr_event_id" +
 						" left join cc_events as e on e.id = sr_ids.max_sr_event_id" + 
 						" where p.deleted = 0" +
@@ -617,6 +619,14 @@ public class JDBCDatabase implements IDatabase {
 					Problem problem = new Problem();
 					int index = DBUtil.loadModelObjectFields(problem, Problem.SCHEMA, resultSet);
 					
+					Module problemModule = new Module();
+					index = DBUtil.loadModelObjectFields(problemModule, Module.SCHEMA, resultSet, index);
+					
+					// If a module was specified, only return problems in that module
+					if (module != null && problemModule.getId() != module.getId()) {
+						continue;
+					}
+					
 					// Is there a submission receipt?
 					SubmissionReceipt receipt;
 					if (resultSet.getObject(index) != null) {
@@ -634,6 +644,7 @@ public class JDBCDatabase implements IDatabase {
 					ProblemAndSubmissionReceipt problemAndSubmissionReceipt = new ProblemAndSubmissionReceipt();
 					problemAndSubmissionReceipt.setProblem(problem);
 					problemAndSubmissionReceipt.setReceipt(receipt);
+					problemAndSubmissionReceipt.setModule(problemModule);
 					
 					result.add(problemAndSubmissionReceipt);
 				}
@@ -1822,6 +1833,95 @@ public class JDBCDatabase implements IDatabase {
 			@Override
 			public String getDescription() {
 				return " reloading model object";
+			}
+		});
+	}
+	
+	@Override
+	public Module[] getModulesForCourse(final User user, final Course course) {
+		return databaseRun(new AbstractDatabaseRunnableNoAuthException<Module[]>() {
+			@Override
+			public Module[] run(Connection conn) throws SQLException {
+				PreparedStatement stmt = prepareStatement(
+						conn,
+						"select m.* from cc_modules as m " +
+						" where m.id in " +
+						"   (select p.module_id from cc_problems as p, cc_course_registrations as cr " +
+						"     where p.course_id = cr.course_id " +
+						"       and cr.course_id = ? " +
+						"       and cr.user_id = ?) " +
+						" order by m.name"
+				);
+				stmt.setInt(1, course.getId());
+				stmt.setInt(2, user.getId());
+				
+				ResultSet resultSet = executeQuery(stmt);
+				List<Module> result = new ArrayList<Module>();
+				while (resultSet.next()) {
+					Module module = new Module();
+					DBUtil.loadModelObjectFields(module, Module.SCHEMA, resultSet);
+					result.add(module);
+				}
+				
+				return result.toArray(new Module[result.size()]);
+			}
+			@Override
+			public String getDescription() {
+				return " getting modules in course";
+			}
+		});
+	}
+	
+	@Override
+	public Module setModule(final User user, final Problem problem, final String moduleName) throws CloudCoderAuthenticationException {
+		return databaseRunAuth(new AbstractDatabaseRunnable<Module>() {
+			@Override
+			public Module run(Connection conn) throws SQLException, CloudCoderAuthenticationException {
+				// Verify that user is an instructor in the course
+				// (throwing CloudCoderAuthenticationException if not)
+				PreparedStatement verifyInstructorStmt = prepareStatement(
+						conn,
+						"select cr.id from cc_course_registrations as cr " +
+						" where cr.user_id = ? " +
+						"   and cr.course_id = ? " +
+						"   and cr.registration_type >= ?"
+				);
+				verifyInstructorStmt.setInt(1, user.getId());
+				verifyInstructorStmt.setInt(2, problem.getProblemId());
+				verifyInstructorStmt.setInt(3, CourseRegistrationType.INSTRUCTOR.ordinal());
+				
+				ResultSet verifyInstructorResultSet = executeQuery(verifyInstructorStmt);
+				if (!verifyInstructorResultSet.next()) {
+					throw new CloudCoderAuthenticationException("Only an instructor can set the module for an exerise");
+				}
+				
+				// See if the module exists already
+				PreparedStatement findExisting = prepareStatement(
+						conn,
+						"select m.* from cc_modules as m where m.name = ?"
+				);
+				findExisting.setString(1, moduleName);
+				
+				Module module = new Module();
+				ResultSet findExistingResultSet = executeQuery(findExisting);
+				if (findExistingResultSet.next()) {
+					// Use existing module
+					DBUtil.loadModelObjectFields(module, Module.SCHEMA, findExistingResultSet);
+				} else {
+					// Module doesn't exist, so add it
+					module.setName(moduleName);
+					DBUtil.storeModelObject(conn, module);
+				}
+				
+				// Update the problem to use the new module
+				problem.setModuleId(module.getId());
+				DBUtil.updateModelObject(conn, problem, Problem.SCHEMA);
+				
+				return module;
+			}
+			@Override
+			public String getDescription() {
+				return " setting module for problem";
 			}
 		});
 	}

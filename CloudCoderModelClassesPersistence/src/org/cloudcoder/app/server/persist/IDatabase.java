@@ -29,6 +29,7 @@ import org.cloudcoder.app.shared.model.CourseRegistrationList;
 import org.cloudcoder.app.shared.model.CourseRegistrationType;
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
 import org.cloudcoder.app.shared.model.IModelObject;
+import org.cloudcoder.app.shared.model.Module;
 import org.cloudcoder.app.shared.model.OperationResult;
 import org.cloudcoder.app.shared.model.Pair;
 import org.cloudcoder.app.shared.model.Problem;
@@ -129,13 +130,14 @@ public interface IDatabase {
 	
 	/**
 	 * Get list of {@link ProblemAndSubmissionReceipt}s for the problems the
-	 * given {@link User} is allowed to see in the given {@link Course}.
+	 * given {@link User} is allowed to see in the given {@link Course} and {@link Module}.
 	 *   
 	 * @param user    the User
 	 * @param course  the Course
+	 * @param module  the Module (if null, then all problems are returned)
 	 * @return list of {@link ProblemAndSubmissionReceipt}s
 	 */
-	public List<ProblemAndSubmissionReceipt> getProblemAndSubscriptionReceiptsInCourse(User user, Course course);
+	public List<ProblemAndSubmissionReceipt> getProblemAndSubscriptionReceiptsInCourse(User user, Course course, Module module);
 	
 	public void storeChanges(Change[] changeList);
 	
@@ -455,5 +457,30 @@ public interface IDatabase {
 	 * @return true if successful, false if object could not be located by its unique id
 	 */
 	public<E extends IModelObject<E>> boolean reloadModelObject(E obj);
+
+	/**
+	 * Get all of the {@link Module}s of the {@link Problem}s that are assigned
+	 * in the given {@link Course}.  Only returns modules if the user is confirmed
+	 * to be registered in the given course.  Note that modules of non-visible
+	 * problems <em>will</em> be returned. 
+	 * 
+	 * @param user    the authenticated user
+	 * @param course  the course
+	 * @return the modules in the course
+	 */
+	public Module[] getModulesForCourse(User user, Course course);
+
+	/**
+	 * Set the {@link Module} in which the given {@link Problem} is categorized.
+	 * The {@link User} must be an instructor in the course in which the
+	 * problem is assigned.
+	 * 
+	 * @param user        the authenticated {@link User}
+	 * @param problem     the {@link Problem}
+	 * @param moduleName  the name of the {@link Module} in which the problem should
+	 *                    be categorized
+	 * @return
+	 */
+	public Module setModule(User user, Problem problem, String moduleName) throws CloudCoderAuthenticationException;
 
 }

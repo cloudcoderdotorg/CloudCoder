@@ -1,6 +1,6 @@
 // CloudCoder - a web-based pedagogical programming environment
-// Copyright (C) 2011-2012, Jaime Spacco <jspacco@knox.edu>
-// Copyright (C) 2011-2012, David H. Hovemeyer <david.hovemeyer@gmail.com>
+// Copyright (C) 2011-2013, Jaime Spacco <jspacco@knox.edu>
+// Copyright (C) 2011-2013, David H. Hovemeyer <david.hovemeyer@gmail.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -51,6 +51,7 @@ public abstract class ModelObjectField<ModelObjectType, E> {
 	private final int size;
 	private final ModelObjectIndexType indexType;
 	private final int flags;
+	private final String defaultValue;
 	
 	/**
 	 * Constructor for fields which are not a unique object id.
@@ -85,11 +86,27 @@ public abstract class ModelObjectField<ModelObjectType, E> {
 	 * @param flags flags to set for this field
 	 */
 	public ModelObjectField(String name, Class<E> type, int size, ModelObjectIndexType indexType, int flags) {
+		this(name, type, size, indexType, flags, null);
+	}
+	
+	/**
+	 * Constructor for fields which might require an index and might have
+	 * a default value for the database column.
+	 * 
+	 * @param name the field name (can be used as a database column name)
+	 * @param type the Java type of the field
+	 * @param size the size (e.g., max string length for a string column)
+	 * @param indexType type of index that should be used for this field
+	 * @param flags flags to set for this field
+	 * @param defaultValue the default value as a string
+	 */
+	public ModelObjectField(String name, Class<E> type, int size, ModelObjectIndexType indexType, int flags, String defaultValue) {
 		this.name = name;
 		this.type = type;
 		this.size = size;
 		this.indexType = indexType;
 		this.flags = flags;
+		this.defaultValue = defaultValue;
 	}
 	
 	/**
@@ -145,6 +162,13 @@ public abstract class ModelObjectField<ModelObjectType, E> {
 	 */
 	public boolean isLiteral() {
 		return (flags & LITERAL) != 0;
+	}
+	
+	/**
+	 * @return the default value as a string; null if the database column does not have a default value
+	 */
+	public String getDefaultValue() {
+		return defaultValue;
 	}
 	
 	/**

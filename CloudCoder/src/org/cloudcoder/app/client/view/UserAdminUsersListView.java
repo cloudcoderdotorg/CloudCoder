@@ -19,6 +19,7 @@ package org.cloudcoder.app.client.view;
 
 import java.util.Arrays;
 
+import org.cloudcoder.app.client.model.CourseSelection;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.page.SessionObserver;
@@ -124,14 +125,15 @@ public class UserAdminUsersListView extends ResizeComposite implements Subscribe
      */
     @Override
     public void eventOccurred(Object key, Publisher publisher, Object hint) {
-        if (key == Session.Event.ADDED_OBJECT && (hint instanceof Course)) {
+        if (key == Session.Event.ADDED_OBJECT && (hint instanceof CourseSelection)) {
             // load all the useres for the current course
             loadUsers(session);
         }
     }
     
     public void loadUsers(final Session session) {
-        Course course=session.get(Course.class);
+        CourseSelection courseSelection=session.get(CourseSelection.class);
+        Course course = courseSelection.getCourse();
         int courseId=course.getId();
         RPC.usersService.getUsers(courseId, new AsyncCallback<User[]>() {
             @Override

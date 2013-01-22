@@ -1,6 +1,6 @@
 // CloudCoder - a web-based pedagogical programming environment
-// Copyright (C) 2011-2012, Jaime Spacco <jspacco@knox.edu>
-// Copyright (C) 2011-2012, David H. Hovemeyer <david.hovemeyer@gmail.com>
+// Copyright (C) 2011-2013, Jaime Spacco <jspacco@knox.edu>
+// Copyright (C) 2011-2013, David H. Hovemeyer <david.hovemeyer@gmail.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -47,6 +47,7 @@ import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.CourseAndCourseRegistration;
 import org.cloudcoder.app.shared.model.CourseRegistration;
 import org.cloudcoder.app.shared.model.CourseRegistrationList;
+import org.cloudcoder.app.shared.model.Module;
 import org.cloudcoder.app.shared.model.OperationResult;
 import org.cloudcoder.app.shared.model.Pair;
 import org.cloudcoder.app.shared.model.Problem;
@@ -157,13 +158,13 @@ public class GetCoursesAndProblemsServiceImpl extends RemoteServiceServlet
 	 */
 	@Override
 	public ProblemAndSubmissionReceipt[] getProblemAndSubscriptionReceipts(
-			Course course) throws CloudCoderAuthenticationException {
+			Course course, Module module) throws CloudCoderAuthenticationException {
 		// Make sure user is authenticated
 		User user = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
 		
 		logger.info("getting submission receipts for authenticated user "+user.getUsername());
 		
-		List<ProblemAndSubmissionReceipt> resultList = Database.getInstance().getProblemAndSubscriptionReceiptsInCourse(user, course);
+		List<ProblemAndSubmissionReceipt> resultList = Database.getInstance().getProblemAndSubscriptionReceiptsInCourse(user, course, module);
 		return resultList.toArray(new ProblemAndSubmissionReceipt[resultList.size()]);
 	}
 	
@@ -182,7 +183,8 @@ public class GetCoursesAndProblemsServiceImpl extends RemoteServiceServlet
 			List<Pair<User, SubmissionReceipt>> e = Database.getInstance().getBestSubmissionReceipts(course, p.getProblemId());
 			for(Pair<User,SubmissionReceipt> pair : e){
 				if(pair.getLeft().getId() == user.getId()){
-					resultList.add(new ProblemAndSubmissionReceipt(p,pair.getRight()));
+					// FIXME: is it a problem that we're not including Modules in the ProblemAndSubmissionReceipts?
+					resultList.add(new ProblemAndSubmissionReceipt(p,pair.getRight(),null));
 				}
 			}
 		}
@@ -397,5 +399,27 @@ public class GetCoursesAndProblemsServiceImpl extends RemoteServiceServlet
 		User user = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
 		
 		return Database.getInstance().endQuiz(user, quiz);
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.cloudcoder.app.client.rpc.GetCoursesAndProblemsService#getModulesForCourse(org.cloudcoder.app.shared.model.Course)
+	 */
+	@Override
+	public Module[] getModulesForCourse(Course course) throws CloudCoderAuthenticationException {
+		// Make sure user is authenticated
+		User user = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
+
+		return Database.getInstance().getModulesForCourse(user, course);
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.cloudcoder.app.client.rpc.GetCoursesAndProblemsService#setModuleName(org.cloudcoder.app.shared.model.Problem, java.lang.String)
+	 */
+	@Override
+	public Module setModule(Problem problem, String moduleName) throws CloudCoderAuthenticationException {
+		// Make sure user is authenticated
+		User user = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
+
+		return Database.getInstance().setModule(user, problem, moduleName);
 	}
 }

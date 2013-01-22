@@ -1,6 +1,6 @@
 // CloudCoder - a web-based pedagogical programming environment
-// Copyright (C) 2011-2012, Jaime Spacco <jspacco@knox.edu>
-// Copyright (C) 2011-2012, David H. Hovemeyer <david.hovemeyer@gmail.com>
+// Copyright (C) 2011-2013, Jaime Spacco <jspacco@knox.edu>
+// Copyright (C) 2011-2013, David H. Hovemeyer <david.hovemeyer@gmail.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -20,6 +20,7 @@ package org.cloudcoder.app.client.rpc;
 import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.CourseAndCourseRegistration;
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
+import org.cloudcoder.app.shared.model.Module;
 import org.cloudcoder.app.shared.model.OperationResult;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemAndSubmissionReceipt;
@@ -69,17 +70,18 @@ public interface GetCoursesAndProblemsService extends RemoteService {
 	public Problem[] getProblems(Course course) throws CloudCoderAuthenticationException;
 	
 	/**
-	 * Get {@link ProblemAndSubmissionReceipt}s for given {@link Course}.
+	 * Get {@link ProblemAndSubmissionReceipt}s for given {@link Course} and {@link Module}.
 	 * This allows the client to get not only the Problems in the Course,
 	 * but also the most recent {@link SubmissionReceipt} for each Problem.
 	 * The client must be registered in the Course.
 	 * 
 	 * @param course the Course
+	 * @param module the Module: if null, then all problems and submission receipts in course are returned
 	 * @return the ProblemAndSubmissionReceipts for the client's work in the Course
 	 * @throws CloudCoderAuthenticationException if the client is not authenticated,
 	 *         or is not regsitered in the course 
 	 */
-	public ProblemAndSubmissionReceipt[] getProblemAndSubscriptionReceipts(Course course) throws CloudCoderAuthenticationException;
+	public ProblemAndSubmissionReceipt[] getProblemAndSubscriptionReceipts(Course course, Module module) throws CloudCoderAuthenticationException;
 	
 	/**
 	 * @param course
@@ -179,4 +181,26 @@ public interface GetCoursesAndProblemsService extends RemoteService {
 	 *         the server-side session 
 	 */
 	public Boolean endQuiz(Quiz quiz) throws CloudCoderAuthenticationException;
+	
+	/**
+	 * Get all {@link Module}s used to tag the {@link Problem}s in given {@link Course}.
+	 * 
+	 * @param course the course
+	 * @return all of the modules in the course
+	 * @throws CloudCoderAuthenticationException 
+	 */
+	public Module[] getModulesForCourse(Course course) throws CloudCoderAuthenticationException;
+
+	/**
+	 * Set the {@link Module} in which a {@link Problem} is categorized.
+	 * If no module currently exists with the given name, a new one is
+	 * created.  The currently-authenticated user must be an instructor
+	 * in the course in which the problem is assigned.
+	 * 
+	 * @param problem     the {@link Problem}
+	 * @param moduleName  the new module name
+	 * @return the {@link Module} in which the {@link Problem} is now categorized
+	 * @throws CloudCoderAuthenticationException
+	 */
+	public Module setModule(Problem problem, String moduleName) throws CloudCoderAuthenticationException;
 }

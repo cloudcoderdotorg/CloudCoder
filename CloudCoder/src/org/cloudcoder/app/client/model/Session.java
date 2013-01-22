@@ -1,6 +1,6 @@
 // CloudCoder - a web-based pedagogical programming environment
-// Copyright (C) 2011-2012, Jaime Spacco <jspacco@knox.edu>
-// Copyright (C) 2011-2012, David H. Hovemeyer <david.hovemeyer@gmail.com>
+// Copyright (C) 2011-2013, Jaime Spacco <jspacco@knox.edu>
+// Copyright (C) 2011-2013, David H. Hovemeyer <david.hovemeyer@gmail.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.ProblemAndTestCaseList;
 import org.cloudcoder.app.shared.util.Publisher;
 
@@ -86,6 +87,9 @@ public class Session extends Publisher {
 	 * @param obj object to add to the session
 	 */
 	public void add(Object obj) {
+		if (obj instanceof Course) {
+			throw new IllegalArgumentException("Attempt to add Course to Session");
+		}
 		data.put(obj.getClass(), obj);
 		notifySubscribers(Event.ADDED_OBJECT, obj);
 	}

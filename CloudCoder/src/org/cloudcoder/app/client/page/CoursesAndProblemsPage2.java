@@ -17,6 +17,7 @@
 
 package org.cloudcoder.app.client.page;
 
+import org.cloudcoder.app.client.model.CourseSelection;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.rpc.RPC;
@@ -238,10 +239,10 @@ public class CoursesAndProblemsPage2 extends CloudCoderPage {
 			this.pageNavPanel.setLogoutHandler(new LogoutHandler(session));
 
 			// Load courses
-			getCoursesAndProblemsRPC(session);
+			getCourseAndCourseRegistrationsRPC(session);
 		}
 
-		protected void getCoursesAndProblemsRPC(final Session session) {
+		protected void getCourseAndCourseRegistrationsRPC(final Session session) {
 			RPC.getCoursesAndProblemsService.getCourseAndCourseRegistrations(new AsyncCallback<CourseAndCourseRegistration[]>() {
 				@Override
 				public void onSuccess(CourseAndCourseRegistration[] result) {
@@ -256,7 +257,7 @@ public class CoursesAndProblemsPage2 extends CloudCoderPage {
 							@Override
 							public void run() {
 								// Try again!
-								getCoursesAndProblemsRPC(session);
+								getCourseAndCourseRegistrationsRPC(session);
 							}
 						});
 					} else {
@@ -333,12 +334,15 @@ public class CoursesAndProblemsPage2 extends CloudCoderPage {
 				termAndCourseTreeView.addSelectionHandler(new SelectionChangeEvent.Handler() {
 					@Override
 					public void onSelectionChange(SelectionChangeEvent event) {
-						Course course = termAndCourseTreeView.getSelectedCourse();
-						getSession().add(course);
+						CourseSelection courseSelection = termAndCourseTreeView.getSelectedCourseAndModule();
+						if (courseSelection != null) {
+							getSession().add(courseSelection);
+						}
 					}
 				});
-			} else if (key == Session.Event.ADDED_OBJECT && hint instanceof Course) {
-				Course course = (Course) hint;
+			} else if (key == Session.Event.ADDED_OBJECT && hint instanceof CourseSelection) {
+				CourseSelection courseSelection = (CourseSelection) hint;
+				Course course = courseSelection.getCourse();
 
 				if (courseAdminButton != null || userAdminButton != null) {
 					// Find the CourseRegistration for this Course
@@ -359,7 +363,7 @@ public class CoursesAndProblemsPage2 extends CloudCoderPage {
 
 		protected void handleCourseAdminButtonClicked() {
 			GWT.log("Course admin button clicked");
-			Course course = getSession().get(Course.class);
+			Course course = getCurrentCourse();
 			if (course != null) {
 				getSession().notifySubscribers(Session.Event.COURSE_ADMIN, course);
 			}
@@ -367,7 +371,7 @@ public class CoursesAndProblemsPage2 extends CloudCoderPage {
 
 		protected void handleUserAdminButtonClicked() {
 			GWT.log("User admin button clicked");
-			Course course = getSession().get(Course.class);
+			Course course = getCurrentCourse();
 			if (course != null) {
 				getSession().notifySubscribers(Session.Event.USER_ADMIN, course);
 			}
@@ -375,17 +379,17 @@ public class CoursesAndProblemsPage2 extends CloudCoderPage {
 
 		protected void handleAccountButtonClicked() {
 			GWT.log("My account button clicked");
-			Course course = getSession().get(Course.class);
+			Course course = getCurrentCourse();
 			if(course != null) {
 				getSession().notifySubscribers(Session.Event.USER_ACCOUNT, course);
 			}
 		}
 		
 		protected void handleRefreshProblemListButtonClicked() {
-			Course course = getSession().get(Course.class);
-			if (course != null) {
+			CourseSelection courseSelection = getSession().get(CourseSelection.class);
+			if (courseSelection != null) {
 				// Force a reload of the course
-				getSession().add(course);
+				getSession().add(courseSelection);
 			}
 		}
 	}

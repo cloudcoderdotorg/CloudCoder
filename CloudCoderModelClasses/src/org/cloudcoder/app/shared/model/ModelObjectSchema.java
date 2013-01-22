@@ -37,26 +37,27 @@ public class ModelObjectSchema<ModelObjectType> {
 		 * Add a field after a field defined in a previous schema version.
 		 */
 		ADD_FIELD_AFTER,
+		
+		/**
+		 * Persist a model object.
+		 */
+		PERSIST_MODEL_OBJECT,
 	}
 	
 	/**
-	 * A delta describing a change to a schema to produce a derived schema.
+	 * A delta applied to a {@link ModelObjectSchema} to produce a derived
+	 * schema.
 	 */
 	public static class Delta<E> {
 		private DeltaType type;
-		private ModelObjectField<? super E, ?> previousField, field;
 		
 		/**
 		 * Constructor.
 		 * 
-		 * @param type           the {@link DeltaType}
-		 * @param previousField  a field in a previous schema version
-		 * @param field          a new field to be added (or modified?)
+		 * @param type the {@link DeltaType}
 		 */
-		public Delta(DeltaType type, ModelObjectField<? super E, ?> previousField, ModelObjectField<? super E, ?> field) {
+		public Delta(DeltaType type) {
 			this.type = type;
-			this.previousField = previousField;
-			this.field = field;
 		}
 		
 		/**
@@ -65,19 +66,64 @@ public class ModelObjectSchema<ModelObjectType> {
 		public DeltaType getType() {
 			return type;
 		}
+	}
+	
+	/**
+	 * A {@link Delta} involving a particular field: for example,
+	 * adding a field or modifying a field.
+	 */
+	public static class FieldDelta<ModelObjectType> extends Delta<ModelObjectType> {
+		private ModelObjectField<? super ModelObjectType, ?> previousField, field;
+		
+		/**
+		 * Constructor.
+		 * 
+		 * @param type           the {@link DeltaType}
+		 * @param previousField  a field in a previous schema version
+		 * @param field          a new field to be added (or modified?)
+		 */
+		public FieldDelta(DeltaType type, ModelObjectField<? super ModelObjectType, ?> previousField, ModelObjectField<? super ModelObjectType, ?> field) {
+			super(type);
+			this.previousField = previousField;
+			this.field = field;
+		}
 		
 		/**
 		 * @return the field from a previous schema version
 		 */
-		public ModelObjectField<? super E, ?> getPreviousField() {
+		public ModelObjectField<? super ModelObjectType, ?> getPreviousField() {
 			return previousField;
 		}
 		
 		/**
 		 * @return the new field to add (or modify?)
 		 */
-		public ModelObjectField<? super E, ?> getField() {
+		public ModelObjectField<? super ModelObjectType, ?> getField() {
 			return field;
+		}
+	}
+	
+	/**
+	 * A {@link Delta} specifying a model object to be persisted.
+	 */
+	public static class PersistModelObjectDelta<ModelObjectType, E extends IModelObject<E>> extends Delta<ModelObjectType> {
+		private E obj;
+		
+		/**
+		 * Constructor.
+		 * 
+		 * @param obj the model object to be persisted
+		 */
+		public PersistModelObjectDelta(E obj) {
+			super(DeltaType.PERSIST_MODEL_OBJECT);
+			this.obj = obj;
+		}
+		
+		/**
+		 * @return the model object
+		 */
+		public E getObj() {
+			return obj;
 		}
 	}
 	
@@ -303,9 +349,9 @@ public class ModelObjectSchema<ModelObjectType> {
 	}
 	
 	/**
-	 * Get the list of {@link Delta}s relative to the previous schema version.
+	 * Get the list of {@link FieldDelta}s relative to the previous schema version.
 	 * 
-	 * @return list of {@link Delta}s
+	 * @return list of {@link FieldDelta}s
 	 */
 	public List<Delta<? super ModelObjectType>> getDeltaList() {
 		return deltaList;
@@ -365,7 +411,7 @@ public class ModelObjectSchema<ModelObjectType> {
 			throw new IllegalStateException("This method is only for derived schemas");
 		}
 		
-		deltaList.add(new Delta<ModelObjectType>(DeltaType.ADD_FIELD_AFTER, previousField, fieldToAdd));
+		deltaList.add(new FieldDelta<ModelObjectType>(DeltaType.ADD_FIELD_AFTER, previousField, fieldToAdd));
 		
 		return this;
 	}
@@ -382,6 +428,15 @@ public class ModelObjectSchema<ModelObjectType> {
 		deltaList.addAll(schema.getDeltaList());
 		return this;
 	}
+	
+	/**
+	 * Add a {@link PersistModelObjectDelta} specifying that the given
+	 * model object should be persisted.
+	 */
+	public<E extends IModelObject<E>> ModelObjectSchema<ModelObjectType> addPersistedModelObject(E obj) {
+		deltaList.add(new PersistModelObjectDelta<ModelObjectType, E>(obj));
+		return this;
+	}
 
 	/**
 	 * This method must be called after all deltas (e.g., {@link #addAfter(ModelObjectField, ModelObjectField)})
@@ -396,12 +451,15 @@ public class ModelObjectSchema<ModelObjectType> {
 		}
 		
 		// Apply all deltas
-		for (Delta<? super ModelObjectType> delta : deltaList) {
-			if (delta.getType() == DeltaType.ADD_FIELD_AFTER) {
-				int index = fieldList.indexOf(delta.getPreviousField());
-				fieldList.add(index + 1, delta.getField());
-			} else {
-				throw new IllegalStateException("Unknown delta type: " + delta.getType());
+		for (Delta<? super ModelObjectType> delta_ : deltaList) {
+			if (delta_ instanceof FieldDelta) {
+				FieldDelta<? super ModelObjectType> delta = (FieldDelta<? super ModelObjectType>)delta_;
+				if (delta.getType() == DeltaType.ADD_FIELD_AFTER) {
+					int index = fieldList.indexOf(delta.getPreviousField());
+					fieldList.add(index + 1, delta.getField());
+				} else {
+					throw new IllegalStateException("Unknown delta type: " + delta.getType());
+				}
 			}
 		}
 		

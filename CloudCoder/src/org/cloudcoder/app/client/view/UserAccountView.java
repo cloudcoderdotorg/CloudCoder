@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.cloudcoder.app.client.model.CourseSelection;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.page.SessionObserver;
@@ -130,7 +131,8 @@ public class UserAccountView extends ResizeComposite implements Subscriber, Sess
     }
     
     public void loadUser(final Session session) {
-        Course course=session.get(Course.class);
+        CourseSelection courseSelection = session.get(CourseSelection.class);
+        Course course = courseSelection.getCourse();
         int courseId=course.getId();
         RPC.usersService.getUsers(courseId, new AsyncCallback<User[]>() {
             @Override

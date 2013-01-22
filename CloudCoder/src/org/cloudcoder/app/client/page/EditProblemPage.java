@@ -80,6 +80,7 @@ public class EditProblemPage extends CloudCoderPage {
 	private class UI extends ResizeComposite implements SessionObserver {
 		private static final double CENTER_PANEL_V_SEP_PX = 10.0;
 		private static final double SAVE_BUTTON_HEIGHT_PX = 32.0;
+		private static final double SAVE_BUTTON_WIDTH_PX = 160.0;
 
 		private DockLayoutPanel dockLayoutPanel;
 		private Label pageLabel;
@@ -118,7 +119,7 @@ public class EditProblemPage extends CloudCoderPage {
 				}
 			});
 			northPanel.add(saveButton);
-			northPanel.setWidgetLeftWidth(saveButton, 0.0, Unit.PX, 140.0, Unit.PX);
+			northPanel.setWidgetLeftWidth(saveButton, 0.0, Unit.PX, SAVE_BUTTON_WIDTH_PX, Unit.PX);
 			northPanel.setWidgetBottomHeight(saveButton, CENTER_PANEL_V_SEP_PX, Unit.PX, SAVE_BUTTON_HEIGHT_PX, Unit.PX);
 			
 			dockLayoutPanel.addNorth(northPanel, PageNavPanel.HEIGHT_PX + SAVE_BUTTON_HEIGHT_PX + CENTER_PANEL_V_SEP_PX);
@@ -163,7 +164,7 @@ public class EditProblemPage extends CloudCoderPage {
 			
 			// Attempt to store the problem and its test cases in the database
 			final ProblemAndTestCaseList problemAndTestCaseList = getSession().get(ProblemAndTestCaseList.class);
-			final Course course = getSession().get(Course.class);
+			final Course course = getCurrentCourse();
 			saveProblem(problemAndTestCaseList, course);
 		}
 
@@ -268,7 +269,7 @@ public class EditProblemPage extends CloudCoderPage {
 			problemAndTestCaseListOrig.copyFrom(problemAndTestCaseList);
 			
 			// Activate views
-			final Course course = session.get(Course.class);
+			final Course course = getCurrentCourse();
 			pageLabel.setText(
 					(problemAndTestCaseList.getProblem().getProblemId()== null ? "Create new" : "Edit") +
 					" problem in " + course.toString());

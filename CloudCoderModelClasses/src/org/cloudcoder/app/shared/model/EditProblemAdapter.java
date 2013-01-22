@@ -251,5 +251,16 @@ public abstract class EditProblemAdapter implements IProblem {
 	public boolean isDeleted() {
 		return delegate.isDeleted();
 	}
+	
+	@Override
+	public void setModuleId(int moduleId) {
+		delegate.setModuleId(moduleId);
+		onChange();
+	}
+	
+	@Override
+	public int getModuleId() {
+		return delegate.getModuleId();
+	}
 
 }

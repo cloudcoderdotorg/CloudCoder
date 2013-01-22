@@ -1,6 +1,6 @@
 // CloudCoder - a web-based pedagogical programming environment
-// Copyright (C) 2011-2012, Jaime Spacco <jspacco@knox.edu>
-// Copyright (C) 2011-2012, David H. Hovemeyer <david.hovemeyer@gmail.com>
+// Copyright (C) 2011-2013, Jaime Spacco <jspacco@knox.edu>
+// Copyright (C) 2011-2013, David H. Hovemeyer <david.hovemeyer@gmail.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -19,21 +19,26 @@ package org.cloudcoder.app.client.view;
 
 import java.util.Arrays;
 
+import org.cloudcoder.app.client.model.CourseSelection;
 import org.cloudcoder.app.client.model.Session;
-import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.page.CloudCoderPage;
 import org.cloudcoder.app.client.page.CourseAdminPage;
 import org.cloudcoder.app.client.page.SessionObserver;
 import org.cloudcoder.app.client.rpc.RPC;
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
 import org.cloudcoder.app.shared.model.Course;
+import org.cloudcoder.app.shared.model.ICallback;
+import org.cloudcoder.app.shared.model.Module;
 import org.cloudcoder.app.shared.model.Problem;
+import org.cloudcoder.app.shared.model.ProblemAndModule;
 import org.cloudcoder.app.shared.model.ProblemAndSubmissionReceipt;
 import org.cloudcoder.app.shared.util.Publisher;
 import org.cloudcoder.app.shared.util.Subscriber;
 import org.cloudcoder.app.shared.util.SubscriptionRegistrar;
 
-import com.google.gwt.core.shared.GWT;
+import com.google.gwt.cell.client.EditTextCell;
+import com.google.gwt.cell.client.FieldUpdater;
+import com.google.gwt.user.cellview.client.Column;
 import com.google.gwt.user.cellview.client.DataGrid;
 import com.google.gwt.user.cellview.client.TextColumn;
 import com.google.gwt.user.client.rpc.AsyncCallback;
@@ -49,82 +54,127 @@ import com.google.gwt.view.client.SingleSelectionModel;
  */
 public class CourseAdminProblemListView extends ResizeComposite implements Subscriber, SessionObserver {
 	private CloudCoderPage page;
-	private DataGrid<Problem> grid;
+	private DataGrid<ProblemAndModule> grid;
 	private Session session;
-	private SingleSelectionModel<Problem> selectionModel;
+	private SingleSelectionModel<ProblemAndModule> selectionModel;
+	private ICallback<ProblemAndModule> editModuleNameCallback;
 	
 	/**
 	 * Constructor.
 	 */
 	public CourseAdminProblemListView(CloudCoderPage page) {
 		this.page = page;
-		grid = new DataGrid<Problem>();
+		grid = new DataGrid<ProblemAndModule>();
 		grid.addColumn(new ProblemNameColumn(), "Name");
 		grid.addColumn(new ProblemBriefDescriptionColumn(), "Description");
 		grid.addColumn(new ProblemTypeColumn(), "Type");
 		grid.addColumn(new ProblemWhenAssignedColumn(), "Assigned");
 		grid.addColumn(new ProblemWhenDueColumn(), "Due");
 		grid.addColumn(new ProblemVisibleColumn(), "Visible");
+		
+		// The column displaying the module name allows editing, and invokes
+		// a callback when the module name changes.
+		ProblemModuleNameColumn moduleNameColumn = new ProblemModuleNameColumn();
+		grid.addColumn(moduleNameColumn, "Module (click to edit)");
+		moduleNameColumn.setFieldUpdater(new FieldUpdater<ProblemAndModule, String>() {
+			@Override
+			public void update(int index, ProblemAndModule object, String value) {
+				object.getModule().setName(value);
+				if (editModuleNameCallback != null) {
+					editModuleNameCallback.call(object);
+				}
+			}
+		});
 		initWidget(grid);
 	}
 	
-	private static class ProblemNameColumn extends TextColumn<Problem> {
+	/**
+	 * Set a callback to be invoked when the module name of a problem is changed.
+	 * 
+	 * @param callback callback invoked when the module name of a problem is changed
+	 */
+	public void setEditModuleNameCallback(ICallback<ProblemAndModule> callback) {
+		this.editModuleNameCallback = callback;
+	}
+	
+	private static class ProblemNameColumn extends TextColumn<ProblemAndModule> {
 		/* (non-Javadoc)
 		 * @see com.google.gwt.user.cellview.client.Column#getValue(java.lang.Object)
 		 */
 		@Override
-		public String getValue(Problem object) {
-			return object.getTestname();
+		public String getValue(ProblemAndModule object) {
+			return object.getProblem().getTestname();
 		}
 	}
 	
-	private static class ProblemBriefDescriptionColumn extends TextColumn<Problem> {
+	private static class ProblemBriefDescriptionColumn extends TextColumn<ProblemAndModule> {
 		/* (non-Javadoc)
 		 * @see com.google.gwt.user.cellview.client.Column#getValue(java.lang.Object)
 		 */
 		@Override
-		public String getValue(Problem object) {
-			return object.getBriefDescription();
+		public String getValue(ProblemAndModule object) {
+			return object.getProblem().getBriefDescription();
 		}
 	}
 	
-	private static class ProblemTypeColumn extends TextColumn<Problem> {
+	private static class ProblemTypeColumn extends TextColumn<ProblemAndModule> {
 		/* (non-Javadoc)
 		 * @see com.google.gwt.user.cellview.client.Column#getValue(java.lang.Object)
 		 */
 		@Override
-		public String getValue(Problem object) {
-			return object.getProblemType().toString();
+		public String getValue(ProblemAndModule object) {
+			return object.getProblem().getProblemType().toString();
 		}
 	}
 	
-	private static class ProblemWhenAssignedColumn extends TextColumn<Problem> {
+	private static class ProblemWhenAssignedColumn extends TextColumn<ProblemAndModule> {
 		/* (non-Javadoc)
 		 * @see com.google.gwt.user.cellview.client.Column#getValue(java.lang.Object)
 		 */
 		@Override
-		public String getValue(Problem object) {
-			return ViewUtil.formatDate(object.getWhenAssignedAsDate());
+		public String getValue(ProblemAndModule object) {
+			return ViewUtil.formatDate(object.getProblem().getWhenAssignedAsDate());
 		}
 	}
 	
-	private static class ProblemWhenDueColumn extends TextColumn<Problem> {
+	private static class ProblemWhenDueColumn extends TextColumn<ProblemAndModule> {
 		/* (non-Javadoc)
 		 * @see com.google.gwt.user.cellview.client.Column#getValue(java.lang.Object)
 		 */
 		@Override
-		public String getValue(Problem object) {
-			return ViewUtil.formatDate(object.getWhenDueAsDate());
+		public String getValue(ProblemAndModule object) {
+			return ViewUtil.formatDate(object.getProblem().getWhenDueAsDate());
 		}
 	}
 	
-	private static class ProblemVisibleColumn extends TextColumn<Problem> {
+	private static class ProblemVisibleColumn extends TextColumn<ProblemAndModule> {
 		/* (non-Javadoc)
 		 * @see com.google.gwt.user.cellview.client.Column#getValue(java.lang.Object)
 		 */
 		@Override
-		public String getValue(Problem object) {
-			return object.isVisible() ? "true" : "false";
+		public String getValue(ProblemAndModule object) {
+			return object.getProblem().isVisible() ? "true" : "false";
+		}
+	}
+	
+//	private static class ProblemModuleNameColumn extends TextColumn<ProblemAndModule> {
+//		@Override
+//		public String getValue(ProblemAndModule object) {
+//			return object.getModule().getName();
+//		}
+//	}
+	
+	private static class ProblemModuleNameColumn extends Column<ProblemAndModule, String> {
+		public ProblemModuleNameColumn() {
+			super(new EditTextCell());
+		}
+		
+		/* (non-Javadoc)
+		 * @see com.google.gwt.user.cellview.client.Column#getValue(java.lang.Object)
+		 */
+		@Override
+		public String getValue(ProblemAndModule object) {
+			return object.getModule().getName();
 		}
 	}
 
@@ -138,29 +188,25 @@ public class CourseAdminProblemListView extends ResizeComposite implements Subsc
 		
 		// Set selection model.
 		// When a Problem is selected, it will be added to the Session.
-		this.selectionModel = new SingleSelectionModel<Problem>();
+		this.selectionModel = new SingleSelectionModel<ProblemAndModule>();
 		selectionModel.addSelectionChangeHandler(new Handler() {
 			@Override
 			public void onSelectionChange(SelectionChangeEvent event) {
-				Problem selected = selectionModel.getSelectedObject();
+				ProblemAndModule selected = selectionModel.getSelectedObject();
 				if (selected != null) {
-					session.add(selected);
+					session.add(selected.getProblem());
 				}
 			}
 		});
 		grid.setSelectionModel(selectionModel);
-		
-		// If the session contains a list of ProblemAndSubmissionReceipts, display the problems.
-		// Otherwise, initiate loading of problems for course.
-		ProblemAndSubmissionReceipt[] problemAndSubmissionReceiptList = session.get(ProblemAndSubmissionReceipt[].class);
-		if (problemAndSubmissionReceiptList != null) {
-			GWT.log("Session contains " + problemAndSubmissionReceiptList.length + " problems");
-			displayProblems(problemAndSubmissionReceiptList);
-		} else {
-			GWT.log("No problems in session...loading...");
-			Course course = session.get(Course.class);
-			loadProblems(session, course);
-		}
+
+		// Force loading of problems in course.
+		// This avoids the problem that if a module in a course was selected
+		// in the courses/problems page, some of the problems may not be
+		// in the session (because they weren't in the selected module).
+		CourseSelection courseSelection = session.get(CourseSelection.class);
+		Course course = courseSelection.getCourse();
+		loadProblems(session, course);
 	}
 	
 	/**
@@ -169,16 +215,21 @@ public class CourseAdminProblemListView extends ResizeComposite implements Subsc
 	 * @return the currently-selected {@link Problem}
 	 */
 	public Problem getSelected() {
-		return selectionModel.getSelectedObject();
+		return selectionModel.getSelectedObject().getProblem();
 	}
 
 	private void loadProblems(final Session session, final Course course) {
-		RPC.getCoursesAndProblemsService.getProblems(course, new AsyncCallback<Problem[]>() {
+		RPC.getCoursesAndProblemsService.getProblemAndSubscriptionReceipts(course, (Module)null, new AsyncCallback<ProblemAndSubmissionReceipt[]>() {
+			/* (non-Javadoc)
+			 * @see com.google.gwt.user.client.rpc.AsyncCallback#onSuccess(java.lang.Object)
+			 */
 			@Override
-			public void onSuccess(Problem[] result) {
+			public void onSuccess(ProblemAndSubmissionReceipt[] result) {
 				displayProblems(result);
 			}
-			
+			/* (non-Javadoc)
+			 * @see com.google.gwt.user.client.rpc.AsyncCallback#onFailure(java.lang.Throwable)
+			 */
 			@Override
 			public void onFailure(Throwable caught) {
 				if (caught instanceof CloudCoderAuthenticationException) {
@@ -188,8 +239,6 @@ public class CourseAdminProblemListView extends ResizeComposite implements Subsc
 							loadProblems(session, course);
 						}
 					});
-				} else {
-					session.add(StatusMessage.error("Could not load problems for course: " + caught.getMessage()));
 				}
 			}
 		});
@@ -200,12 +249,14 @@ public class CourseAdminProblemListView extends ResizeComposite implements Subsc
 	 */
 	@Override
 	public void eventOccurred(Object key, Publisher publisher, Object hint) {
-		if (key == Session.Event.ADDED_OBJECT && (hint instanceof Course)) {
+		if (key == Session.Event.ADDED_OBJECT && (hint instanceof CourseSelection)) {
 			// Course selected, load its problems.
 			// Note that this isn't really needed by CourseAdminPage (because there
 			// is only one Course which is pre-selected), but if this view is
 			// reused in another page at some point, this might be useful.
-			loadProblems(session, (Course)hint);
+			CourseSelection courseSelection = (CourseSelection) hint;
+			Course course = courseSelection.getCourse();
+			loadProblems(session, course);
 		} else if (key == Session.Event.ADDED_OBJECT && (hint instanceof ProblemAndSubmissionReceipt[])) {
 			// This can happen when these is an explicit reload of problems
 			displayProblems((ProblemAndSubmissionReceipt[]) hint);
@@ -213,15 +264,15 @@ public class CourseAdminProblemListView extends ResizeComposite implements Subsc
 	}
 
 	protected void displayProblems(ProblemAndSubmissionReceipt[] problemAndSubmissionReceiptList) {
-		Problem[] problems = new Problem[problemAndSubmissionReceiptList.length];
+		ProblemAndModule[] problems = new ProblemAndModule[problemAndSubmissionReceiptList.length];
 		int count = 0;
 		for (ProblemAndSubmissionReceipt p : problemAndSubmissionReceiptList) {
-			problems[count++] = p.getProblem();
+			problems[count++] = new ProblemAndModule(p.getProblem(), p.getModule());
 		}
 		displayProblems(problems);
 	}
 
-	protected void displayProblems(Problem[] result) {
+	protected void displayProblems(ProblemAndModule[] result) {
 		grid.setRowCount(result.length);
 		grid.setRowData(Arrays.asList(result));
 	}

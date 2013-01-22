@@ -17,6 +17,7 @@
 
 package org.cloudcoder.app.client.page;
 
+import org.cloudcoder.app.client.model.CourseSelection;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.rpc.RPC;
@@ -597,7 +598,7 @@ public class UserAdminPage extends CloudCoderPage
             statusMessageView.activate(session, subscriptionRegistrar);
             
             // The session should contain a course
-            Course course = session.get(Course.class);
+            Course course = getCurrentCourse();
             rawCourseTitle=course.getName()+" - "+course.getTitle();
             courseLabel.setText(rawCourseTitle);
             courseId=course.getId();
@@ -608,7 +609,7 @@ public class UserAdminPage extends CloudCoderPage
         public void eventOccurred(Object key, Publisher publisher, Object hint) {
             if (key == Session.Event.ADDED_OBJECT && (hint instanceof User)) {
                 onSelectUser((User) hint);
-            } else if (key == Session.Event.ADDED_OBJECT && (hint instanceof Course)) {
+            } else if (key == Session.Event.ADDED_OBJECT && (hint instanceof CourseSelection)) {
                 
             }
         }
@@ -631,7 +632,7 @@ public class UserAdminPage extends CloudCoderPage
             GWT.log("handle edit user");
             //final User chosen = getSession().get(User.class);
             final User chosen = userAdminUsersListView.getSelectedUser();
-            final Course course = getSession().get(Course.class);
+            final Course course = getCurrentCourse();
             //TODO get the course type?
             //TODO wtf is the in the user record and how does it get there?
             CourseRegistrationType type=null;
@@ -676,7 +677,7 @@ public class UserAdminPage extends CloudCoderPage
             if (chosen==null) {
                 return;
             }
-            final Course course = getSession().get(Course.class);
+            final Course course = getCurrentCourse();
             
             GWT.log("handling user "+chosen.getUsername());
             //TODO get the course type?

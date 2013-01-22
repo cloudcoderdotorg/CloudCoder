@@ -1,6 +1,6 @@
 // CloudCoder - a web-based pedagogical programming environment
-// Copyright (C) 2011-2012, Jaime Spacco <jspacco@knox.edu>
-// Copyright (C) 2011-2012, David H. Hovemeyer <david.hovemeyer@gmail.com>
+// Copyright (C) 2011-2013, Jaime Spacco <jspacco@knox.edu>
+// Copyright (C) 2011-2013, David H. Hovemeyer <david.hovemeyer@gmail.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -19,6 +19,7 @@ package org.cloudcoder.app.client.rpc;
 
 import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.CourseAndCourseRegistration;
+import org.cloudcoder.app.shared.model.Module;
 import org.cloudcoder.app.shared.model.OperationResult;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemAndSubmissionReceipt;
@@ -38,7 +39,7 @@ public interface GetCoursesAndProblemsServiceAsync {
 
 	void getProblems(Course course, AsyncCallback<Problem[]> callback);
 
-	void getProblemAndSubscriptionReceipts(Course course,
+	void getProblemAndSubscriptionReceipts(Course course, Module module,
 			AsyncCallback<ProblemAndSubmissionReceipt[]> callback);
 
 	void getProblemAndSubscriptionReceipts(Course course, User user,
@@ -65,5 +66,10 @@ public interface GetCoursesAndProblemsServiceAsync {
 	void findCurrentQuiz(Problem problem, AsyncCallback<Quiz> callback);
 
 	void endQuiz(Quiz quiz, AsyncCallback<Boolean> callback);
+
+	void getModulesForCourse(Course course, AsyncCallback<Module[]> callback);
+
+	void setModule(Problem problem, String moduleName,
+			AsyncCallback<Module> callback);
 
 }

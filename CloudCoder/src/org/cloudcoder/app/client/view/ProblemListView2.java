@@ -19,13 +19,13 @@ package org.cloudcoder.app.client.view;
 
 import java.util.Arrays;
 
+import org.cloudcoder.app.client.model.CourseSelection;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.page.CloudCoderPage;
 import org.cloudcoder.app.client.page.SessionObserver;
 import org.cloudcoder.app.client.rpc.RPC;
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
-import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.ProblemAndSubmissionReceipt;
 import org.cloudcoder.app.shared.model.SubmissionStatus;
 import org.cloudcoder.app.shared.util.Publisher;
@@ -138,11 +138,13 @@ public class ProblemListView2 extends ResizeComposite implements SessionObserver
 			}
 		});
 		
-		// If there is already a Course selected, load its problems
-		Course course = session.get(Course.class);
+		// If there is already a Course selected, load its problems.
+		// Otherwise, if there are problems already in the session, display them.
+		CourseSelection courseSelection = session.get(CourseSelection.class);
 		ProblemAndSubmissionReceipt[] problemList = session.get(ProblemAndSubmissionReceipt[].class);
-		if (course != null) {
-			loadProblemsForCourse(course);
+		if (courseSelection != null) {
+//			Course course = courseSelection.getCourse();
+			loadProblemsForCourse(courseSelection);
 		} else if (problemList != null) {
 			displayLoadedProblems(problemList);
 		}
@@ -150,9 +152,10 @@ public class ProblemListView2 extends ResizeComposite implements SessionObserver
 	
 	@Override
 	public void eventOccurred(Object key, Publisher publisher, Object hint) {
-		if (key == Session.Event.ADDED_OBJECT && (hint instanceof Course)) {
+		if (key == Session.Event.ADDED_OBJECT && (hint instanceof CourseSelection)) {
 			// A Course has been selected: load its problems
-			loadProblemsForCourse((Course) hint);
+			CourseSelection courseSelection = (CourseSelection) hint;
+			loadProblemsForCourse(courseSelection);
 		} else if (key == Session.Event.ADDED_OBJECT && (hint instanceof ProblemAndSubmissionReceipt[])) {
 			// The list of ProblemAndSubmissionReceipts has been reloaded.
 			// This can happen because the current page has done something to change
@@ -161,8 +164,8 @@ public class ProblemListView2 extends ResizeComposite implements SessionObserver
 		}
 	}
 
-	public void loadProblemsForCourse(final Course course) {
-		RPC.getCoursesAndProblemsService.getProblemAndSubscriptionReceipts(course, new AsyncCallback<ProblemAndSubmissionReceipt[]>() {
+	public void loadProblemsForCourse(final CourseSelection courseSelection) {
+		RPC.getCoursesAndProblemsService.getProblemAndSubscriptionReceipts(courseSelection.getCourse(), courseSelection.getModule(), new AsyncCallback<ProblemAndSubmissionReceipt[]>() {
 			@Override
 			public void onFailure(Throwable caught) {
 				if (caught instanceof CloudCoderAuthenticationException) {
@@ -170,7 +173,7 @@ public class ProblemListView2 extends ResizeComposite implements SessionObserver
 						@Override
 						public void run() {
 							// Try again!
-							loadProblemsForCourse(course);
+							loadProblemsForCourse(courseSelection);
 						}
 					});
 				} else {

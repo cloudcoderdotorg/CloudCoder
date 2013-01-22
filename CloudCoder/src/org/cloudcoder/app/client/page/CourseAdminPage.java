@@ -1,6 +1,6 @@
 // CloudCoder - a web-based pedagogical programming environment
-// Copyright (C) 2011-2012, Jaime Spacco <jspacco@knox.edu>
-// Copyright (C) 2011-2012, David H. Hovemeyer <david.hovemeyer@gmail.com>
+// Copyright (C) 2011-2013, Jaime Spacco <jspacco@knox.edu>
+// Copyright (C) 2011-2013, David H. Hovemeyer <david.hovemeyer@gmail.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -32,8 +32,10 @@ import org.cloudcoder.app.client.view.StatusMessageView;
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
 import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.ICallback;
+import org.cloudcoder.app.shared.model.Module;
 import org.cloudcoder.app.shared.model.OperationResult;
 import org.cloudcoder.app.shared.model.Problem;
+import org.cloudcoder.app.shared.model.ProblemAndModule;
 import org.cloudcoder.app.shared.model.ProblemAndTestCaseList;
 import org.cloudcoder.app.shared.model.ProblemAuthorship;
 import org.cloudcoder.app.shared.model.TestCase;
@@ -162,6 +164,22 @@ public class CourseAdminPage extends CloudCoderPage {
 			// Create a center panel with problems list.
 			this.courseAdminProblemListView = new CourseAdminProblemListView(CourseAdminPage.this);
 			dockLayoutPanel.add(courseAdminProblemListView);
+			// Handle edits to the module name.
+			courseAdminProblemListView.setEditModuleNameCallback(new ICallback<ProblemAndModule>() {
+				public void call(ProblemAndModule value) {
+					RPC.getCoursesAndProblemsService.setModule(value.getProblem(), value.getModule().getName(), new AsyncCallback<Module>() {
+						@Override
+						public void onFailure(Throwable caught) {
+							getSession().add(StatusMessage.error("Could not set module for exercise", caught));
+						}
+
+						@Override
+						public void onSuccess(Module result) {
+							getSession().add(StatusMessage.goodNews("Successfully changed module for exercise"));
+						}
+					});
+				}
+			});
 			
 			initWidget(dockLayoutPanel);
 		}
@@ -209,7 +227,7 @@ public class CourseAdminPage extends CloudCoderPage {
 
 		private void doChangeVisibility(final boolean visible) {
 			Problem chosen = getSession().get(Problem.class);
-			final Course course = getSession().get(Course.class);
+			final Course course = getCurrentCourse();
 			
 			getSession().add(StatusMessage.pending("Changing visibility of problem..."));
 			
@@ -271,7 +289,7 @@ public class CourseAdminPage extends CloudCoderPage {
 
 		private void doImportProblem() {
 			ImportProblemDialog dialog = new ImportProblemDialog();
-			final Course course = getSession().get(Course.class);
+			final Course course = getCurrentCourse();
 			dialog.setCourse(course);
 			dialog.setResultCallback(new ICallback<ProblemAndTestCaseList>() {
 				@Override
@@ -304,7 +322,7 @@ public class CourseAdminPage extends CloudCoderPage {
 		
 		private void handleDeleteProblem() {
 			final Problem chosen = getSession().get(Problem.class);
-			final Course course = getSession().get(Course.class);
+			final Course course = getCurrentCourse();
 			
 			// Only invisible problems may be deleted
 			if (chosen.isVisible()) {
@@ -402,7 +420,7 @@ public class CourseAdminPage extends CloudCoderPage {
 			problem.setAuthorWebsite(user.getWebsite());
 			
 			// Set course id
-			problem.setCourseId(getSession().get(Course.class).getId());
+			problem.setCourseId(getCurrentCourse().getId());
 			
 			// Initially there are no test cases
 			TestCase[] testCaseList= new TestCase[0];
@@ -437,7 +455,7 @@ public class CourseAdminPage extends CloudCoderPage {
 			statusMessageView.activate(session, subscriptionRegistrar);
 			
 			// The session should contain a course
-			Course course = session.get(Course.class);
+			Course course = getCurrentCourse();
 			courseLabel.setText(course.getName() + " - " + course.getTitle());
 		}
 

@@ -22,6 +22,7 @@ import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.rpc.RPC;
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
 import org.cloudcoder.app.shared.model.Course;
+import org.cloudcoder.app.shared.model.Module;
 import org.cloudcoder.app.shared.model.ProblemAndSubmissionReceipt;
 
 import com.google.gwt.core.client.GWT;
@@ -41,7 +42,7 @@ public class SessionUtil {
 	 * @param session  the {@link Session}
 	 */
 	public static void loadProblemAndSubmissionReceiptsInCourse(final CloudCoderPage page, final Course course, final Session session) {
-        RPC.getCoursesAndProblemsService.getProblemAndSubscriptionReceipts(course, new AsyncCallback<ProblemAndSubmissionReceipt[]>() {
+        RPC.getCoursesAndProblemsService.getProblemAndSubscriptionReceipts(course, (Module)null, new AsyncCallback<ProblemAndSubmissionReceipt[]>() {
             @Override
             public void onFailure(Throwable caught) {
             	if (caught instanceof CloudCoderAuthenticationException) {
