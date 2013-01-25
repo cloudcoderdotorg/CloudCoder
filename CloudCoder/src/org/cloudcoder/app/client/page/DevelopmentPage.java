@@ -497,24 +497,33 @@ public class DevelopmentPage extends CloudCoderPage {
 						});
 					} else {
 						GWT.log("Could not set problem", caught);
-						addSessionObject(StatusMessage.error("Error loading problem on server: " + caught.getMessage()));
+						addSessionObject(StatusMessage.error("Error loading exercise", caught));
 					}
 				}
 				
 				@Override
 				public void onSuccess(Problem result) {
-					// Awesome - the server has approved us to work on this problem.
-					// Get the UI ready for some coding!
-
-					// initiate loading of current problem text
-					asyncLoadCurrentProblemText();
-
-					// start a timer to periodically transmit pending changes to the server
-					startTransmitPendingChangeTimer(session);
-					
-					// create (but do not start) a timer to periodically poll to check
-					// if a submission has completed compilation/testing
-					createCheckPendingSubmissionTimer();
+					if (result == null) {
+						// The server did not approve us to work on the problem.
+						// One possibility is that the user has an active quiz in
+						// progress.  When a student starts working on a quiz,
+						// working on other problems is not allowed.
+						session.add(StatusMessage.error("This exercise is not available (did you start a quiz?)"));
+						mode = Mode.PREVENT_EDITS;
+					} else {
+						// Awesome - the server has approved us to work on this problem.
+						// Get the UI ready for some coding!
+	
+						// initiate loading of current problem text
+						asyncLoadCurrentProblemText();
+	
+						// start a timer to periodically transmit pending changes to the server
+						startTransmitPendingChangeTimer(session);
+						
+						// create (but do not start) a timer to periodically poll to check
+						// if a submission has completed compilation/testing
+						createCheckPendingSubmissionTimer();
+					}
 				}
 			});
 		}

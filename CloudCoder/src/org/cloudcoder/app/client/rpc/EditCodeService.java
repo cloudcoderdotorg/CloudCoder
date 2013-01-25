@@ -32,8 +32,8 @@ public interface EditCodeService extends RemoteService {
 	 * Set the {@link Problem} the user wants to work on.
 	 * 
 	 * @param problemId the problem id
-	 * @return the {@link Problem}
-	 * @throws CloudCoderAuthenticationException if the user is not permitted to work on the problem
+	 * @return the {@link Problem}, or null if the user is not permitted to work on the problem
+	 * @throws CloudCoderAuthenticationException if the user is not logged in
 	 */
 	public Problem setProblem(int problemId) throws CloudCoderAuthenticationException;
 	

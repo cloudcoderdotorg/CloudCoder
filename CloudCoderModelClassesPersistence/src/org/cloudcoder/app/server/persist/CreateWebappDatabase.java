@@ -35,6 +35,7 @@ import org.cloudcoder.app.shared.model.ModelObjectSchema;
 import org.cloudcoder.app.shared.model.Module;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.Quiz;
+import org.cloudcoder.app.shared.model.StartedQuiz;
 import org.cloudcoder.app.shared.model.SubmissionReceipt;
 import org.cloudcoder.app.shared.model.Term;
 import org.cloudcoder.app.shared.model.TestCase;
@@ -67,6 +68,7 @@ public class CreateWebappDatabase {
 		User.SCHEMA,
 		Quiz.SCHEMA,
 		Module.SCHEMA,
+		StartedQuiz.SCHEMA,
 	};
 	
 	private static class Props {

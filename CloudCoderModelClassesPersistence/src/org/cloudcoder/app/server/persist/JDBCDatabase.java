@@ -61,6 +61,7 @@ import org.cloudcoder.app.shared.model.RepoProblemSearchCriteria;
 import org.cloudcoder.app.shared.model.RepoProblemSearchResult;
 import org.cloudcoder.app.shared.model.RepoProblemTag;
 import org.cloudcoder.app.shared.model.RepoTestCase;
+import org.cloudcoder.app.shared.model.StartedQuiz;
 import org.cloudcoder.app.shared.model.SubmissionReceipt;
 import org.cloudcoder.app.shared.model.SubmissionStatus;
 import org.cloudcoder.app.shared.model.Term;
@@ -1881,9 +1882,10 @@ public class JDBCDatabase implements IDatabase {
 				// (throwing CloudCoderAuthenticationException if not)
 				PreparedStatement verifyInstructorStmt = prepareStatement(
 						conn,
-						"select cr.id from cc_course_registrations as cr " +
+						"select cr.id from cc_course_registrations as cr, cc_problems as p " +
 						" where cr.user_id = ? " +
-						"   and cr.course_id = ? " +
+						"   and p.problem_id = ? " +
+						"   and cr.course_id = p.course_id " +
 						"   and cr.registration_type >= ?"
 				);
 				verifyInstructorStmt.setInt(1, user.getId());
@@ -1892,7 +1894,11 @@ public class JDBCDatabase implements IDatabase {
 				
 				ResultSet verifyInstructorResultSet = executeQuery(verifyInstructorStmt);
 				if (!verifyInstructorResultSet.next()) {
-					throw new CloudCoderAuthenticationException("Only an instructor can set the module for an exerise");
+					logger.info(
+							"Attempt by user {} to set module for problem {} without instructor permission",
+							user.getId(),
+							problem.getProblemId());
+					throw new CloudCoderAuthenticationException("Only an instructor can set the module for an exercise");
 				}
 				
 				// See if the module exists already
@@ -1922,6 +1928,85 @@ public class JDBCDatabase implements IDatabase {
 			@Override
 			public String getDescription() {
 				return " setting module for problem";
+			}
+		});
+	}
+	
+	@Override
+	public StartedQuiz startOrContinueQuiz(final User user, final Quiz quiz) {
+		return databaseRun(new AbstractDatabaseRunnableNoAuthException<StartedQuiz>() {
+			@Override
+			public StartedQuiz run(Connection conn) throws SQLException {
+				PreparedStatement query = prepareStatement(
+						conn,
+						"select sq.* from cc_started_quizzes as sq, cc_quizzes as q " +
+						" where sq.user_id = ? " +
+						"   and sq.quiz_id = ? " +
+						"   and q.id = sq.quiz_id " +
+						"   and q.start_time <= ? " +
+						"   and (q.end_time = 0 or q.end_time > ?)"
+				);
+				query.setInt(1, user.getId());
+				query.setInt(2, quiz.getId());
+				long currentTime = System.currentTimeMillis();
+				query.setLong(3, currentTime);
+				query.setLong(4, currentTime);
+				
+				StartedQuiz startedQuiz = new StartedQuiz();
+				ResultSet queryResult = executeQuery(query);
+				if (queryResult.next()) {
+					// Found the StartedQuiz
+					DBUtil.loadModelObjectFields(startedQuiz, StartedQuiz.SCHEMA, queryResult);
+				} else {
+					// StartedQuiz doesn't exist yet, so create it
+					startedQuiz.setQuizId(quiz.getId());
+					startedQuiz.setUserId(user.getId());
+					startedQuiz.setStartTime(currentTime);
+					DBUtil.storeModelObject(conn, startedQuiz);
+				}
+				
+				return startedQuiz;
+			}
+			
+			@Override
+			public String getDescription() {
+				return " checking for started quiz";
+			}
+		});
+	}
+	
+	@Override
+	public StartedQuiz findUnfinishedQuiz(final User user) {
+		return databaseRun(new AbstractDatabaseRunnableNoAuthException<StartedQuiz>() {
+			@Override
+			public StartedQuiz run(Connection conn) throws SQLException {
+				PreparedStatement stmt = prepareStatement(
+						conn,
+						"select sq.* from cc_started_quizzes as sq, cc_quizzes as q " +
+						" where sq.quiz_id = q.id " +
+						"   and sq.user_id = ? " +
+						"   and q.start_time < ? " +
+						"   and (q.end_time = 0 or q.end_time > ?)"
+				);
+				stmt.setInt(1, user.getId());
+				
+				long currentTime = System.currentTimeMillis();
+				stmt.setLong(2, currentTime);
+				stmt.setLong(3, currentTime);
+				
+				ResultSet resultSet = executeQuery(stmt);
+				StartedQuiz result = null;
+				if (resultSet.next()) {
+					result = new StartedQuiz();
+					DBUtil.loadModelObjectFields(result, StartedQuiz.SCHEMA, resultSet);
+					return result;
+				}
+				
+				return result;
+			}
+			@Override
+			public String getDescription() {
+				return " finding unfinished quiz for user";
 			}
 		});
 	}

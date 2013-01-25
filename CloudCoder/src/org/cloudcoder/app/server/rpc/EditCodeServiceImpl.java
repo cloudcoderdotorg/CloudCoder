@@ -34,6 +34,7 @@ import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemText;
 import org.cloudcoder.app.shared.model.Quiz;
 import org.cloudcoder.app.shared.model.QuizEndedException;
+import org.cloudcoder.app.shared.model.StartedQuiz;
 import org.cloudcoder.app.shared.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +60,26 @@ public class EditCodeServiceImpl extends RemoteServiceServlet implements EditCod
 		// Get the problem
 		Pair<Problem, Quiz> pair = Database.getInstance().getProblem(user, problemId);
 		if (pair == null) {
+			// User is not permitted to access this problem
 			return null;
+		}
+		
+		// Check whether the user has started a quiz that has not concluded.
+		// The existence of a StartedQuiz for an in-progress
+		// quiz locks a student out of access to other problems.
+		// (This prevents students cheating by examining the solutions to previous
+		// problems while working on the current quiz.)  The lockout ends
+		// when the quiz ends.
+		StartedQuiz startedQuiz = Database.getInstance().findUnfinishedQuiz(user);
+		if (startedQuiz != null) {
+			// Make sure that the problem the user has selected
+			// is the same one as the ongoing quiz.
+			if (pair.getRight() == null || pair.getRight().getId() != startedQuiz.getId()) {
+				// User is trying to load a problem other than the quiz.
+				logger.info("User {} attempted to work on problem {} during ongoing quiz {}",
+						new Object[]{user.getId(), pair.getLeft().getProblemId(), startedQuiz.getQuizId()});
+				return null;
+			}
 		}
 
 		// Store the Problem and (if there is one) Quiz in the HttpSession -
@@ -69,6 +89,12 @@ public class EditCodeServiceImpl extends RemoteServiceServlet implements EditCod
 		// been forged.)
 		getThreadLocalRequest().getSession().setAttribute(SessionAttributeKeys.PROBLEM_KEY, pair.getLeft());
 		getThreadLocalRequest().getSession().setAttribute(SessionAttributeKeys.QUIZ_KEY, pair.getRight());
+		
+		// If the user is working on a quiz, make sure a StartedQuiz object
+		// has been recorded.
+		if (pair.getRight() != null) {
+			Database.getInstance().startOrContinueQuiz(user, pair.getRight());
+		}
 
 		// If appropriate, record that the user has started the problem
 		Database.getInstance().getOrAddLatestSubmissionReceipt(user, pair.getLeft());

@@ -43,6 +43,7 @@ import org.cloudcoder.app.shared.model.RepoProblemAndTestCaseList;
 import org.cloudcoder.app.shared.model.RepoProblemSearchCriteria;
 import org.cloudcoder.app.shared.model.RepoProblemSearchResult;
 import org.cloudcoder.app.shared.model.RepoProblemTag;
+import org.cloudcoder.app.shared.model.StartedQuiz;
 import org.cloudcoder.app.shared.model.SubmissionReceipt;
 import org.cloudcoder.app.shared.model.Term;
 import org.cloudcoder.app.shared.model.TestCase;
@@ -418,7 +419,7 @@ public interface IDatabase {
 	/**
 	 * Start a {@link Quiz} for given {@link Problem} in given course section.
 	 * 
-	 * @param user    the authenticated {@link User), who must be an instructor
+	 * @param user    the authenticated {@link User}, who must be an instructor
 	 *                in the course/section
 	 * @param problem the {@link Problem} to give as a quiz
 	 * @param section the course section
@@ -482,5 +483,26 @@ public interface IDatabase {
 	 * @return
 	 */
 	public Module setModule(User user, Problem problem, String moduleName) throws CloudCoderAuthenticationException;
+
+	/**
+	 * Start or continue a user's work on a quiz.
+	 * Ensures that a {@link StartedQuiz} object exists for the user/quiz.
+	 * 
+	 * @param user     the {@link User}
+	 * @param quiz     the {@link Quiz}
+	 * @return the {@link StartedQuiz} that indicates that the user has started
+	 *         the quiz
+	 */
+	public StartedQuiz startOrContinueQuiz(User user, Quiz quiz);
+
+	/**
+	 * Find out whether the given {@link User} has started a {@link Quiz},
+	 * but has not finished it.
+	 * 
+	 * @param user the {@link User}
+	 * @return the {@link StartedQuiz} object specifying the unfinished quiz,
+	 *         or null if there is no unfinished quiz for this user
+	 */
+	public StartedQuiz findUnfinishedQuiz(User user);
 
 }
