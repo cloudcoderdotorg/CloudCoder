@@ -39,6 +39,7 @@ import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.CourseRegistration;
 import org.cloudcoder.app.shared.model.CourseRegistrationList;
 import org.cloudcoder.app.shared.model.CourseRegistrationType;
+import org.cloudcoder.app.shared.model.EditedUser;
 import org.cloudcoder.app.shared.model.Event;
 import org.cloudcoder.app.shared.model.IContainsEvent;
 import org.cloudcoder.app.shared.model.IModelObject;
@@ -933,31 +934,31 @@ public class JDBCDatabase implements IDatabase {
     }
 
     @Override
-    public void addUserToCourse(final User user, final int courseId, final CourseRegistrationType registrationType, final int section) {
-	    databaseRun(new AbstractDatabaseRunnableNoAuthException<Boolean>() {
-	        /* (non-Javadoc)
-             * @see org.cloudcoder.app.server.persist.DatabaseRunnable#run(java.sql.Connection)
-             */
-            @Override
-            public Boolean run(Connection conn) throws SQLException {
-                logger.info("inserting user "+user.getUsername()+" to course "+courseId);
-                int userId=doInsertOrUpdateUser(user, conn, this);
-                user.setId(userId);
-                ConfigurationUtil.registerUser(conn, user.getId(), courseId, registrationType, section);
-                return true;
-            }
-            
-            /* (non-Javadoc)
-             * @see org.cloudcoder.app.server.persist.DatabaseRunnable#getDescription()
-             */
-            @Override
-            public String getDescription() {
-                return "Registering student";
-            }
-        });
-    }
+	public void addUserToCourse(final User authenticatedUser, final int courseId, final EditedUser editedUser) throws CloudCoderAuthenticationException {
+    	databaseRunAuth(new AbstractDatabaseRunnable<Boolean>() {
+    		@Override
+    		public Boolean run(Connection conn) throws SQLException, CloudCoderAuthenticationException {
+    			// Make sure authenticated user is an instructor in the course
+    			CourseRegistrationList regList = doGetCourseRegistrations(conn, courseId, authenticatedUser.getId(), this);
+    			if (!regList.isInstructor()) {
+    				logger.warn("Attempt by non-instructor user {} to add new user to course {}", authenticatedUser.getId(), courseId);
+    				throw new CloudCoderAuthenticationException("Only an instructor can add user to course");
+    			}
 
-    
+    			// Add the new user
+    			User user = editedUser.getUser();
+    			int userId = ConfigurationUtil.createOrUpdateUser(conn, user.getUsername(), user.getFirstname(), user.getLastname(), user.getEmail(), editedUser.getPassword(), user.getWebsite());
+    			user.setId(userId);
+    			ConfigurationUtil.registerUser(conn, user.getId(), courseId, editedUser.getRegistrationType(), editedUser.getSection());
+    			
+    			return true;
+    		}
+    		@Override
+    		public String getDescription() {
+    			return " adding user to course";
+    		}
+		});
+    }
 
     @Override
 	public void addProblem(final Problem problem) {
@@ -2244,18 +2245,18 @@ public class JDBCDatabase implements IDatabase {
 		return resultSet.getInt(1);
 	}
 
-	private int doInsertOrUpdateUser(User user, 
-	    Connection conn,
-	    AbstractDatabaseRunnable<?> databaseRunnable) throws SQLException
-	{
-	    return ConfigurationUtil.createOrUpdateUser(conn, 
-	            user.getUsername(), 
-	            user.getFirstname(), 
-	            user.getLastname(), 
-	            user.getEmail(), 
-	            user.getPasswordHash(),
-	            user.getWebsite());
-    }
+//	private int doInsertOrUpdateUser(User user, 
+//	    Connection conn,
+//	    AbstractDatabaseRunnable<?> databaseRunnable) throws SQLException
+//	{
+//	    return ConfigurationUtil.createOrUpdateUser(conn, 
+//	            user.getUsername(), 
+//	            user.getFirstname(), 
+//	            user.getLastname(), 
+//	            user.getEmail(), 
+//	            user.getPasswordHash(),
+//	            user.getWebsite());
+//    }
 	
 	private List<? extends Object[]> doGetCoursesForUser(
 			final User user,

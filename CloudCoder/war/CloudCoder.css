@@ -9,6 +9,16 @@
 	color: red;
 	font-style: italic;
 }
+/* Style for input fields marked as invalid during validation. */
+.cc-invalid {
+	background: #f88;
+}
+/* Style to make buttons float to the right in a dialog box. */
+.cc-floatRightButton {
+	float: right;
+	margin-right: 10px;
+	margin-left: 10px;
+}
 .cc-problemName, .cc-courseLabel, .cc-dialogTitle {
 	font-weight: bold;
 	font-size: 20px;

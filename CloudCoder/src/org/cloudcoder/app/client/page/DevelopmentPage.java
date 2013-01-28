@@ -102,11 +102,6 @@ public class DevelopmentPage extends CloudCoderPage {
 		ONCLEAN_CALLBACK_IN_PROGRESS,
 		
 		/**
-		 * Logging out.
-		 */
-		LOGOUT,
-		
-		/**
 		 * Editing is disabled because a quiz has ended, or some other
 		 * error has occurred.
 		 */
@@ -249,7 +244,19 @@ public class DevelopmentPage extends CloudCoderPage {
 			
 			// Add logout and back handlers
 			pageNavPanel.setLogoutHandler(new LogoutHandler(session));
-			pageNavPanel.setBackHandler(new BackHomeHandler(session));
+			pageNavPanel.setBackHandler(new BackHomeHandler(session) {
+				@Override
+				public void run() {
+					// Before executing superclass run method, remove
+					// Problem and QuizInProgress (if any) from the session.
+					// This prevents issues such as a quiz problem that
+					// should no longer be accessible lingering in the
+					// user's client-side session.
+					session.remove(Problem.class);
+					session.remove(QuizInProgress.class);
+					super.run();
+				}
+			});
 			
 			// Add submit handler
 			devActionsPanel.setSubmitHandler(new Runnable() {
@@ -272,6 +279,11 @@ public class DevelopmentPage extends CloudCoderPage {
 			devActionsPanel.setResetHandler(new Runnable() {
 				@Override
 				public void run() {
+					// Do not allow reset if edits are disallowed
+					if (mode == Mode.PREVENT_EDITS) {
+						return;
+					}
+
 					// Require user to confirm the reset with a dialog.
 					ChoiceDialogBox<ResetChoice> confirmResetDialog = new ChoiceDialogBox<ResetChoice>(
 							"Really reset the problem?",
@@ -375,6 +387,11 @@ public class DevelopmentPage extends CloudCoderPage {
 		}
 
 		protected void doSubmitRPC(final Problem problem, final String text) {
+			// Do not allow submit if edits are disallowed
+			if (mode == Mode.PREVENT_EDITS) {
+				return;
+			}
+
 			RPC.submitService.submit(problem.getProblemId(), text, new AsyncCallback<Void>() {
 				@Override
 				public void onFailure(Throwable caught) {
@@ -405,6 +422,11 @@ public class DevelopmentPage extends CloudCoderPage {
 		}
 		
 		private void doResetProblem() {
+			// Do not allow reset if edits are disallowed
+			if (mode == Mode.PREVENT_EDITS) {
+				return;
+			}
+			
 			GWT.log("Resetting problem");
 			
 			// The Problem object should contain the skeleton code

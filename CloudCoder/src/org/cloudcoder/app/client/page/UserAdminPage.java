@@ -21,6 +21,7 @@ import org.cloudcoder.app.client.model.CourseSelection;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.rpc.RPC;
+import org.cloudcoder.app.client.view.NewUserDialog;
 import org.cloudcoder.app.client.view.PageNavPanel;
 import org.cloudcoder.app.client.view.StatusMessageView;
 import org.cloudcoder.app.client.view.UserAdminUsersListView;
@@ -28,6 +29,8 @@ import org.cloudcoder.app.client.view.UserProgressListView;
 import org.cloudcoder.app.client.view.ViewUtil;
 import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.CourseRegistrationType;
+import org.cloudcoder.app.shared.model.EditedUser;
+import org.cloudcoder.app.shared.model.ICallback;
 import org.cloudcoder.app.shared.model.User;
 import org.cloudcoder.app.shared.util.Publisher;
 import org.cloudcoder.app.shared.util.Subscriber;
@@ -107,7 +110,7 @@ public class UserAdminPage extends CloudCoderPage
         private Button[] userManagementButtons;
         private UserAdminUsersListView userAdminUsersListView;
         private StatusMessageView statusMessageView;
-        private AddUserPopupPanel popupPanel;
+//        private AddUserPopupPanel popupPanel;
         
         public UI() {
             DockLayoutPanel dockLayoutPanel = new DockLayoutPanel(Unit.PX);
@@ -226,152 +229,8 @@ public class UserAdminPage extends CloudCoderPage
                vp.add(myGrid);
             }        	
         }
-        
-        private class AddUserPopupPanel extends PopupPanel{
 
-            public AddUserPopupPanel(final Widget widget, final int courseId){
-               super(true);
-               
-               VerticalPanel vp = new VerticalPanel();
-               setWidget(vp);
-               final FormPanel form = new FormPanel();
-               // copy of the current instance (this)
-               // to be used by inner classes
-               final PopupPanel panelCopy=this;
-               panelCopy.setGlassEnabled(true);
-               
-               // We actually perform the submit asynchronously
-               //form.setEncoding(FormPanel.ENCODING_MULTIPART);
-               //form.setMethod(FormPanel.METHOD_POST);
-              
-               // TODO are these style file hooks?
-               form.addStyleName("table-center");
-               form.addStyleName("demo-FormPanel");
-
-               VerticalPanel holder = new VerticalPanel();
-
-               // username
-               holder.add(new Label("Username"));
-               final TextBox username = new TextBox();
-               username.setName("username");
-               holder.add(username);
-               
-               // firstname
-               holder.add(new Label("Firstname"));
-               final TextBox firstname = new TextBox();
-               firstname.setName("firstname");
-               holder.add(firstname);
-               
-               // lastname
-               holder.add(new Label("Lastname"));
-               final TextBox lastname = new TextBox();
-               lastname.setName("lastname");
-               holder.add(lastname);
-               
-               // email
-               holder.add(new Label("Email"));
-               final TextBox email = new TextBox();
-               email.setName("email");
-               holder.add(email);
-               
-               // website
-               holder.add(new Label("Website"));
-               final TextBox website = new TextBox();
-               email.setName("website");
-               holder.add(website);
-
-               // password
-               holder.add(new Label("Password"));
-               final PasswordTextBox passwd = new PasswordTextBox();
-               passwd.setName("passwd");
-               holder.add(passwd);
-               
-               // re-enter password
-               holder.add(new Label("re-enter Password"));
-               final PasswordTextBox passwd2 = new PasswordTextBox();
-               passwd2.setName("passwd2");
-               holder.add(passwd2);
-               
-               // radio button for the account type
-               holder.add(new Label("Account type"));
-               final RadioButton studentAccountButton = new RadioButton("account-type","student");
-               studentAccountButton.setValue(true);
-               final RadioButton instructorAccountButton = new RadioButton("account-type","instructor");
-               holder.add(studentAccountButton);
-               holder.add(instructorAccountButton);
-               
-               holder.add(new Button("Add user", new ClickHandler() {
-                   @Override
-                   public void onClick(ClickEvent event) {
-                       //This is more like a fake form
-                       //we're not submitting it to a server-side servlet
-                       GWT.log("Add user button clicked");
-                       final User user=new User();
-                       if (username.getValue().equals("")) {
-                           Window.alert("Username cannot be empty");
-                           return;
-                       }
-                       user.setUsername(username.getValue());
-                       if (firstname.getValue().equals("")) {
-                           Window.alert("Firstname cannot be empty");
-                           return;
-                       }
-                       user.setFirstname(firstname.getValue());
-                       if (lastname.getValue().equals("")) {
-                           Window.alert("Lastname cannot be empty");
-                           return;
-                       }
-                       user.setLastname(lastname.getValue());
-                       if (email.getValue().equals("")) {
-                           Window.alert("Email cannot be empty");
-                           return;
-                       }
-                       user.setEmail(email.getValue());
-                       if (passwd.getValue().equals("")) {
-                           Window.alert("Password cannot be empty");
-                           return;
-                       }
-                       // website is allowed to be empty, but not null
-                       user.setWebsite(website.getValue());
-                       if (!passwd.getValue().equals(passwd2.getValue())) {
-                           Window.alert("Passwords do no match");
-                           return;
-                       }
-                       user.setPasswordHash(passwd.getValue());
-                       user.setWebsite("");
-                       
-                       CourseRegistrationType type=CourseRegistrationType.STUDENT;
-                       if (instructorAccountButton.getValue()) {
-                           type=CourseRegistrationType.INSTRUCTOR;
-                       }
-                       //TODO add support for sections
-                       int section=101;
-                       
-                       GWT.log("courseId is " +courseId);
-                       RPC.usersService.addUserToCourse(user, courseId, type, section, new AsyncCallback<Boolean>() {
-                        
-                           @Override
-                           public void onSuccess(Boolean result) {
-                               GWT.log("Added "+user.getUsername()+" to course "+rawCourseTitle);
-                               panelCopy.hide(true);
-                               reloadUsers();
-                               getSession().add(StatusMessage.goodNews("Added "+user.getUsername()+" to course "+rawCourseTitle));
-                           }
-
-                           @Override
-                           public void onFailure(Throwable caught) {
-                               GWT.log("Failed to add student");
-                               getSession().add(StatusMessage.error("Unable to add "+user.getUsername()+" to course"));
-                           }
-                       });
-                   }
-               }));
-               form.add(holder);
-
-               vp.add(form);
-            }
-        }
-  
+        // TODO: replace with a dialog based on EditUserView
         private class EditUserPopupPanel extends PopupPanel{
 
             public EditUserPopupPanel(final Widget widget, final User user, 
@@ -651,16 +510,35 @@ public class UserAdminPage extends CloudCoderPage
             Window.alert("Not implemented yet, sorry");
         }
         
-        private void handleNewUser(ClickEvent event) {
-            GWT.log("handle new user");
-            
-            Widget w = (Widget)event.getSource();
-            AddUserPopupPanel pop = new AddUserPopupPanel(w, courseId);
-            pop.center();
-            pop.setGlassEnabled(true);
-            pop.show();
+		private void handleNewUser(ClickEvent event) {
+			GWT.log("handle new user");
 
-        }
+			final NewUserDialog dialog = new NewUserDialog();
+			dialog.setAddUserCallback(new ICallback<EditedUser>() {
+				@Override
+				public void call(EditedUser value) {
+					final EditedUser editedUser = dialog.getData();
+					RPC.usersService.addUserToCourse(editedUser, courseId, new AsyncCallback<Boolean>() {
+
+						@Override
+						public void onSuccess(Boolean result) {
+							GWT.log("Added "+editedUser.getUser().getUsername()+" to course "+rawCourseTitle);
+							dialog.hide();
+							reloadUsers();
+							getSession().add(StatusMessage.goodNews("Added "+editedUser.getUser().getUsername()+" to course "+rawCourseTitle));
+						}
+
+						@Override
+						public void onFailure(Throwable caught) {
+							GWT.log("Failed to add student");
+							getSession().add(StatusMessage.error("Unable to add "+editedUser.getUser().getUsername()+" to course", caught));
+						}
+					});
+
+				}
+			});
+			dialog.center();
+		}
         
         private void handleRegisterNewUsers(ClickEvent event) {
             GWT.log("handle Register new users");

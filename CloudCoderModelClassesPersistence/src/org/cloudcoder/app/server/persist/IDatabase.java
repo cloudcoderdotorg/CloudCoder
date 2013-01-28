@@ -28,6 +28,7 @@ import org.cloudcoder.app.shared.model.CourseRegistration;
 import org.cloudcoder.app.shared.model.CourseRegistrationList;
 import org.cloudcoder.app.shared.model.CourseRegistrationType;
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
+import org.cloudcoder.app.shared.model.EditedUser;
 import org.cloudcoder.app.shared.model.IModelObject;
 import org.cloudcoder.app.shared.model.Module;
 import org.cloudcoder.app.shared.model.OperationResult;
@@ -281,12 +282,14 @@ public interface IDatabase {
      * will have the given course registration type and will be for the
      * section indicated.
      * 
-     * @param user
-     * @param courseId
-     * @param type
-     * @param section
+     * @param authenticatedUser the currently-authenticated {@link User}, who must be
+     *                          an instructor in the course
+     * @param courseId          the course id
+     * @param editedUser        the {@link EditedUser} containing the information about the
+     *                          new user to add
+     * @throws CloudCoderAuthenticationException if the authenticated user is not an instructor in the course
      */
-    public void addUserToCourse(User user, int courseId, CourseRegistrationType type, int section);
+    public void addUserToCourse(User authenticatedUser, int courseId, EditedUser editedUser) throws CloudCoderAuthenticationException;
 
     /**
      * Edit a user record in the database.  Any blank fields will

@@ -24,6 +24,7 @@ import org.cloudcoder.app.server.persist.Database;
 import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.CourseRegistrationType;
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
+import org.cloudcoder.app.shared.model.EditedUser;
 import org.cloudcoder.app.shared.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,16 +59,23 @@ public class UserServiceImpl extends RemoteServiceServlet implements UserService
         return resultList.toArray(userArr);
     }
     
-    public Boolean addUserToCourse(User user, int courseId, CourseRegistrationType type, int section)
-    throws CloudCoderAuthenticationException
-    {
-        logger.warn("Adding "+user.getUsername()+" to courseId "+courseId);
-        GWT.log("Adding "+user.getUsername()+" to course "+courseId);
-        User authenticatedUser = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
-        Database.getInstance().addUserToCourse(user, courseId, type, section);
+    /* (non-Javadoc)
+     * @see org.cloudcoder.app.client.rpc.UserService#addUserToCourse(org.cloudcoder.app.shared.model.EditedUser, int)
+     */
+    @Override
+    public Boolean addUserToCourse(EditedUser editedUser, int courseId) throws CloudCoderAuthenticationException {
+    	// make sure user is logged in
+    	User authenticatedUser = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
+    	
+    	// Add the EditedUser to the database
+        User user = editedUser.getUser();
+    	logger.info("Adding "+user.getUsername()+" to courseId "+courseId);
+        Database.getInstance().addUserToCourse(authenticatedUser, courseId, editedUser);
+        
         return true;
     }
     
+    @Override
     public Boolean editUser(User user)
     throws CloudCoderAuthenticationException
     {
@@ -77,6 +85,7 @@ public class UserServiceImpl extends RemoteServiceServlet implements UserService
         return true;
     }
     
+    @Override
     public void editCourseRegistrationType(int userId, int courseId, CourseRegistrationType type)
     throws CloudCoderAuthenticationException
     {
