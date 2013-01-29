@@ -1751,6 +1751,7 @@ public class JDBCDatabase implements IDatabase {
 						"   and cr.course_id = ? " +
 						"   and cr.registration_type >= ? " +
 						"   and q.course_id = cr.course_id " +
+						"   and q.section = cr.section " +
 						"   and q.problem_id = ? " +
 						"   and q.start_time <= ? " +
 						"   and (q.end_time >= ? or q.end_time = 0)"
