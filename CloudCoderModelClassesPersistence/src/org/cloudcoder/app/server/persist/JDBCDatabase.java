@@ -696,20 +696,7 @@ public class JDBCDatabase implements IDatabase {
 		return databaseRun(new AbstractDatabaseRunnableNoAuthException<List<TestCase>>() {
 			@Override
 			public List<TestCase> run(Connection conn) throws SQLException {
-				PreparedStatement stmt = prepareStatement(
-						conn,
-						"select * from " + TestCase.SCHEMA.getDbTableName() + " where problem_id = ?");
-				stmt.setInt(1, problemId);
-				
-				List<TestCase> result = new ArrayList<TestCase>();
-				
-				ResultSet resultSet = executeQuery(stmt);
-				while (resultSet.next()) {
-					TestCase testCase = new TestCase();
-					load(testCase, resultSet, 1);
-					result.add(testCase);
-				}
-				return result;
+				return doGetTestCasesForProblem(conn, problemId, this);
 			}
 			@Override
 			public String getDescription() {
@@ -717,36 +704,28 @@ public class JDBCDatabase implements IDatabase {
 			}
 		});
 	}
-	
+
 	@Override
 	public TestCase[] getTestCasesForProblem(final User authenticatedUser, final int problemId) {
 		return databaseRun(new AbstractDatabaseRunnableNoAuthException<TestCase[]>() {
 			@Override
 			public TestCase[] run(Connection conn) throws SQLException {
-				PreparedStatement stmt = prepareStatement(
-						conn,
-						"select tc.* " +
-						"   from " + TestCase.SCHEMA.getDbTableName() + " as tc, " + Problem.SCHEMA.getDbTableName() + " as p, " + CourseRegistration.SCHEMA.getDbTableName() + " as cr " +
-						"  where tc.problem_id = p.problem_id " +
-						"    and p.problem_id = ? " +
-						"    and p.course_id =  cr.course_id " +
-						"    and cr.user_id = ? " +
-						"    and cr.registration_type >= ? " +
-						"order by tc.test_case_id asc"
-						);
-				stmt.setInt(1, problemId);
-				stmt.setInt(2, authenticatedUser.getId());
-				stmt.setInt(3, CourseRegistrationType.INSTRUCTOR.ordinal());
+				// Find the problem
+				Problem problem = new Problem();
+				problem.setProblemId(problemId);
+				DBUtil.loadModelObject(conn, problem);
 				
-				ResultSet resultSet = executeQuery(stmt);
-				List<TestCase> result = new ArrayList<TestCase>();
-				while (resultSet.next()) {
-					TestCase testCase = new TestCase();
-					load(testCase, resultSet, 1);
-					result.add(testCase);
+				// Make sure the user is an instructor in the course in which the problem is assigned
+				CourseRegistrationList regList = doGetCourseRegistrations(
+						conn, problem.getCourseId(), authenticatedUser.getId(), this);
+				if (!regList.isInstructor()) {
+					// Authenticated user is not an instructor
+					return new TestCase[0];
 				}
 				
-				// Success!
+				// Authenticated user is an instructor in the course,
+				// so we can go ahead and return the test cases
+				List<TestCase> result = doGetTestCasesForProblem(conn, problemId, this);
 				return result.toArray(new TestCase[result.size()]);
 			}
 			@Override
@@ -2069,6 +2048,35 @@ public class JDBCDatabase implements IDatabase {
 		} catch (SQLException e) {
 			throw new PersistenceException("SQLException", e);
 		}
+	}
+	
+	/**
+	 * Get test cases for given problem id.
+	 * 
+	 * @param conn       the database connection
+	 * @param problemId  the problem id
+	 * @param dbRunnable the {@link AbstractDatabaseRunnable}
+	 * @return the list of test cases
+	 * @throws SQLException
+	 */
+	private List<TestCase> doGetTestCasesForProblem(
+			Connection conn,
+			int problemId,
+			AbstractDatabaseRunnable<?> dbRunnable) throws SQLException {
+		PreparedStatement stmt = dbRunnable.prepareStatement(
+				conn,
+				"select * from " + TestCase.SCHEMA.getDbTableName() + " where problem_id = ?");
+		stmt.setInt(1, problemId);
+		
+		List<TestCase> result = new ArrayList<TestCase>();
+		
+		ResultSet resultSet = dbRunnable.executeQuery(stmt);
+		while (resultSet.next()) {
+			TestCase testCase = new TestCase();
+			load(testCase, resultSet, 1);
+			result.add(testCase);
+		}
+		return result;
 	}
 
 	/**

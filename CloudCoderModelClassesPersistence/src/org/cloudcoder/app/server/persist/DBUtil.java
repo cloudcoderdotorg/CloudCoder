@@ -44,6 +44,7 @@ import org.cloudcoder.app.shared.model.ModelObjectIndexType;
 import org.cloudcoder.app.shared.model.ModelObjectSchema;
 import org.cloudcoder.app.shared.model.ModelObjectSchema.Delta;
 import org.cloudcoder.app.shared.model.ModelObjectSchema.PersistModelObjectDelta;
+import org.cloudcoder.app.shared.model.Problem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -979,5 +980,48 @@ public class DBUtil {
 			field.setUntyped(obj, value);
 		}
 		return index;
+	}
+
+	/**
+	 * Reload a model object's fields based on its unique id.
+	 * 
+	 * @param conn   connection to the database
+	 * @param obj    the object to load: the unique id must be set!
+	 * @param schema the object's schema
+	 * @throws SQLException if there is no such object in the database
+	 */
+	public static<E> void loadModelObject(Connection conn, E obj, ModelObjectSchema<? super E> schema) throws SQLException {
+		PreparedStatement stmt = null;
+		ResultSet resultSet = null;
+		
+		try {
+			ModelObjectField<? super E, ?> uniqueIdField = schema.getUniqueIdField();
+			stmt = conn.prepareStatement(
+					"select * from " + schema.getDbTableName() +
+					" where " + uniqueIdField.getName() + " = ?");
+			Object uniqueId = uniqueIdField.get(obj);
+			stmt.setObject(1, uniqueId);
+			
+			resultSet = stmt.executeQuery();
+			if (!resultSet.next()) {
+				throw new SQLException("No object found with unique id " + uniqueId);
+			}
+			
+			loadModelObjectFields(obj, schema, resultSet);
+		} finally {
+			closeQuietly(resultSet);
+			closeQuietly(stmt);
+		}
+	}
+
+	/**
+	 * Reload a model object's fields based on its unique id.
+	 * 
+	 * @param conn   connection to the database
+	 * @param obj    the object to load: the unique id must be set!
+	 * @throws SQLException if there is no such object in the database
+	 */
+	public static<E extends IModelObject<E>> void loadModelObject(Connection conn, E obj) throws SQLException {
+		loadModelObject(conn, obj, obj.getSchema());
 	}
 }
