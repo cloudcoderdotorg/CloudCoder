@@ -15,33 +15,57 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package org.cloudcoder.app.server.persist;
+package org.cloudcoder.app.shared.model;
+
+import java.io.Serializable;
 
 /**
- * Runtime exception indicating that a persistence operation
- * failed.
+ * Aggregate of {@link User} and {@link SubmissionReceipt}.
+ * Useful for pairing a user with a specific SubmissionReceipt (for example,
+ * the user's best submission receipt.)
  * 
  * @author David Hovemeyer
  */
-public class PersistenceException extends RuntimeException {
-	private static final long serialVersionUID = 1L;
-
+public class UserAndSubmissionReceipt implements Serializable {
+	private User user;
+	private SubmissionReceipt submissionReceipt;
+	
 	/**
 	 * Constructor.
-	 * 
-	 * @param msg   message describing the failure
-	 * @param cause the cause
 	 */
-	public PersistenceException(String msg, Throwable cause) {
-		super(msg, cause);
+	public UserAndSubmissionReceipt() {
+		
 	}
-
+	
 	/**
-	 * Constructor.
+	 * Set the user.
 	 * 
-	 * @param msg   message describing the failure
+	 * @param user the user to set
 	 */
-	public PersistenceException(String msg) {
-		super(msg);
+	public void setUser(User user) {
+		this.user = user;
+	}
+	
+	/**
+	 * @return the user
+	 */
+	public User getUser() {
+		return user;
+	}
+	
+	/**
+	 * Set the submission receipt.
+	 * 
+	 * @param submissionReceipt the submission receipt to set
+	 */
+	public void setSubmissionReceipt(SubmissionReceipt submissionReceipt) {
+		this.submissionReceipt = submissionReceipt;
+	}
+	
+	/**
+	 * @return the submission receipt
+	 */
+	public SubmissionReceipt getSubmissionReceipt() {
+		return submissionReceipt;
 	}
 }

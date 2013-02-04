@@ -50,6 +50,7 @@ import org.cloudcoder.app.shared.model.Term;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.TestResult;
 import org.cloudcoder.app.shared.model.User;
+import org.cloudcoder.app.shared.model.UserAndSubmissionReceipt;
 import org.cloudcoder.app.shared.model.UserRegistrationRequest;
 
 /**
@@ -324,12 +325,27 @@ public interface IDatabase {
 	
 	/**
 	 * Get best submission receipts for given {@link Problem} in given {@link Course}.
+	 * Should not be called unless the currently-authenticated user is an
+	 * instructor in the course.
 	 * 
 	 * @param course   the {@link Course}
-	 * @param problemId  the problem id
-	 * @return list of {@link Pair} objects containing {@link User} and best {@link SubmissionReceipt} for user
+	 * @param section  the section number of the course (0 for all sections)
+	 * @param problem  the {@link Problem}
+	 * @return list of {@link UserAndSubmissionReceipt} objects
 	 */
-	public List<Pair<User,SubmissionReceipt>> getBestSubmissionReceipts(Course course, int problemId);
+	public List<UserAndSubmissionReceipt> getBestSubmissionReceipts(Course course, int section, Problem problem);
+
+	/**
+	 * Get best submission receipts for given {@link Problem}.
+	 * Returns empty list if the authenticated user is not an instructor
+	 * in the course in which the problem is assigned.
+	 * 
+	 * @param problem           the {@link Problem}
+	 * @param section           the section number (0 for all sections)
+	 * @param authenticatedUser the authenticated {@link User}
+	 * @return list of best submission receipts for each user in course
+	 */
+	public List<UserAndSubmissionReceipt> getBestSubmissionReceipts(Problem problem, int section, User authenticatedUser);
 
 	/**
 	 * Delete a problem (and its test cases).
@@ -507,5 +523,15 @@ public interface IDatabase {
 	 *         or null if there is no unfinished quiz for this user
 	 */
 	public StartedQuiz findUnfinishedQuiz(User user);
+
+	/**
+	 * Get all sections for given {@link Course}.
+	 * 
+	 * @param course            the course
+	 * @param authenticatedUser the authenticated {@link User}, who must be
+	 *                          an instructor in the course
+	 * @return the sections, or an empty array if the user is not an instructor in the course
+	 */
+	public Integer[] getSectionsForCourse(Course course, User authenticatedUser);
 
 }

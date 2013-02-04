@@ -213,3 +213,29 @@
 	font-size: 92px;
 	text-align: right;
 }
+/* Bar graphs (tests passed vs. attempted) in StudentProgressView */
+.cc-barNoInfo {
+	height: 12px;
+	width: 120px;
+	background: silver;
+	margin: 0px;
+	border: 0px;
+	padding: 0px;
+}
+.cc-barOuter {
+	height: 12px;
+	width: 120px;
+	position: relative;
+	background: red;
+	margin: 0px;
+	border: 0px;
+	padding: 0px;
+}
+.cc-barInner { /* nested inside cc-barInner div to make a green bar: set width to desired percentage */
+	height: 12px;
+	left: 0px;
+	background: green;
+	margin: 0px;
+	border: 0px;
+	padding: 0px;
+}

@@ -71,6 +71,9 @@ public class Session extends Publisher {
 		
 		/** Start a quiz for currently-selected {@link Problem}. */
 		START_QUIZ,
+		
+		/** View statistics (student progress) on the currently-selected {@link Problem}. */ 
+		STATISTICS,
 	}
 	
 	/**

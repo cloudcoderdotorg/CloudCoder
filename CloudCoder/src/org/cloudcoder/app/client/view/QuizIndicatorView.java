@@ -17,7 +17,7 @@
 
 package org.cloudcoder.app.client.view;
 
-import org.cloudcoder.app.client.QuizInProgress;
+import org.cloudcoder.app.client.model.QuizInProgress;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.shared.util.Publisher;
 import org.cloudcoder.app.shared.util.Subscriber;

@@ -55,18 +55,18 @@ import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.LayoutPanel;
 
 /**
- * Page for performing course admin actions.
+ * Page for performing course admin actions related to {@link Problem}s.
  * 
  * @author David Hovemeyer
  */
-public class CourseAdminPage extends CloudCoderPage {
+public class ProblemAdminPage extends CloudCoderPage {
 	private enum ProblemAction implements IButtonPanelAction {
-		NEW("New exercise", "Create a new exercise"),
-		EDIT("Edit exercise", "Edit the selected exercise"),
-		DELETE("Delete exercise", "Delete the selected exercise"),
+		NEW("New", "Create a new exercise"),
+		EDIT("Edit", "Edit the selected exercise"),
+		DELETE("Delete", "Delete the selected exercise"),
 		STATISTICS("Statistics", "See statistics on selected exercise"),
-		IMPORT("Import exercise", "Import an exercise from the CloudCoder exercise repository"),
-		SHARE("Share exercise", "Shared selected exercise by publishing it to the CloudCoder exercise repository"),
+		IMPORT("Import", "Import an exercise from the CloudCoder exercise repository"),
+		SHARE("Share", "Shared selected exercise by publishing it to the CloudCoder exercise repository"),
 		MAKE_VISIBLE("Make visible", "Make selected exerise visible to students"),
 		MAKE_INVISIBLE("Make invisible", "Make selected exercise invisible to students"),
 		QUIZ("Quiz", "Give selected exercise as a quiz");
@@ -162,7 +162,7 @@ public class CourseAdminPage extends CloudCoderPage {
 			dockLayoutPanel.addSouth(statusMessageView, StatusMessageView.HEIGHT_PX);
 			
 			// Create a center panel with problems list.
-			this.courseAdminProblemListView = new CourseAdminProblemListView(CourseAdminPage.this);
+			this.courseAdminProblemListView = new CourseAdminProblemListView(ProblemAdminPage.this);
 			dockLayoutPanel.add(courseAdminProblemListView);
 			// Handle edits to the module name.
 			courseAdminProblemListView.setEditModuleNameCallback(new ICallback<ProblemAndModule>() {
@@ -376,8 +376,8 @@ public class CourseAdminPage extends CloudCoderPage {
 			// Get the selected problem
 			final Problem chosen = getSession().get(Problem.class);
 			
-			String URL = GWT.getHostPageBaseURL()+"/admin/problems/"+chosen.getCourseId()+"/"+chosen.getProblemId();			
-			com.google.gwt.user.client.Window.open(URL, "_blank", "");
+			// Switch to the StatisticsPage
+			getSession().notifySubscribers(Session.Event.STATISTICS, chosen);
 		}
 
 		/**
@@ -469,7 +469,7 @@ public class CourseAdminPage extends CloudCoderPage {
 			
 			// The session should contain a course
 			Course course = getCurrentCourse();
-			courseLabel.setText(course.getName() + " - " + course.getTitle());
+			courseLabel.setText("Problems in " + course.getName() + " - " + course.getTitle());
 		}
 
 		/* (non-Javadoc)
@@ -539,7 +539,7 @@ public class CourseAdminPage extends CloudCoderPage {
 
 		public void reloadProblems(final Course course) {
 			// Reload problems
-			SessionUtil.loadProblemAndSubmissionReceiptsInCourse(CourseAdminPage.this, course, getSession());
+			SessionUtil.loadProblemAndSubmissionReceiptsInCourse(ProblemAdminPage.this, course, getSession());
 			
 			// If a problem is selected, add it to the session
 			// (so the buttons are enabled/disable appropriately).

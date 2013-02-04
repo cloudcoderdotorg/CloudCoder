@@ -22,7 +22,7 @@ import java.util.Arrays;
 import org.cloudcoder.app.client.model.CourseSelection;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.page.CloudCoderPage;
-import org.cloudcoder.app.client.page.CourseAdminPage;
+import org.cloudcoder.app.client.page.ProblemAdminPage;
 import org.cloudcoder.app.client.page.SessionObserver;
 import org.cloudcoder.app.client.rpc.RPC;
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
@@ -48,7 +48,7 @@ import com.google.gwt.view.client.SelectionChangeEvent.Handler;
 import com.google.gwt.view.client.SingleSelectionModel;
 
 /**
- * View to show problems in the {@link CourseAdminPage}.
+ * View to show problems in the {@link ProblemAdminPage}.
  * 
  * @author David Hovemeyer
  */

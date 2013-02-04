@@ -20,13 +20,14 @@ package org.cloudcoder.app.client;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.page.CloudCoderPage;
-import org.cloudcoder.app.client.page.CourseAdminPage;
+import org.cloudcoder.app.client.page.ProblemAdminPage;
 import org.cloudcoder.app.client.page.CoursesAndProblemsPage2;
 import org.cloudcoder.app.client.page.DevelopmentPage;
 import org.cloudcoder.app.client.page.EditProblemPage;
 import org.cloudcoder.app.client.page.InitErrorPage;
 import org.cloudcoder.app.client.page.LoginPage;
 import org.cloudcoder.app.client.page.QuizPage;
+import org.cloudcoder.app.client.page.StatisticsPage;
 import org.cloudcoder.app.client.page.UserAccountPage;
 import org.cloudcoder.app.client.page.UserAdminPage;
 import org.cloudcoder.app.client.rpc.RPC;
@@ -138,12 +139,14 @@ public class CloudCoder implements EntryPoint, Subscriber {
 			return new CoursesAndProblemsPage2();
 		} else if (name.equals(DevelopmentPage.class.getName())) {
 			return new DevelopmentPage();
-		} else if (name.equals(CourseAdminPage.class.getName())) {
-			return new CourseAdminPage();
+		} else if (name.equals(ProblemAdminPage.class.getName())) {
+			return new ProblemAdminPage();
 		} else if (name.equals(EditProblemPage.class.getName())) {
 			return new EditProblemPage();
 		} else if (name.equals(QuizPage.class.getName())) {
 			return new QuizPage();
+		} else if (name.equals(StatisticsPage.class.getName())) {
+			return new StatisticsPage();
 		}
 		
 		// This shouldn't happen (can't find page for Activity),
@@ -224,7 +227,7 @@ public class CloudCoder implements EntryPoint, Subscriber {
 		} else if (key == Session.Event.PROBLEM_CHOSEN) {
 			changePage(new DevelopmentPage());
 		} else if (key == Session.Event.COURSE_ADMIN) {
-		    changePage(new CourseAdminPage());
+		    changePage(new ProblemAdminPage());
 		} else if (key == Session.Event.USER_ADMIN) {
 		    changePage(new UserAdminPage());
 		} else if (key == Session.Event.LOGOUT) {
@@ -235,6 +238,8 @@ public class CloudCoder implements EntryPoint, Subscriber {
 		    changePage(new UserAccountPage());
 		} else if (key == Session.Event.START_QUIZ) {
 			changePage(new QuizPage());
+		} else if (key == Session.Event.STATISTICS) {
+			changePage(new StatisticsPage());
 		}
 	}
 }

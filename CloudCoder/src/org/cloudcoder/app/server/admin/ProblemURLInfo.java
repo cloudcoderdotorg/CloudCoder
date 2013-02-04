@@ -17,6 +17,9 @@
 
 package org.cloudcoder.app.server.admin;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import javax.servlet.http.HttpServletRequest;
 
 /**
@@ -27,6 +30,7 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class ProblemURLInfo {
 	private final int courseId;
+	private final int section;
 	private final int problemId;
 	private final int userId;
 	
@@ -34,11 +38,13 @@ public class ProblemURLInfo {
 	 * Constructor.
 	 * 
 	 * @param courseId   the course id
+	 * @param section    the section
 	 * @param problemId  the problem id
 	 * @param userId     the user id (student)
 	 */
-	public ProblemURLInfo(int courseId, int problemId, int userId) {
+	public ProblemURLInfo(int courseId, int section, int problemId, int userId) {
 		this.courseId = courseId;
+		this.section = section;
 		this.problemId = problemId;
 		this.userId = userId;
 	}
@@ -51,18 +57,31 @@ public class ProblemURLInfo {
 	}
 	
 	/**
-	 * @return the problem id
+	 * @return the section (0 if a section was not specified)
+	 */
+	public int getSection() {
+		return section;
+	}
+	
+	/**
+	 * @return the problem id (-1 if a problem id was not specified)
 	 */
 	public int getProblemId() {
 		return problemId;
 	}
 	
 	/**
-	 * @return the user id
+	 * @return the user id (-1 if a user id was not specified)
 	 */
 	public int getUserId() {
 		return userId;
 	}
+	
+	private static final Pattern PROBLEM_URLINFO_PATTERN = Pattern.compile("(\\d+)(-\\d+)?(/(\\d+)(/(\\d+))?)?");
+	private static final int COURSE_ID_GROUP = 1;
+	private static final int SECTION_GROUP = 2;
+	private static final int PROBLEM_ID_GROUP = 4;
+	private static final int USER_ID_GROUP = 6;
 	
 	/**
 	 * Parse the path info of a request to the {@link Problems} servlet.
@@ -74,10 +93,12 @@ public class ProblemURLInfo {
 	public static ProblemURLInfo fromRequest(HttpServletRequest req) {
 		// Problem URLs are of the form:
 		//
-		// - /cloudcoder/admin/problems/<course id> for all problems in course
-		// - /cloudcoder/admin/problems/<course id>/<problem id> for specific problem in course
-		// - /cloudcoder/admin/problems/<course id>/<problem id>/<user id> for
+		// - admin/problems/<course id> for all problems in course
+		// - admin/problems/<course id>/<problem id> for specific problem in course
+		// - admin/problems/<course id>/<problem id>/<user id> for
 		//   specific student's work on specific problem in course
+		
+		// <course id> may optionally have a hyphen and a section appended
 		
 		String pathInfo = req.getPathInfo();
 		if (pathInfo == null) {
@@ -89,31 +110,36 @@ public class ProblemURLInfo {
 			pathInfo = pathInfo.substring(1);
 		}
 		
-		String[] parts = pathInfo.split("/");
-		if (parts.length < 1 || parts.length > 3) {
-			// invalid
+		Matcher m = PROBLEM_URLINFO_PATTERN.matcher(pathInfo);
+		if (!m.matches()) {
 			return null;
 		}
 		
 		int courseId;
+		int section = 0;
 		int problemId = -1;
 		int userId = -1;
 		
-		try {
-			courseId = Integer.parseInt(parts[0]);
-			if (parts.length > 1) {
-				problemId = Integer.parseInt(parts[1]);
-				if (parts.length > 2) {
-					userId = Integer.parseInt(parts[2]);
-				}
-			}
-		} catch (NumberFormatException e) {
-			// invalid
-			return null;
+		courseId = Integer.parseInt(m.group(COURSE_ID_GROUP));
+		String optSection = m.group(SECTION_GROUP);
+		if (nonEmptyMatch(optSection)) {
+			// skip leading "-"
+			optSection = optSection.substring(1);
+			section = Integer.parseInt(optSection);
 		}
-		
-		//System.out.println("Parsed: " + courseId + "/" + problemId + "/" + userId);
-		
-		return new ProblemURLInfo(courseId, problemId, userId);
+		String optProblemId = m.group(PROBLEM_ID_GROUP);
+		if (nonEmptyMatch(optProblemId)) {
+			problemId = Integer.parseInt(optProblemId);
+		}
+		String optUserId = m.group(USER_ID_GROUP);
+		if (nonEmptyMatch(optUserId)) {
+			userId = Integer.parseInt(optUserId);
+		}
+
+		return new ProblemURLInfo(courseId, section, problemId, userId);
+	}
+
+	private static boolean nonEmptyMatch(String s) {
+		return s != null && !s.equals("");
 	}
 }

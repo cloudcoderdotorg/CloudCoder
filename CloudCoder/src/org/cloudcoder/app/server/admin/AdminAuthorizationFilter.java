@@ -19,7 +19,6 @@ package org.cloudcoder.app.server.admin;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Properties;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -32,13 +31,16 @@ import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.DatatypeConverter;
 
 import org.cloudcoder.app.server.persist.Database;
+import org.cloudcoder.app.server.rpc.SessionAttributeKeys;
 import org.cloudcoder.app.shared.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Abstract base class for Filters to check that the client is authorized
- * to use an admin servlet.  Checks that Basic HTTP authorization has
+ * to use an admin servlet.
+ * Uses the user present in the server-side session if there is one.
+ * Otherwise, checks that Basic HTTP authorization has
  * been provided and that it matches a CloudCoder user.  Adds the
  * User object to the request as a request attribute.  Delegates
  * to a subclass to check that the client is authorized to perform
@@ -61,11 +63,32 @@ public abstract class AdminAuthorizationFilter implements Filter {
 			throws IOException, ServletException {
 		HttpServletRequest req = (HttpServletRequest) req_;
 		HttpServletResponse resp = (HttpServletResponse) resp_;
+
+		User user;
 		
+		// Authenticate user.
+		// If there is a user in the session, use it.
+		// (This handles the case of AJAX requests made by the
+		// client-side webapp.)
+		// Otherwise, do basic HTTP authentication.
+		user = (User) req.getSession().getAttribute(SessionAttributeKeys.USER_KEY);
+		if (user == null) {
+			user = doBasicAuth(req, resp);
+		}
+		
+		if (user != null) {
+			req.setAttribute(RequestAttributeKeys.USER_KEY, user);
+			
+			// Delegate to subclass to do servlet-specific checks.
+			checkAuthorization(user, req, resp, chain);
+		}
+	}
+	
+	private User doBasicAuth(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		String authHeader = req.getHeader("Authorization");
 		if (authHeader == null || !authHeader.startsWith("Basic ")) {
 			AdminServletUtil.unauthorized(resp);
-			return;
+			return null;
 		}
 		
 		// Extract the base64-encoded username:password combo.
@@ -76,14 +99,14 @@ public abstract class AdminAuthorizationFilter implements Filter {
 		} catch (IllegalArgumentException e) {
 			logger.info("Admin auth: invalid base64 data " + authString);
 			AdminServletUtil.unauthorized(resp);
-			return;
+			return null;
 		}
 		String userNameAndPassword = new String(bytes, Charset.forName("UTF-8"));
 		int sep = userNameAndPassword.indexOf(':');
 		if (sep < 0) {
 			logger.info("Admin auth: invalid username:password pair");
 			AdminServletUtil.unauthorized(resp);
-			return;
+			return null;
 		}
 		
 		// Extract username and password
@@ -98,13 +121,10 @@ public abstract class AdminAuthorizationFilter implements Filter {
 		if (user == null) {
 			logger.info("Admin auth: username/password mismatch for " + userName);
 			AdminServletUtil.unauthorized(resp);
-			return;
+			return null;
 		}
-		
-		req.setAttribute(RequestAttributeKeys.USER_KEY, user);
-		
-		// Delegate to subclass to do servlet-specific checks.
-		checkAuthorization(user, req, resp, chain);
+
+		return user;
 	}
 
 	/**

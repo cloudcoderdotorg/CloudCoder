@@ -46,6 +46,9 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.DockLayoutPanel;
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.InlineHTML;
+import com.google.gwt.user.client.ui.InlineLabel;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.LayoutPanel;
 import com.google.gwt.user.client.ui.SplitLayoutPanel;
@@ -74,7 +77,7 @@ public class CoursesAndProblemsPage2 extends CloudCoderPage {
 		/**
 		 * Width of the course and user admin buttons.
 		 */
-		public static final double COURSE_AND_USER_ADMIN_BUTTON_WIDTH_PX = 110.0;
+		public static final double COURSE_AND_USER_ADMIN_BUTTON_WIDTH_PX = 70.0;
 
 		/**
 		 * Height of the course and user admin buttons.
@@ -299,22 +302,25 @@ public class CoursesAndProblemsPage2 extends CloudCoderPage {
 						Unit.PX);
 				westPanel.setWidgetLeftRight(termAndCourseTreeView, 0.0, Unit.PX, SEP_PX, Unit.PX);
 
-				// Create the "Course admin" and "user admin" buttons if appropriate.
+				// Create the "Problems" and "User" admin buttons if appropriate.
 				if (isInstructor) {
-					courseAdminButton = new Button("Course admin");
-					westPanel.add(courseAdminButton);
-					westPanel.setWidgetRightWidth(courseAdminButton, SEP_PX, Unit.PX, COURSE_AND_USER_ADMIN_BUTTON_WIDTH_PX, Unit.PX);
-					westPanel.setWidgetTopHeight(courseAdminButton, SectionLabel.HEIGHT_PX, Unit.PX, COURSE_AND_USER_ADMIN_BUTTON_HEIGHT_PX, Unit.PX);
+					FlowPanel adminButtonPanel = new FlowPanel();
+					
+					InlineLabel manageLabel = new InlineLabel("Manage: ");
+					adminButtonPanel.add(manageLabel);
+					
+					courseAdminButton = new Button("Problems");
 					courseAdminButton.addClickHandler(new ClickHandler(){
 						@Override
 						public void onClick(ClickEvent event) {
 							handleCourseAdminButtonClicked();
 						}
 					});
-					userAdminButton = new Button("User admin");
-					westPanel.add(userAdminButton);
-					westPanel.setWidgetRightWidth(userAdminButton, SEP_PX*2+COURSE_AND_USER_ADMIN_BUTTON_WIDTH_PX, Unit.PX, COURSE_AND_USER_ADMIN_BUTTON_WIDTH_PX, Unit.PX);
-					westPanel.setWidgetTopHeight(userAdminButton, SectionLabel.HEIGHT_PX, Unit.PX, COURSE_AND_USER_ADMIN_BUTTON_HEIGHT_PX, Unit.PX);
+					adminButtonPanel.add(courseAdminButton);
+					
+					adminButtonPanel.add(new InlineHTML(" "));
+					
+					userAdminButton = new Button("Users");
 					userAdminButton.addClickHandler(new ClickHandler(){
 						/* (non-Javadoc)
 						 * @see com.google.gwt.event.dom.client.ClickHandler#onClick(com.google.gwt.event.dom.client.ClickEvent)
@@ -324,6 +330,12 @@ public class CoursesAndProblemsPage2 extends CloudCoderPage {
 							handleUserAdminButtonClicked();
 						}
 					});
+					adminButtonPanel.add(userAdminButton);
+					
+					westPanel.add(adminButtonPanel);
+					westPanel.setWidgetTopHeight(adminButtonPanel, SectionLabel.HEIGHT_PX, Unit.PX, COURSE_AND_USER_ADMIN_BUTTON_HEIGHT_PX + 4.0, Unit.PX);
+					westPanel.setWidgetLeftRight(adminButtonPanel, 0.0, Unit.PX, 0.0, Unit.PX);
+
 					// Disable buttons initially.  They will be enabled/disabled
 					// appropriately as courses are selected.
 					courseAdminButton.setEnabled(false);

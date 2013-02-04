@@ -28,13 +28,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cloudcoder.app.server.persist.Database;
 import org.cloudcoder.app.shared.model.Course;
-import org.cloudcoder.app.shared.model.Pair;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemList;
 import org.cloudcoder.app.shared.model.ProblemSummary;
 import org.cloudcoder.app.shared.model.ProblemSummaryList;
-import org.cloudcoder.app.shared.model.SubmissionReceipt;
 import org.cloudcoder.app.shared.model.User;
+import org.cloudcoder.app.shared.model.UserAndSubmissionReceipt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,11 +66,14 @@ public class Problems extends HttpServlet {
 		User user = (User) req.getAttribute(RequestAttributeKeys.USER_KEY);
 		Course course = (Course) req.getAttribute(RequestAttributeKeys.COURSE_KEY);
 		
+		Problem problem = new Problem();
+		problem.setProblemId(problemURLInfo.getProblemId());
+		Database.getInstance().reloadModelObject(problem);
+		
 		if (problemURLInfo.getProblemId() < 0) {
 			summarizeProblems(user, course, resp);
 		} else {
-			int problemId = problemURLInfo.getProblemId();
-			summarizeStudentWorkOnProblem(user, course, problemId, resp);
+			summarizeStudentWorkOnProblem(user, course, problemURLInfo.getSection(), problem, resp);
 		}
 	}
 	
@@ -93,6 +95,7 @@ public class Problems extends HttpServlet {
 			problemSummaryList.add(problemSummary);
 		}
 
+		@SuppressWarnings("resource")
 		CSVWriter writer = new CSVWriter(resp.getWriter());
 		
 		writer.writeNext(PROBLEMS_HEADER);
@@ -111,7 +114,7 @@ public class Problems extends HttpServlet {
 	}
 	
 	private static final String[] BEST_SUBMISSION_HEADER = new String[]{
-		"Username","Passed/Total"
+		"Username","Passed/Total", "Passed", "Total", "Percent",
 	};
 
 	/**
@@ -119,30 +122,42 @@ public class Problems extends HttpServlet {
 	 * 
 	 * @param user        authenticated user
 	 * @param course      the course
-	 * @param problemId   the problem id
+	 * @param section     the section of the course
+	 * @param problem     the problem
 	 * @param resp        the HttpServletResponse to write to
 	 * @throws ServletException 
 	 * @throws IOException 
 	 */
-	private void summarizeStudentWorkOnProblem(User user, Course course, int problemId, HttpServletResponse resp) throws ServletException, IOException {
+	private void summarizeStudentWorkOnProblem(User user, Course course, int section, Problem problem, HttpServletResponse resp) throws ServletException, IOException {
 		resp.setContentType("text/csv");
-		resp.addHeader("Content-disposition", "attachment;filename=course" + course.getId() + "Problem" + problemId + ".csv");
+		String fileName = "course" + course.getId() + (section != 0 ? ("Section" + section) : "") + "Problem" + problem.getProblemId() + ".csv";
+		resp.addHeader("Content-disposition", "attachment;filename=" + fileName);
 
-		List<Pair<User, SubmissionReceipt>> bestSubmissions = Database.getInstance().getBestSubmissionReceipts(course, problemId);
+		List<UserAndSubmissionReceipt> bestSubmissions = Database.getInstance().getBestSubmissionReceipts(course, section, problem);
 		
+		@SuppressWarnings("resource")
 		CSVWriter writer = new CSVWriter(resp.getWriter());
 		
-		String problemName = Database.getInstance().getProblem(problemId).getBriefDescription();
-		int numTests = Database.getInstance().getTestCasesForProblem(problemId).size();
+		String problemName = Database.getInstance().getProblem(problem.getProblemId()).getBriefDescription();
+		int numTests = Database.getInstance().getTestCasesForProblem(problem.getProblemId()).size();
 		
-		writer.writeNext(new String[]{course.getName()+" - \""+problemName+"\""});
+		writer.writeNext(new String[]{course.getName(), problemName});
 		writer.writeNext(new String[]{});
 		writer.writeNext(BEST_SUBMISSION_HEADER);
 		
-		for (Pair<User, SubmissionReceipt> pair : bestSubmissions) {
+		for (UserAndSubmissionReceipt pair : bestSubmissions) {
 			List<String> entry = new ArrayList<String>();
-			entry.add(pair.getLeft().getUsername());
-			entry.add(String.valueOf(pair.getRight().getNumTestsPassed()+" out of "+numTests));
+			entry.add(pair.getUser().getUsername());
+			
+			int numPassed = (pair.getSubmissionReceipt() != null) ? pair.getSubmissionReceipt().getNumTestsPassed() : 0;
+			
+			entry.add(String.valueOf(numPassed+" out of "+numTests));
+			
+			entry.add(String.valueOf(numPassed));
+			entry.add(String.valueOf(numTests));
+			double percent = (numTests > 0 ? ((double)numPassed / (double)numTests) : 0.0) * 100.0;
+			entry.add(String.format("%.2f", percent));
+			
 			writer.writeNext(entry.toArray(new String[entry.size()]));
 		}
 	}

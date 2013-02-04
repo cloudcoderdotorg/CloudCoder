@@ -1,6 +1,6 @@
 // CloudCoder - a web-based pedagogical programming environment
-// Copyright (C) 2011-2012, Jaime Spacco <jspacco@knox.edu>
-// Copyright (C) 2011-2012, David H. Hovemeyer <david.hovemeyer@gmail.com>
+// Copyright (C) 2011-2013, Jaime Spacco <jspacco@knox.edu>
+// Copyright (C) 2011-2013, David H. Hovemeyer <david.hovemeyer@gmail.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -69,6 +69,7 @@ import org.cloudcoder.app.shared.model.Term;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.TestResult;
 import org.cloudcoder.app.shared.model.User;
+import org.cloudcoder.app.shared.model.UserAndSubmissionReceipt;
 import org.cloudcoder.app.shared.model.UserRegistrationRequest;
 import org.cloudcoder.app.shared.model.UserRegistrationRequestStatus;
 import org.slf4j.Logger;
@@ -1345,74 +1346,37 @@ public class JDBCDatabase implements IDatabase {
 	}
 	
 	@Override
-	public List<Pair<User, SubmissionReceipt>> getBestSubmissionReceipts(
-			final Course course, final int problemId) {
-		return databaseRun(new AbstractDatabaseRunnableNoAuthException<List<Pair<User, SubmissionReceipt>>>() {
+	public List<UserAndSubmissionReceipt> getBestSubmissionReceipts(
+			final Course unused, final int section, final Problem problem) {
+		return databaseRun(new AbstractDatabaseRunnableNoAuthException<List<UserAndSubmissionReceipt>>() {
 			@Override
-			public List<Pair<User, SubmissionReceipt>> run(Connection conn)
+			public List<UserAndSubmissionReceipt> run(Connection conn)
 					throws SQLException {
-
-				// Clearly, my SQL is either amazing or appalling.
-				// Probably the latter.
-				PreparedStatement stmt = prepareStatement(
-						conn,
-						"select u.*, e.*, sr.* " +
-						"  from cc_users as u, cc_events as e, cc_submission_receipts as sr," +
-						"  (select i_u.id as user_id, best.max_tests_passed as max_tests_passed, MIN(i_e.timestamp) as timestamp" +
-						"    from cc_users as i_u," +
-						"         cc_events as i_e," +
-						"         cc_submission_receipts as i_sr," +
-						"         (select ii_u.id as user_id, MAX(ii_sr.num_tests_passed) as max_tests_passed" +
-						"            from cc_users as ii_u, cc_events as ii_e, cc_submission_receipts as ii_sr " +
-						"           where ii_u.id = ii_e.user_id " +
-						"             and ii_e.id = ii_sr.event_id " +
-						"             and ii_e.problem_id = ?" +
-						"          group by ii_u.id) as best" +
-						"" +
-						"    where i_u.id = i_e.user_id" +
-						"      and i_e.id = i_sr.event_id" +
-						"      and i_e.problem_id = ?" +
-						"      and i_u.id = best.user_id" +
-						"      and i_sr.num_tests_passed = best.max_tests_passed" +
-						"      group by i_u.id, best.max_tests_passed) as earliest_and_best" +
-						"" +
-						" where u.id = e.user_id" +
-						"     and e.id = sr.event_id" +
-						"     and e.problem_id = ?" +
-						"     and u.id = earliest_and_best.user_id" +
-						"     and sr.num_tests_passed = earliest_and_best.max_tests_passed" +
-						"     and e.timestamp = earliest_and_best.timestamp"
-				);
-				stmt.setInt(1, problemId);
-				stmt.setInt(2, problemId);
-				stmt.setInt(3, problemId);
-				
-				ResultSet resultSet = executeQuery(stmt);
-				List<Pair<User, SubmissionReceipt>> result = new ArrayList<Pair<User,SubmissionReceipt>>();
-				
-				while (resultSet.next()) {
-					int index = 1;
-					User user = new User();
-					index = loadGeneric(user, resultSet, index, User.SCHEMA);
-					Event event = new Event();
-					index = loadGeneric(event, resultSet, index, Event.SCHEMA);
-					SubmissionReceipt receipt = new SubmissionReceipt();
-					loadGeneric(receipt, resultSet, index, SubmissionReceipt.SCHEMA);
-					
-					receipt.setEvent(event);
-					
-					Pair<User, SubmissionReceipt> pair = new Pair<User, SubmissionReceipt>();
-					pair.setLeft(user);
-					pair.setRight(receipt);
-					
-					result.add(pair);
-				}
-				
-				return result;
+				return doGetBestSubmissionReceipts(conn, problem, section, this);
 			}
 			@Override
 			public String getDescription() {
 				return " getting best submission receipts for problem/course";
+			}
+		});
+	}
+
+	@Override
+	public List<UserAndSubmissionReceipt> getBestSubmissionReceipts(final Problem problem, final int section, final User authenticatedUser) {
+		return databaseRun(new AbstractDatabaseRunnableNoAuthException<List<UserAndSubmissionReceipt>>() {
+			@Override
+			public List<UserAndSubmissionReceipt> run(Connection conn) throws SQLException {
+				CourseRegistrationList regList = doGetCourseRegistrations(conn, problem.getCourseId(), authenticatedUser.getId(), this);
+				if (!regList.isInstructor()) {
+					// user is not an instructor
+					return new ArrayList<UserAndSubmissionReceipt>();
+				}
+
+				return doGetBestSubmissionReceipts(conn, problem, section, this);
+			}
+			@Override
+			public String getDescription() {
+				return " getting best submission receipts for problem";
 			}
 		});
 	}
@@ -1991,6 +1955,40 @@ public class JDBCDatabase implements IDatabase {
 			}
 		});
 	}
+	
+	@Override
+	public Integer[] getSectionsForCourse(final Course course, final User authenticatedUser) {
+		return databaseRun(new AbstractDatabaseRunnableNoAuthException<Integer[]>() {
+			@Override
+			public Integer[] run(Connection conn) throws SQLException {
+				// Make sure user is an instructor in the course
+				CourseRegistrationList regList = doGetCourseRegistrations(conn, course.getId(), authenticatedUser.getId(), this);
+				if (!regList.isInstructor()) {
+					return new Integer[0];
+				}
+				
+				PreparedStatement stmt = prepareStatement(
+						conn,
+						"select distinct cr.section from cc_course_registrations as cr " +
+						" where cr.course_id = ? " +
+						" order by cr.section asc"
+				);
+				stmt.setInt(1, course.getId());
+				
+				List<Integer> result = new ArrayList<Integer>();
+				ResultSet resultSet = executeQuery(stmt);
+				while (resultSet.next()) {
+					result.add(resultSet.getInt(1));
+				}
+				
+				return result.toArray(new Integer[result.size()]);
+			}
+			@Override
+			public String getDescription() {
+				return " getting sections for course";
+			}
+		});
+	}
 
 	/**
 	 * Run a database transaction and return the result.
@@ -2024,30 +2022,78 @@ public class JDBCDatabase implements IDatabase {
 	}
 
 	private<E> E doDatabaseRun(DatabaseRunnable<E> databaseRunnable) throws CloudCoderAuthenticationException {
-		try {
-			Connection conn = null;
-			boolean committed = false;
+		int attempts = 0;
+		
+		boolean successfulCommit = false;
+		E result = null;
+
+		// Attempt the transaction until a maximum number of attempts is reached.
+		while (!successfulCommit && attempts < 20) {
+			attempts++;
+			
+			Connection conn;
+			boolean origAutocommit;
+			
+			// Attempt to get a connection
 			try {
 				conn = getConnection();
+				origAutocommit = conn.getAutoCommit();
+			} catch (SQLException e) {
+				throw new PersistenceException("SQLException", e);
+			}
+			
+			// Attempt the execute the transaction.
+			// If the transaction is not successful (throws SQLException),
+			// determine if it is because of a deadlock or other recoverable
+			// error, and if so, retry.
+			try {
 				conn.setAutoCommit(false);
-				// FIXME: should retry if deadlock is detected
-				E result = databaseRunnable.run(conn);
+				result = databaseRunnable.run(conn);
 				conn.commit();
-				committed = true;
-				return result;
+				successfulCommit = true; // Hooray!
+			} catch (SQLException e) {
+				String sqlState = e.getSQLState();
+				if (sqlState != null && (sqlState.equals("40001") || sqlState.equals("41000") || sqlState.equals("23000"))) {
+					// Deadlock detected: retry transaction
+					// NOTE: I have also included duplicate key errors (23000).
+					// There is evidence that a MySQL bug can cause spurious
+					// duplicate key errors on auto increment fields, which I *think*
+					// I have actually seen in CloudCoder error logs.
+					//   See: http://www.softwareprojects.com/resources/programming/t-mysql-innodb-deadlocks-and-duplicate-key-errors-12-1970.html
+					// Workaround is to retry the transaction.
+					logger.info("MySQL deadlock detected (sqlState=" + sqlState + ")", e);
+				} else {
+					// Some other kind of transaction failure.
+					logger.error("Transaction failed with SQLException", e);
+					throw new PersistenceException("SQLException", e);
+				}
 			} finally {
-				if (conn != null) {
-					if (!committed) {
+				// If the transaction didn't succeed, roll back
+				if (!successfulCommit) {
+					try {
 						conn.rollback();
+					} catch (SQLException ex) {
+						throw new PersistenceException("SQLException (on rollback)", ex);
 					}
-					databaseRunnable.cleanup();
-					conn.setAutoCommit(true);
+				}
+				
+				// Restore the original autocommit value and release the connection.
+				try {
+					conn.setAutoCommit(origAutocommit);
 					releaseConnection();
+				} catch (SQLException e) {
+					throw new PersistenceException("SQLException (releasing connection)", e);
 				}
 			}
-		} catch (SQLException e) {
-			throw new PersistenceException("SQLException", e);
 		}
+		
+		// If the transaction was never executed successfully, throw a PersistenceException
+		if (!successfulCommit) {
+			throw new PersistenceException("Could not complete transaction (gave up after " + attempts + " attempts)");
+		}
+		
+		// Success!
+		return result;
 	}
 	
 	/**
@@ -2253,19 +2299,6 @@ public class JDBCDatabase implements IDatabase {
 		
 		return resultSet.getInt(1);
 	}
-
-//	private int doInsertOrUpdateUser(User user, 
-//	    Connection conn,
-//	    AbstractDatabaseRunnable<?> databaseRunnable) throws SQLException
-//	{
-//	    return ConfigurationUtil.createOrUpdateUser(conn, 
-//	            user.getUsername(), 
-//	            user.getFirstname(), 
-//	            user.getLastname(), 
-//	            user.getEmail(), 
-//	            user.getPasswordHash(),
-//	            user.getWebsite());
-//    }
 	
 	private List<? extends Object[]> doGetCoursesForUser(
 			final User user,
@@ -2529,6 +2562,97 @@ public class JDBCDatabase implements IDatabase {
 			}
 		}
 
+		return result;
+	}
+	
+	protected List<UserAndSubmissionReceipt> doGetBestSubmissionReceipts(
+			Connection conn,
+			final Problem problem,
+			final int section,
+			AbstractDatabaseRunnable<?> dbRunnable) throws SQLException {
+		
+		// Clearly, my SQL is either amazing or appalling.
+		// Probably the latter.
+		PreparedStatement stmt = dbRunnable.prepareStatement(
+				conn,
+				
+				"select uu.*, best.* from cc_users as uu " +
+				"  left join " +
+				"         (select u.id as the_user_id, e.*, sr.* " +
+				"           from cc_users as u, cc_events as e, cc_submission_receipts as sr," +
+				"           (select i_u.id as user_id, best.max_tests_passed as max_tests_passed, MIN(i_e.timestamp) as timestamp" +
+				"             from cc_users as i_u," +
+				"                  cc_events as i_e," +
+				"                  cc_submission_receipts as i_sr," +
+				"                  (select ii_u.id as user_id, MAX(ii_sr.num_tests_passed) as max_tests_passed" +
+				"                     from cc_users as ii_u, cc_events as ii_e, cc_submission_receipts as ii_sr " +
+				"                    where ii_u.id = ii_e.user_id " +
+				"                      and ii_e.id = ii_sr.event_id " +
+				"                      and ii_e.problem_id = ?" +
+				"                   group by ii_u.id) as best" +
+				"" +
+				"             where i_u.id = i_e.user_id" +
+				"               and i_e.id = i_sr.event_id" +
+				"               and i_e.problem_id = ?" +
+				"               and i_u.id = best.user_id" +
+				"               and i_sr.num_tests_passed = best.max_tests_passed" +
+				"               group by i_u.id, best.max_tests_passed) as earliest_and_best" +
+				"" +
+				"          where u.id = e.user_id" +
+				"              and e.id = sr.event_id" +
+				"              and e.problem_id = ?" +
+				"              and u.id = earliest_and_best.user_id" +
+				"              and sr.num_tests_passed = earliest_and_best.max_tests_passed" +
+				"              and e.timestamp = earliest_and_best.timestamp) as best " +
+				"          on uu.id = best.the_user_id " +
+				"" +
+				" where uu.id in (select distinct xu.id from cc_users as xu, cc_course_registrations as xcr "+
+				"                  where xu.id = xcr.user_id " +
+				"                    and xcr.course_id = ? " +
+				"                    and (? = 0 or xcr.section = ?)) "
+		);
+		int problemId = problem.getProblemId();
+		stmt.setInt(1, problemId);
+		stmt.setInt(2, problemId);
+		stmt.setInt(3, problemId);
+		stmt.setInt(4, problem.getCourseId());
+		stmt.setInt(5, section); // if section is 0, all sections will be included
+		stmt.setInt(6, section);
+		
+		ResultSet resultSet = dbRunnable.executeQuery(stmt);
+		List<UserAndSubmissionReceipt> result = new ArrayList<UserAndSubmissionReceipt>();
+		
+		while (resultSet.next()) {
+			int index = 1;
+			User user = new User();
+			index = loadGeneric(user, resultSet, index, User.SCHEMA);
+
+			SubmissionReceipt receipt;
+			
+			// Is there a best submission receipt?
+			if (resultSet.getObject(index) != null) {
+				// Found a best submission receipt
+
+				index++; // skip best.the_user_id column
+				
+				Event event = new Event();
+				index = loadGeneric(event, resultSet, index, Event.SCHEMA);
+				receipt = new SubmissionReceipt();
+				loadGeneric(receipt, resultSet, index, SubmissionReceipt.SCHEMA);
+				
+				receipt.setEvent(event);
+			} else {
+				// No best submission receipt
+				receipt = null;
+			}
+			
+			UserAndSubmissionReceipt pair = new UserAndSubmissionReceipt();
+			pair.setUser(user);
+			pair.setSubmissionReceipt(receipt);
+			
+			result.add(pair);
+		}
+		
 		return result;
 	}
 	

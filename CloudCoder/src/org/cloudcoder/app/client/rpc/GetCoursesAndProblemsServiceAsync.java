@@ -27,6 +27,7 @@ import org.cloudcoder.app.shared.model.ProblemAndTestCaseList;
 import org.cloudcoder.app.shared.model.Quiz;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.User;
+import org.cloudcoder.app.shared.model.UserAndSubmissionReceipt;
 
 import com.google.gwt.user.client.rpc.AsyncCallback;
 
@@ -44,6 +45,9 @@ public interface GetCoursesAndProblemsServiceAsync {
 
 	void getProblemAndSubscriptionReceipts(Course course, User user,
 			AsyncCallback<ProblemAndSubmissionReceipt[]> callback);
+
+	void getBestSubmissionReceipts(Problem problem, int section,
+			AsyncCallback<UserAndSubmissionReceipt[]> callback);
 	
 	void getTestCasesForProblem(int problemId,
 			AsyncCallback<TestCase[]> callback);
@@ -71,5 +75,7 @@ public interface GetCoursesAndProblemsServiceAsync {
 
 	void setModule(Problem problem, String moduleName,
 			AsyncCallback<Module> callback);
+
+	void getSectionsForCourse(Course course, AsyncCallback<Integer[]> callback);
 
 }

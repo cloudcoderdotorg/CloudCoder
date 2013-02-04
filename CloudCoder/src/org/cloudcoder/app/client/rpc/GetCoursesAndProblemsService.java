@@ -29,6 +29,7 @@ import org.cloudcoder.app.shared.model.Quiz;
 import org.cloudcoder.app.shared.model.SubmissionReceipt;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.User;
+import org.cloudcoder.app.shared.model.UserAndSubmissionReceipt;
 
 import com.google.gwt.user.client.rpc.RemoteService;
 import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
@@ -90,6 +91,17 @@ public interface GetCoursesAndProblemsService extends RemoteService {
 	 * @throws NetCoderAuthenticationException
 	 */
 	public ProblemAndSubmissionReceipt[] getProblemAndSubscriptionReceipts(Course course, User user) throws CloudCoderAuthenticationException;
+	
+	/**
+	 * Get the best submission receipts for each {@link User} on a specific {@link Problem}.
+	 * Currently-authenticated user must be an instructor in the course.
+	 * 
+	 * @param problem the {@link Problem}
+	 * @param section the section (0 for all sections)
+	 * @return the {@link UserAndSubmissionReceipt}s with best submission receipt for each user
+	 * @throws CloudCoderAuthenticationException
+	 */
+	public UserAndSubmissionReceipt[] getBestSubmissionReceipts(Problem problem, int section) throws CloudCoderAuthenticationException;
 	
 	/**
 	 * Get the list of {@link TestCase}s for a {@link Problem}.
@@ -203,4 +215,13 @@ public interface GetCoursesAndProblemsService extends RemoteService {
 	 * @throws CloudCoderAuthenticationException
 	 */
 	public Module setModule(Problem problem, String moduleName) throws CloudCoderAuthenticationException;
+
+	/**
+	 * Get all section numbers for the given {@link Course}.
+	 * 
+	 * @param course the course
+	 * @return array containing all of the section numbers for the course
+	 * @throws CloudCoderAuthenticationException
+	 */
+	public Integer[] getSectionsForCourse(Course course) throws CloudCoderAuthenticationException;
 }

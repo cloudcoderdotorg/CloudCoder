@@ -15,33 +15,41 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package org.cloudcoder.app.server.persist;
+package org.cloudcoder.app.client.model;
+
+import org.cloudcoder.app.shared.model.Course;
 
 /**
- * Runtime exception indicating that a persistence operation
- * failed.
+ * Model object indicating a section of a {@link Course}.
+ * Used when a page/view allows selection of sections of
+ * a course.
  * 
  * @author David Hovemeyer
  */
-public class PersistenceException extends RuntimeException {
-	private static final long serialVersionUID = 1L;
-
+public class Section {
+	private final int number;
+	
 	/**
-	 * Constructor.
-	 * 
-	 * @param msg   message describing the failure
-	 * @param cause the cause
+	 * Constructor.  Section number is set to 0, which means
+	 * "all sections".
 	 */
-	public PersistenceException(String msg, Throwable cause) {
-		super(msg, cause);
+	public Section() {
+		this.number = 0;
 	}
-
+	
 	/**
 	 * Constructor.
 	 * 
-	 * @param msg   message describing the failure
+	 * @param number the section number
 	 */
-	public PersistenceException(String msg) {
-		super(msg);
+	public Section(int number) {
+		this.number = number;
+	}
+	
+	/**
+	 * @return the section number
+	 */
+	public int getNumber() {
+		return number;
 	}
 }
