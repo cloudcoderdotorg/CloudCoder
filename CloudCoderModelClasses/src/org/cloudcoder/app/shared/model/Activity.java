@@ -39,7 +39,7 @@ public class Activity implements Serializable {
 	// that we want to store in the Activity.  Not terribly elegant,
 	// but effective.
 	private Problem problem;
-	private Course course;
+	private CourseSelection courseSelection;
 	private ProblemAndTestCaseList problemAndTestCaseList;
 	
 	/**
@@ -76,8 +76,8 @@ public class Activity implements Serializable {
 	public void addSessionObject(ActivityObject obj) {
 		if (obj instanceof Problem) {
 			this.problem = (Problem) obj;
-		} else if (obj instanceof Course) {
-			this.course = (Course) obj;
+		} else if (obj instanceof CourseSelection) {
+			this.courseSelection = (CourseSelection) obj;
 		} else if (obj instanceof ProblemAndTestCaseList) {
 			this.problemAndTestCaseList = (ProblemAndTestCaseList) obj;
 		} else {
@@ -97,8 +97,8 @@ public class Activity implements Serializable {
 		if (problem != null) {
 			result.add(problem);
 		}
-		if (course != null) {
-			result.add(course);
+		if (courseSelection != null) {
+			result.add(courseSelection);
 		}
 		if (problemAndTestCaseList != null) {
 			result.add(problemAndTestCaseList);

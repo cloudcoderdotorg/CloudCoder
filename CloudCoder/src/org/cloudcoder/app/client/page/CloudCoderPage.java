@@ -21,13 +21,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.cloudcoder.app.client.CloudCoder;
-import org.cloudcoder.app.client.model.CourseSelection;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.rpc.RPC;
 import org.cloudcoder.app.client.view.SessionExpiredDialogBox;
 import org.cloudcoder.app.shared.model.Activity;
 import org.cloudcoder.app.shared.model.Course;
+import org.cloudcoder.app.shared.model.CourseSelection;
 import org.cloudcoder.app.shared.model.User;
 import org.cloudcoder.app.shared.util.DefaultSubscriptionRegistrar;
 import org.cloudcoder.app.shared.util.SubscriptionRegistrar;

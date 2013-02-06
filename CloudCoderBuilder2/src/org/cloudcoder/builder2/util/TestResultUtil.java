@@ -207,8 +207,13 @@ public class TestResultUtil {
 				buf.append(" - " + p.getStatusMessage());
 			}
 	
-			testResult.setStdout(StringUtil.merge(p.getStdout()));
-			testResult.setStderr(StringUtil.merge(p.getStderr()));
+			if (!testCase.isSecret()) {
+				testResult.setStdout(StringUtil.merge(p.getStdout()));
+				testResult.setStderr(StringUtil.merge(p.getStderr()));
+			} else {
+				testResult.setStdout("Secret test - output is not revealed");
+				testResult.setStderr("Secret test - output is not revealed");
+			}
 		}
 
 		return testResult;

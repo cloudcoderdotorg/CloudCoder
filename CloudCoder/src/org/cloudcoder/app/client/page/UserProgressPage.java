@@ -17,13 +17,13 @@
 
 package org.cloudcoder.app.client.page;
 
-import org.cloudcoder.app.client.model.CourseSelection;
-import org.cloudcoder.app.client.model.UserSelection;
 import org.cloudcoder.app.client.model.Session;
+import org.cloudcoder.app.client.model.UserSelection;
 import org.cloudcoder.app.client.view.PageNavPanel;
 import org.cloudcoder.app.client.view.StatusMessageView;
 import org.cloudcoder.app.client.view.UserProgressView;
 import org.cloudcoder.app.shared.model.Course;
+import org.cloudcoder.app.shared.model.CourseSelection;
 import org.cloudcoder.app.shared.model.User;
 import org.cloudcoder.app.shared.util.SubscriptionRegistrar;
 

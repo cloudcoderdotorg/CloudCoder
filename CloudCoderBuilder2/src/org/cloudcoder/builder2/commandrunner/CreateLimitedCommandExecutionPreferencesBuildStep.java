@@ -20,7 +20,7 @@ public class CreateLimitedCommandExecutionPreferencesBuildStep implements IBuild
 		
 		prefs.setLimit(CommandLimit.CPU_TIME_SEC, 5);
 		prefs.setLimit(CommandLimit.FILE_SIZE_KB, 0);
-		prefs.setLimit(CommandLimit.OUTPUT_LINE_MAX_CHARS, 100);
+		prefs.setLimit(CommandLimit.OUTPUT_LINE_MAX_CHARS, 400);
 		prefs.setLimit(CommandLimit.OUTPUT_MAX_BYTES, 4000);
 		prefs.setLimit(CommandLimit.OUTPUT_MAX_LINES, 40);
 		prefs.setLimit(CommandLimit.PROCESSES, 0);

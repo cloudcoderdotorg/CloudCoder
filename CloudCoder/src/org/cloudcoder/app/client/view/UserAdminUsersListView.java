@@ -19,14 +19,14 @@ package org.cloudcoder.app.client.view;
 
 import java.util.Arrays;
 
-import org.cloudcoder.app.client.model.CourseSelection;
 import org.cloudcoder.app.client.model.Section;
-import org.cloudcoder.app.client.model.UserSelection;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
+import org.cloudcoder.app.client.model.UserSelection;
 import org.cloudcoder.app.client.page.SessionObserver;
 import org.cloudcoder.app.client.rpc.RPC;
 import org.cloudcoder.app.shared.model.Course;
+import org.cloudcoder.app.shared.model.CourseSelection;
 import org.cloudcoder.app.shared.model.User;
 import org.cloudcoder.app.shared.util.Publisher;
 import org.cloudcoder.app.shared.util.Subscriber;

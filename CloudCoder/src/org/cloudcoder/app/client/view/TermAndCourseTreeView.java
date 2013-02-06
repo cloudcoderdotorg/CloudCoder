@@ -24,12 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
-import org.cloudcoder.app.client.model.CourseSelection;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.rpc.RPC;
 import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.CourseAndCourseRegistration;
+import org.cloudcoder.app.shared.model.CourseSelection;
 import org.cloudcoder.app.shared.model.Module;
 import org.cloudcoder.app.shared.model.TermAndYear;
 import org.cloudcoder.app.shared.util.SubscriptionRegistrar;

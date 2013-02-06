@@ -15,11 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package org.cloudcoder.app.client.model;
+package org.cloudcoder.app.shared.model;
 
-import org.cloudcoder.app.shared.model.Course;
-import org.cloudcoder.app.shared.model.Module;
-import org.cloudcoder.app.shared.model.Problem;
 
 /**
  * Object added to the {@link Session} when a {@link Course} is selected.
@@ -28,9 +25,18 @@ import org.cloudcoder.app.shared.model.Problem;
  * 
  * @author David Hovemeyer
  */
-public class CourseSelection {
-	private final Course course;
-	private final Module module;
+public class CourseSelection implements ActivityObject {
+	private static final long serialVersionUID = 1L;
+
+	private Course course;
+	private Module module;
+	
+	/**
+	 * Default constructor.
+	 */
+	public CourseSelection() {
+		
+	}
 	
 	/**
 	 * Constructor.
@@ -44,10 +50,27 @@ public class CourseSelection {
 	}
 	
 	/**
+	 * Set the course.
+	 * @param course the course to set
+	 */
+	public void setCourse(Course course) {
+		this.course = course;
+	}
+	
+	/**
+	 * Get the course.
 	 * @return the course
 	 */
 	public Course getCourse() {
 		return course;
+	}
+	
+	/**
+	 * Set the module.
+	 * @param module the module to set.
+	 */
+	public void setModule(Module module) {
+		this.module = module;
 	}
 	
 	/**

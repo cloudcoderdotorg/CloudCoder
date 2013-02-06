@@ -34,12 +34,14 @@
 
 package org.cloudcoder.app.shared.model;
 
+import java.io.Serializable;
+
 /**
  * Model object representing a course.
  * 
  * @author David Hovemeyer
  */
-public class Course implements ActivityObject, IModelObject<Course> {
+public class Course implements IModelObject<Course>, Serializable {
 	private static final long serialVersionUID = 1L;
 
 	private int id;
