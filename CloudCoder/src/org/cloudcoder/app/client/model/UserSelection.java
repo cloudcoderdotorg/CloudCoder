@@ -17,44 +17,29 @@
 
 package org.cloudcoder.app.client.model;
 
-import org.cloudcoder.app.shared.model.Course;
+import org.cloudcoder.app.shared.model.User;
 
 /**
- * Model object indicating a section of a {@link Course}.
- * Used when a page/view allows selection of sections of
- * a course.
+ * A {@link User} selected in a user interface.
  * 
  * @author David Hovemeyer
  */
-public class Section {
-	private final int number;
-	
-	/**
-	 * Constructor.  Section number is set to 0, which means
-	 * "all sections".
-	 */
-	public Section() {
-		this.number = 0;
-	}
-	
+public class UserSelection {
+	private final User user;
+
 	/**
 	 * Constructor.
 	 * 
-	 * @param number the section number
+	 * @param user the selected user
 	 */
-	public Section(int number) {
-		this.number = number;
+	public UserSelection(User user) {
+		this.user = user;
 	}
 	
 	/**
-	 * @return the section number
+	 * @return the user
 	 */
-	public int getNumber() {
-		return number;
-	}
-	
-	@Override
-	public String toString() {
-		return number == 0 ? "All" : String.valueOf(number);
+	public User getUser() {
+		return user;
 	}
 }

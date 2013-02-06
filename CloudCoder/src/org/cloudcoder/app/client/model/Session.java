@@ -74,6 +74,9 @@ public class Session extends Publisher {
 		
 		/** View statistics (student progress) on the currently-selected {@link Problem}. */ 
 		STATISTICS,
+		
+		/** View progress of single student in a {@link Course}. */
+		USER_PROGRESS,
 	}
 	
 	/**

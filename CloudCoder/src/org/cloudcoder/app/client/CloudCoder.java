@@ -30,6 +30,7 @@ import org.cloudcoder.app.client.page.QuizPage;
 import org.cloudcoder.app.client.page.StatisticsPage;
 import org.cloudcoder.app.client.page.UserAccountPage;
 import org.cloudcoder.app.client.page.UserAdminPage;
+import org.cloudcoder.app.client.page.UserProgressPage;
 import org.cloudcoder.app.client.rpc.RPC;
 import org.cloudcoder.app.shared.model.Activity;
 import org.cloudcoder.app.shared.model.ActivityObject;
@@ -147,6 +148,8 @@ public class CloudCoder implements EntryPoint, Subscriber {
 			return new QuizPage();
 		} else if (name.equals(StatisticsPage.class.getName())) {
 			return new StatisticsPage();
+		} else if (name.equals(UserProgressPage.class.getName())) {
+			return new UserProgressPage();
 		}
 		
 		// This shouldn't happen (can't find page for Activity),
@@ -240,6 +243,8 @@ public class CloudCoder implements EntryPoint, Subscriber {
 			changePage(new QuizPage());
 		} else if (key == Session.Event.STATISTICS) {
 			changePage(new StatisticsPage());
+		} else if (key == Session.Event.USER_PROGRESS) {
+			changePage(new UserProgressPage());
 		}
 	}
 }

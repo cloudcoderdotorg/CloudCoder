@@ -135,12 +135,13 @@ public interface IDatabase {
 	 * Get list of {@link ProblemAndSubmissionReceipt}s for the problems the
 	 * given {@link User} is allowed to see in the given {@link Course} and {@link Module}.
 	 *   
-	 * @param user    the User
+	 * @param user    the authenticated User
 	 * @param course  the Course
+	 * @param forUser the user to get the {@link ProblemAndSubmissionReceipt}s for
 	 * @param module  the Module (if null, then all problems are returned)
 	 * @return list of {@link ProblemAndSubmissionReceipt}s
 	 */
-	public List<ProblemAndSubmissionReceipt> getProblemAndSubscriptionReceiptsInCourse(User user, Course course, Module module);
+	public List<ProblemAndSubmissionReceipt> getProblemAndSubscriptionReceiptsInCourse(User user, Course course, User forUser, Module module);
 	
 	public void storeChanges(Change[] changeList);
 	
@@ -193,11 +194,13 @@ public interface IDatabase {
 
 	/**
 	 * Return a list of all users in the given course.
+	 * @param sectionNumber 
 	 * 
 	 * @param course The course for which we want all users.
+	 * @param sectionNumber the section of the course (0 for all sections)
 	 * @return A lot of all users inthe given course.
 	 */
-	public List<User> getUsersInCourse(int courseId);
+	public List<User> getUsersInCourse(int courseId, int sectionNumber);
 	
 	/**
 	 * Get the Change with given id.

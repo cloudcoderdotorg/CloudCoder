@@ -45,7 +45,7 @@ public class UserServiceImpl extends RemoteServiceServlet implements UserService
      * @see org.cloudcoder.app.client.rpc.UserService#getUsers(org.cloudcoder.app.shared.model.Course)
      */
     @Override
-    public User[] getUsers(int courseId)
+    public User[] getUsers(int courseId, int sectionNumber)
     throws CloudCoderAuthenticationException
     {
         //logger.warn("Getting all users in course "+course.getName());
@@ -53,7 +53,7 @@ public class UserServiceImpl extends RemoteServiceServlet implements UserService
         User user = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
         logger.debug(user.getUsername() + " listing all users");
         // TODO: how to authenticate that this is an instructor?
-        List<User> resultList = Database.getInstance().getUsersInCourse(courseId);
+        List<User> resultList = Database.getInstance().getUsersInCourse(courseId, sectionNumber);
         
         User[] userArr=new User[resultList.size()];
         return resultList.toArray(userArr);

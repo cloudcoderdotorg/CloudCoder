@@ -20,6 +20,8 @@ package org.cloudcoder.app.client.view;
 import java.util.Arrays;
 
 import org.cloudcoder.app.client.model.CourseSelection;
+import org.cloudcoder.app.client.model.Section;
+import org.cloudcoder.app.client.model.UserSelection;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.page.SessionObserver;
@@ -47,7 +49,8 @@ public class UserAdminUsersListView extends ResizeComposite implements Subscribe
     private DataGrid<User> grid;
     private Session session;
     private User selected;
-    private User loggedUser;
+    //private User loggedUser;
+	private Section section;
     
     public User getSelectedUser() {
         return selected;
@@ -92,9 +95,16 @@ public class UserAdminUsersListView extends ResizeComposite implements Subscribe
     @Override
     public void activate(final Session session, SubscriptionRegistrar subscriptionRegistrar)
     {
+    	// Make sure there is a Section, add one to session if not
+    	this.section = session.get(Section.class);
+    	if (section == null) {
+    		section = new Section(); // selects all sections
+    		session.add(section);
+    	}
+    	
         this.session = session;
         this.session.subscribe(Session.Event.ADDED_OBJECT, this, subscriptionRegistrar);
-        this.loggedUser=this.session.get(User.class);
+        //this.loggedUser=this.session.get(User.class);
         // Set selection model.
         // When a User record is selected, it will be added to the Session.
         final SingleSelectionModel<User> selectionModel = new SingleSelectionModel<User>();
@@ -102,7 +112,8 @@ public class UserAdminUsersListView extends ResizeComposite implements Subscribe
             @Override
             public void onSelectionChange(SelectionChangeEvent event) {
                 selected = selectionModel.getSelectedObject();
-                session.add(loggedUser);
+                //session.add(loggedUser);
+                session.add(new UserSelection(selected));
             }
         });
         grid.setSelectionModel(selectionModel);
@@ -115,7 +126,7 @@ public class UserAdminUsersListView extends ResizeComposite implements Subscribe
         if (userList != null) {
             displayUsers(userList);
         } else {
-            loadUsers(session);
+            loadUsers();
         }
         
     }
@@ -127,15 +138,18 @@ public class UserAdminUsersListView extends ResizeComposite implements Subscribe
     public void eventOccurred(Object key, Publisher publisher, Object hint) {
         if (key == Session.Event.ADDED_OBJECT && (hint instanceof CourseSelection)) {
             // load all the useres for the current course
-            loadUsers(session);
+            loadUsers();
+        } else if (key == Session.Event.ADDED_OBJECT && (hint instanceof Section)) {
+        	section = (Section) hint;
+        	loadUsers();
         }
     }
     
-    public void loadUsers(final Session session) {
+    public void loadUsers() {
         CourseSelection courseSelection=session.get(CourseSelection.class);
         Course course = courseSelection.getCourse();
         int courseId=course.getId();
-        RPC.usersService.getUsers(courseId, new AsyncCallback<User[]>() {
+        RPC.usersService.getUsers(courseId, section.getNumber(), new AsyncCallback<User[]>() {
             @Override
             public void onSuccess(User[] result) {
                 displayUsers(result);

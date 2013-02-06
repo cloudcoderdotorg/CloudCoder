@@ -28,6 +28,7 @@ import org.cloudcoder.app.client.rpc.RPC;
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
 import org.cloudcoder.app.shared.model.ProblemAndSubmissionReceipt;
 import org.cloudcoder.app.shared.model.SubmissionStatus;
+import org.cloudcoder.app.shared.model.User;
 import org.cloudcoder.app.shared.util.Publisher;
 import org.cloudcoder.app.shared.util.Subscriber;
 import org.cloudcoder.app.shared.util.SubscriptionRegistrar;
@@ -165,7 +166,7 @@ public class ProblemListView2 extends ResizeComposite implements SessionObserver
 	}
 
 	public void loadProblemsForCourse(final CourseSelection courseSelection) {
-		RPC.getCoursesAndProblemsService.getProblemAndSubscriptionReceipts(courseSelection.getCourse(), courseSelection.getModule(), new AsyncCallback<ProblemAndSubmissionReceipt[]>() {
+		RPC.getCoursesAndProblemsService.getProblemAndSubscriptionReceipts(courseSelection.getCourse(), session.get(User.class), courseSelection.getModule(), new AsyncCallback<ProblemAndSubmissionReceipt[]>() {
 			@Override
 			public void onFailure(Throwable caught) {
 				if (caught instanceof CloudCoderAuthenticationException) {

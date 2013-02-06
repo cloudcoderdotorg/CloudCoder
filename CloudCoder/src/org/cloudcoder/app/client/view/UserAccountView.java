@@ -134,7 +134,7 @@ public class UserAccountView extends ResizeComposite implements Subscriber, Sess
         CourseSelection courseSelection = session.get(CourseSelection.class);
         Course course = courseSelection.getCourse();
         int courseId=course.getId();
-        RPC.usersService.getUsers(courseId, new AsyncCallback<User[]>() {
+        RPC.usersService.getUsers(courseId, 0, new AsyncCallback<User[]>() {
             @Override
             public void onSuccess(User[] result) {
                 displayUser(result);

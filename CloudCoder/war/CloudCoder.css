@@ -239,3 +239,8 @@
 	border: 0px;
 	padding: 0px;
 }
+
+/* Add this style to a FlowPanel to change it to inline display. */
+.cc-inlineFlowPanel {
+	display: inline;
+}

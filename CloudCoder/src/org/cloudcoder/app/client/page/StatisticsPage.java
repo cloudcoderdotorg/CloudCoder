@@ -20,11 +20,10 @@ package org.cloudcoder.app.client.page;
 import org.cloudcoder.app.client.model.CourseSelection;
 import org.cloudcoder.app.client.model.Section;
 import org.cloudcoder.app.client.model.Session;
-import org.cloudcoder.app.client.model.StatusMessage;
-import org.cloudcoder.app.client.rpc.RPC;
 import org.cloudcoder.app.client.view.PageNavPanel;
+import org.cloudcoder.app.client.view.ProblemProgressView;
+import org.cloudcoder.app.client.view.SectionSelectionView;
 import org.cloudcoder.app.client.view.StatusMessageView;
-import org.cloudcoder.app.client.view.StudentProgressView;
 import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.util.Publisher;
@@ -33,21 +32,16 @@ import org.cloudcoder.app.shared.util.SubscriptionRegistrar;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Style.Unit;
-import com.google.gwt.event.dom.client.ChangeEvent;
-import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.DockLayoutPanel;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.InlineHTML;
-import com.google.gwt.user.client.ui.InlineLabel;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.LayoutPanel;
-import com.google.gwt.user.client.ui.ListBox;
 
 /**
  * Page for displaying statistics for a given {@link Problem}.
@@ -62,9 +56,9 @@ public class StatisticsPage extends CloudCoderPage {
 		private PageNavPanel pageNavPanel;
 		private Label problemLabel;
 		private StatusMessageView statusMessageView;
-		private StudentProgressView studentProgressView;
+		private ProblemProgressView studentProgressView;
 		private Button downloadCsvButton;
-		private ListBox chooseSectionBox;
+		private SectionSelectionView sectionSelectionView;
 
 		public UI() {
 			DockLayoutPanel dockLayoutPanel = new DockLayoutPanel(Unit.PX);
@@ -87,17 +81,8 @@ public class StatisticsPage extends CloudCoderPage {
 			
 			// stats options (choose section, sorting, download CSV)
 			FlowPanel statsOptionPanel = new FlowPanel();
-			InlineLabel chooseSectionLabel = new InlineLabel("Section: ");
-			statsOptionPanel.add(chooseSectionLabel);
-			this.chooseSectionBox = new ListBox();
-			chooseSectionBox.setWidth("80px");
-			chooseSectionBox.addChangeHandler(new ChangeHandler() {
-				@Override
-				public void onChange(ChangeEvent event) {
-					handleSectionChange();
-				}
-			});
-			statsOptionPanel.add(chooseSectionBox);
+			this.sectionSelectionView = new SectionSelectionView();
+			statsOptionPanel.add(sectionSelectionView);
 			statsOptionPanel.add(new InlineHTML(" "));
 			this.downloadCsvButton = new Button("Download");
 			downloadCsvButton.addClickHandler(new ClickHandler() {
@@ -124,33 +109,13 @@ public class StatisticsPage extends CloudCoderPage {
 			
 			// Center panel: stats view
 			LayoutPanel centerPanel = new LayoutPanel();
-			this.studentProgressView = new StudentProgressView();
+			this.studentProgressView = new ProblemProgressView();
 			centerPanel.add(studentProgressView);
 			centerPanel.setWidgetLeftRight(studentProgressView, 0.0, Unit.PX, 0.0, Unit.PX);
 			centerPanel.setWidgetTopBottom(studentProgressView, 10.0, Unit.PX, 10.0, Unit.PX);
 			dockLayoutPanel.add(centerPanel);
 			
 			initWidget(dockLayoutPanel);
-		}
-
-		private String getSectionChoice() {
-			int selected = chooseSectionBox.getSelectedIndex();
-			return selected < 0 ? null : chooseSectionBox.getItemText(selected);
-		}
-
-		protected void handleSectionChange() {
-			String choice = getSectionChoice();
-			if (choice != null) {
-				// Add a Section object to the session.
-				// The StudentProgressView listens for these events,
-				// and updates the results appropriately.
-				if (choice.equals("All")) {
-					getSession().add(new Section()); // all sections
-				} else {
-					int section = Integer.parseInt(choice);
-					getSession().add(new Section(section));
-				}
-			}
 		}
 
 		protected void handleDownloadCsv() {
@@ -163,10 +128,10 @@ public class StatisticsPage extends CloudCoderPage {
 			// course id and problem id, and (optionally) section number
 			StringBuilder pathInfo = new StringBuilder();
 			pathInfo.append(problem.getCourseId());
-			String sectionChoice = getSectionChoice();
-			if (sectionChoice != null && !sectionChoice.equals("All")) {
+			Section sectionChoice = sectionSelectionView.getSelectedSection();
+			if (sectionChoice != null && sectionChoice.getNumber() != 0) {
 				pathInfo.append("-");
-				pathInfo.append(sectionChoice);
+				pathInfo.append(sectionChoice.getNumber());
 			}
 			pathInfo.append("/");
 			pathInfo.append(problem.getProblemId());
@@ -185,33 +150,21 @@ public class StatisticsPage extends CloudCoderPage {
 		}-*/;
 
 		public void activate(final Session session, final SubscriptionRegistrar subscriptionRegistrar) {
-			// Initially, results for all sections are shown
-			session.add(new Section());
+			// Make sure a Section has been selected (adding one if not)
+			Section section = session.get(Section.class);
+			if (section != null) {
+				session.add(new Section()); // add a Section matching all section
+			}
 			
 			// Activate views
 			statusMessageView.activate(session, subscriptionRegistrar);
 			studentProgressView.activate(session, subscriptionRegistrar);
+			sectionSelectionView.activate(session, subscriptionRegistrar);
 			
 			// Set title
 			Problem problem = session.get(Problem.class);
 			CourseSelection courseSelection = session.get(CourseSelection.class);
 			problemLabel.setText("Statistics for " + problem.toNiceString() + " in " + courseSelection.getCourse().getName());
-			
-			// Set section numbers
-			chooseSectionBox.addItem("All");
-			RPC.getCoursesAndProblemsService.getSectionsForCourse(courseSelection.getCourse(), new AsyncCallback<Integer[]>() {
-				@Override
-				public void onSuccess(Integer[] result) {
-					for (Integer section : result) {
-						chooseSectionBox.addItem(section.toString());
-					}
-				}
-				
-				@Override
-				public void onFailure(Throwable caught) {
-					session.add(StatusMessage.error("Couldn't get section numbers for course", caught));
-				}
-			});
 			
 			// Set back/logout handlers
 			pageNavPanel.setBackHandler(new Runnable() {
@@ -226,8 +179,7 @@ public class StatisticsPage extends CloudCoderPage {
 		
 		@Override
 		public void eventOccurred(Object key, Publisher publisher, Object hint) {
-			// TODO Auto-generated method stub
-			
+			// So far, no need to handle events here
 		}
 	}
 

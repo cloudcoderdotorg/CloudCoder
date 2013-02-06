@@ -130,7 +130,7 @@ public class UserProgressListView extends ResizeComposite implements Subscriber,
         CourseSelection courseSelection=session.get(CourseSelection.class);
         Course course = courseSelection.getCourse();
         
-        RPC.getCoursesAndProblemsService.getProblemAndSubscriptionReceipts(course, user, new AsyncCallback<ProblemAndSubmissionReceipt[]>() {
+        RPC.getCoursesAndProblemsService.getProblemAndSubscriptionReceipts(course, user, null, new AsyncCallback<ProblemAndSubmissionReceipt[]>() {
 			@Override
 			public void onSuccess(ProblemAndSubmissionReceipt[] result) {
 				GWT.log("displaying problems for "+user.getUsername());

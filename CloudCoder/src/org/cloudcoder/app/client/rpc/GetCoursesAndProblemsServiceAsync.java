@@ -40,11 +40,11 @@ public interface GetCoursesAndProblemsServiceAsync {
 
 	void getProblems(Course course, AsyncCallback<Problem[]> callback);
 
-	void getProblemAndSubscriptionReceipts(Course course, Module module,
+	void getProblemAndSubscriptionReceipts(Course course, User forUser, Module module,
 			AsyncCallback<ProblemAndSubmissionReceipt[]> callback);
 
-	void getProblemAndSubscriptionReceipts(Course course, User user,
-			AsyncCallback<ProblemAndSubmissionReceipt[]> callback);
+//	void getProblemAndSubscriptionReceipts(Course course, User user,
+//			AsyncCallback<ProblemAndSubmissionReceipt[]> callback);
 
 	void getBestSubmissionReceipts(Problem problem, int section,
 			AsyncCallback<UserAndSubmissionReceipt[]> callback);

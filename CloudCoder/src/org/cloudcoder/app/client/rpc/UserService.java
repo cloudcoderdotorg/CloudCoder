@@ -38,11 +38,12 @@ public interface UserService extends RemoteService
      * Get a list of all {@link User} objects for each of
      * the users registered for the given Course.
      * 
-     * @param course The course for which we want the users.
+     * @param courseId The course for which we want the users.
+     * @param sectionNumber the section number of the course (0 to get all sections)
      * @return An array of all of the Users registered for the given course.
      * @throws CloudCoderAuthenticationException if the client is not authenticated
      */
-    User[] getUsers(int courseId) throws CloudCoderAuthenticationException;
+    User[] getUsers(int courseId, int sectionNumber) throws CloudCoderAuthenticationException;
     
     /**
      * Add a user to a course.

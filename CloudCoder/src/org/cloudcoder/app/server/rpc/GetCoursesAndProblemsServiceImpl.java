@@ -157,40 +157,40 @@ public class GetCoursesAndProblemsServiceImpl extends RemoteServiceServlet
 	 */
 	@Override
 	public ProblemAndSubmissionReceipt[] getProblemAndSubscriptionReceipts(
-			Course course, Module module) throws CloudCoderAuthenticationException {
+			Course course, User forUser, Module module) throws CloudCoderAuthenticationException {
 		// Make sure user is authenticated
 		User user = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
 		
 		logger.info("getting submission receipts for authenticated user "+user.getUsername());
 		
-		List<ProblemAndSubmissionReceipt> resultList = Database.getInstance().getProblemAndSubscriptionReceiptsInCourse(user, course, module);
+		List<ProblemAndSubmissionReceipt> resultList = Database.getInstance().getProblemAndSubscriptionReceiptsInCourse(user, course, forUser, module);
 		return resultList.toArray(new ProblemAndSubmissionReceipt[resultList.size()]);
 	}
 	
-	/* (non-Javadoc)
-	 * @see org.cloudcoder.app.client.rpc.GetCoursesAndProblemsService#getProblemAndSubscriptionReceipts(org.cloudcoder.app.shared.model.Course)
-	 */
-	@Override
-	public ProblemAndSubmissionReceipt[] getProblemAndSubscriptionReceipts(
-			Course course, User user) throws CloudCoderAuthenticationException {
-
-		logger.warn("yay! getting submission receipts for user "+user.getUsername());
-		
-		List<ProblemAndSubmissionReceipt> resultList = new LinkedList<ProblemAndSubmissionReceipt>();
-		ProblemList problems = Database.getInstance().getProblemsInCourse(user, course);
-		for(Problem p : problems.getProblemList()){
-			List<UserAndSubmissionReceipt> e = Database.getInstance().getBestSubmissionReceipts(course, 0, p);
-			for(UserAndSubmissionReceipt pair : e){
-				if(pair.getUser().getId() == user.getId()){
-					// FIXME: is it a problem that we're not including Modules in the ProblemAndSubmissionReceipts?
-					resultList.add(new ProblemAndSubmissionReceipt(p,pair.getSubmissionReceipt(),null));
-				}
-			}
-		}
-		
-		//List<ProblemAndSubmissionReceipt> resultList = Database.getInstance().getBestSubmissionReceipts(course, problemId).getProblemAndSubscriptionReceiptsInCourse(user, course);
-		return resultList.toArray(new ProblemAndSubmissionReceipt[resultList.size()]);
-	}
+//	/* (non-Javadoc)
+//	 * @see org.cloudcoder.app.client.rpc.GetCoursesAndProblemsService#getProblemAndSubscriptionReceipts(org.cloudcoder.app.shared.model.Course)
+//	 */
+//	@Override
+//	public ProblemAndSubmissionReceipt[] getProblemAndSubscriptionReceipts(
+//			Course course, User user) throws CloudCoderAuthenticationException {
+//
+//		logger.warn("yay! getting submission receipts for user "+user.getUsername());
+//		
+//		List<ProblemAndSubmissionReceipt> resultList = new LinkedList<ProblemAndSubmissionReceipt>();
+//		ProblemList problems = Database.getInstance().getProblemsInCourse(user, course);
+//		for(Problem p : problems.getProblemList()){
+//			List<UserAndSubmissionReceipt> e = Database.getInstance().getBestSubmissionReceipts(course, 0, p);
+//			for(UserAndSubmissionReceipt pair : e){
+//				if(pair.getUser().getId() == user.getId()){
+//					// FIXME: is it a problem that we're not including Modules in the ProblemAndSubmissionReceipts?
+//					resultList.add(new ProblemAndSubmissionReceipt(p,pair.getSubmissionReceipt(),null));
+//				}
+//			}
+//		}
+//		
+//		//List<ProblemAndSubmissionReceipt> resultList = Database.getInstance().getBestSubmissionReceipts(course, problemId).getProblemAndSubscriptionReceiptsInCourse(user, course);
+//		return resultList.toArray(new ProblemAndSubmissionReceipt[resultList.size()]);
+//	}
 	
 	/* (non-Javadoc)
 	 * @see org.cloudcoder.app.client.rpc.GetCoursesAndProblemsService#getBestSubmissionReceipts(org.cloudcoder.app.shared.model.Problem)

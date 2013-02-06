@@ -32,6 +32,7 @@ import org.cloudcoder.app.shared.model.Module;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemAndModule;
 import org.cloudcoder.app.shared.model.ProblemAndSubmissionReceipt;
+import org.cloudcoder.app.shared.model.User;
 import org.cloudcoder.app.shared.util.Publisher;
 import org.cloudcoder.app.shared.util.Subscriber;
 import org.cloudcoder.app.shared.util.SubscriptionRegistrar;
@@ -221,7 +222,7 @@ public class CourseAdminProblemListView extends ResizeComposite implements Subsc
 	}
 
 	private void loadProblems(final Session session, final Course course) {
-		RPC.getCoursesAndProblemsService.getProblemAndSubscriptionReceipts(course, (Module)null, new AsyncCallback<ProblemAndSubmissionReceipt[]>() {
+		RPC.getCoursesAndProblemsService.getProblemAndSubscriptionReceipts(course, session.get(User.class), (Module)null, new AsyncCallback<ProblemAndSubmissionReceipt[]>() {
 			/* (non-Javadoc)
 			 * @see com.google.gwt.user.client.rpc.AsyncCallback#onSuccess(java.lang.Object)
 			 */

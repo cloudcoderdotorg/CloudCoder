@@ -19,7 +19,6 @@ package org.cloudcoder.app.client.view;
 
 import java.util.Arrays;
 
-import org.cloudcoder.app.client.model.CourseSelection;
 import org.cloudcoder.app.client.model.Section;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
@@ -43,21 +42,22 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Composite;
 
 /**
- * Table view for summarizing student progress.
+ * Table view for summarizing student progress on a particlar {@link Problem}.
  * Views the session's array of {@link UserAndSubmissionReceipt} objects,
  * where the submission receipts are the students best submission for
  * a particular problem.
  * 
  * @author David Hovemeyer
  */
-public class StudentProgressView extends Composite implements Subscriber, SessionObserver {
+public class ProblemProgressView extends Composite implements Subscriber, SessionObserver {
 	private DataGrid<UserAndSubmissionReceipt> grid;
 	private Problem problem;
 	private TestCase[] testCaseList;
 	private UserAndSubmissionReceipt[] data;
 	private Session session;
+	private Section currentSection;
 	
-	public StudentProgressView() {
+	public ProblemProgressView() {
 		data = new UserAndSubmissionReceipt[0];
 
 		grid = new DataGrid<UserAndSubmissionReceipt>();
@@ -168,6 +168,13 @@ public class StudentProgressView extends Composite implements Subscriber, Sessio
 	@Override
 	public void activate(final Session session, final SubscriptionRegistrar subscriptionRegistrar) {
 		this.session = session;
+
+		// Make sure a Section has been selected (adding one if not)
+		currentSection = session.get(Section.class);
+		if (currentSection == null) {
+			currentSection = new Section(); // add Section selecting all sections
+			session.add(currentSection);
+		}
 		
 		session.subscribe(Session.Event.ADDED_OBJECT, this, subscriptionRegistrar);
 		problem = session.get(Problem.class);
@@ -193,6 +200,9 @@ public class StudentProgressView extends Composite implements Subscriber, Sessio
 	private void getBestSubmissions() {
 		Section choice = session.get(Section.class);
 		
+		String loadingMessage = "Loading data" + (choice.getNumber() != 0 ? (" for section " + choice.getNumber()) : "") + "...";
+		session.add(StatusMessage.pending(loadingMessage));
+		
 		RPC.getCoursesAndProblemsService.getBestSubmissionReceipts(problem, choice.getNumber(), new AsyncCallback<UserAndSubmissionReceipt[]>() {
 			@Override
 			public void onFailure(Throwable caught) {
@@ -201,6 +211,7 @@ public class StudentProgressView extends Composite implements Subscriber, Sessio
 			
 			@Override
 			public void onSuccess(UserAndSubmissionReceipt[] result) {
+				session.add(StatusMessage.goodNews("Data loaded successfully"));
 				data = result;
 				refreshView();
 			}
@@ -219,8 +230,12 @@ public class StudentProgressView extends Composite implements Subscriber, Sessio
 			data = (UserAndSubmissionReceipt[]) hint;
 			refreshView();
 		} else if (key == Session.Event.ADDED_OBJECT && hint instanceof Section) {
-			// Section number choice changed
-			getBestSubmissions();
+			Section section = (Section)hint;
+			if (currentSection == null || currentSection.getNumber() != section.getNumber()) {
+				// Section number choice changed
+				currentSection = section;
+				getBestSubmissions();
+			}
 		}
 	}
 
