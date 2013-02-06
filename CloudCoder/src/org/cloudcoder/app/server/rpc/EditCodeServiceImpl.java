@@ -74,7 +74,7 @@ public class EditCodeServiceImpl extends RemoteServiceServlet implements EditCod
 		if (startedQuiz != null) {
 			// Make sure that the problem the user has selected
 			// is the same one as the ongoing quiz.
-			if (pair.getRight() == null || pair.getRight().getId() != startedQuiz.getId()) {
+			if (pair.getRight() == null || pair.getRight().getId() != startedQuiz.getQuizId()) {
 				// User is trying to load a problem other than the quiz.
 				logger.info("User {} attempted to work on problem {} during ongoing quiz {}",
 						new Object[]{user.getId(), pair.getLeft().getProblemId(), startedQuiz.getQuizId()});

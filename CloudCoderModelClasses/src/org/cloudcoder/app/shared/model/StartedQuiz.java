@@ -61,6 +61,9 @@ public class StartedQuiz implements Serializable, IModelObject<StartedQuiz> {
 	private int quizId;
 	private long startTime;
 	
+	/**
+	 * Constructor.
+	 */
 	public StartedQuiz() {
 		
 	}
@@ -70,34 +73,65 @@ public class StartedQuiz implements Serializable, IModelObject<StartedQuiz> {
 		return SCHEMA;
 	}
 	
+	/**
+	 * Set the unique id.
+	 * @param id the unique id to set
+	 */
 	public void setId(int id) {
 		this.id = id;
 	}
 	
+	/**
+	 * @return the unique id
+	 */
 	public int getId() {
 		return id;
 	}
 	
+	/**
+	 * Set the user id of the user who has started a quiz.
+	 * 
+	 * @param userId the user id
+	 */
 	public void setUserId(int userId) {
 		this.userId = userId;
 	}
 	
+	/**
+	 * @return the user id of the user who started a quiz
+	 */
 	public int getUserId() {
 		return userId;
 	}
 	
+	/**
+	 * Set the unique id of the quiz.
+	 * 
+	 * @param quizId the unique id of the quiz
+	 */
 	public void setQuizId(int quizId) {
 		this.quizId = quizId;
 	}
 	
+	/**
+	 * @return the unique id of the quiz
+	 */
 	public int getQuizId() {
 		return quizId;
 	}
 	
+	/**
+	 * Set time when the quiz was started.
+	 * 
+	 * @param startTime time when the quiz was started
+	 */
 	public void setStartTime(long startTime) {
 		this.startTime = startTime;
 	}
 	
+	/**
+	 * @return time when the quiz was started
+	 */
 	public long getStartTime() {
 		return startTime;
 	}
