@@ -723,7 +723,7 @@ public class JDBCDatabase implements IDatabase {
 	}
 
 	@Override
-	public TestCase[] getTestCasesForProblem(final User authenticatedUser, final int problemId) {
+	public TestCase[] getTestCasesForProblem(final User authenticatedUser, final boolean requireInstructor, final int problemId) {
 		return databaseRun(new AbstractDatabaseRunnableNoAuthException<TestCase[]>() {
 			@Override
 			public TestCase[] run(Connection conn) throws SQLException {
@@ -732,16 +732,21 @@ public class JDBCDatabase implements IDatabase {
 				problem.setProblemId(problemId);
 				DBUtil.loadModelObject(conn, problem);
 				
-				// Make sure the user is an instructor in the course in which the problem is assigned
+				// Check user's registration in the course
 				CourseRegistrationList regList = doGetCourseRegistrations(
 						conn, problem.getCourseId(), authenticatedUser.getId(), this);
-				if (!regList.isInstructor()) {
+				
+				if (regList.getList().isEmpty()) {
+					// Not registered, deny
+					return new TestCase[0];
+				}
+
+				if (requireInstructor && !regList.isInstructor()) {
 					// Authenticated user is not an instructor
 					return new TestCase[0];
 				}
 				
-				// Authenticated user is an instructor in the course,
-				// so we can go ahead and return the test cases
+				// Allow the request, so go ahead and return the test cases
 				List<TestCase> result = doGetTestCasesForProblem(conn, problemId, this);
 				return result.toArray(new TestCase[result.size()]);
 			}

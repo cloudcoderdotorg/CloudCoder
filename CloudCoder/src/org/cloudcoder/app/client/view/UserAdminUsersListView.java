@@ -95,12 +95,8 @@ public class UserAdminUsersListView extends ResizeComposite implements Subscribe
     @Override
     public void activate(final Session session, SubscriptionRegistrar subscriptionRegistrar)
     {
-    	// Make sure there is a Section, add one to session if not
+    	// Get selected section
     	this.section = session.get(Section.class);
-    	if (section == null) {
-    		section = new Section(); // selects all sections
-    		session.add(section);
-    	}
     	
         this.session = session;
         this.session.subscribe(Session.Event.ADDED_OBJECT, this, subscriptionRegistrar);
@@ -117,17 +113,9 @@ public class UserAdminUsersListView extends ResizeComposite implements Subscribe
             }
         });
         grid.setSelectionModel(selectionModel);
-        
-        // If the session contains a list of Users, display them.
-        // Otherwise, initiate loading of users for this course.
-        User[] userList = session.get(User[].class);
-        	
-        //ProblemAndSubmissionReceipt[] problemAndSubmissionReceiptList = session.get(ProblemAndSubmissionReceipt[].class);
-        if (userList != null) {
-            displayUsers(userList);
-        } else {
-            loadUsers();
-        }
+
+        // Load users for course/section
+        loadUsers();
         
     }
 
@@ -140,12 +128,20 @@ public class UserAdminUsersListView extends ResizeComposite implements Subscribe
             // load all the useres for the current course
             loadUsers();
         } else if (key == Session.Event.ADDED_OBJECT && (hint instanceof Section)) {
-        	section = (Section) hint;
-        	loadUsers();
+        	if (section == null || section.getNumber() != ((Section)hint).getNumber()) {
+        		// section selection changed, reload users
+            	section = (Section) hint;
+        		loadUsers();
+        	}
         }
     }
     
     public void loadUsers() {
+    	if (section == null) {
+    		// Need a section selection
+    		return;
+    	}
+    	
         CourseSelection courseSelection=session.get(CourseSelection.class);
         Course course = courseSelection.getCourse();
         int courseId=course.getId();

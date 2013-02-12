@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.cloudcoder.app.client.model.ChangeFromAceOnChangeEvent;
 import org.cloudcoder.app.client.model.ChangeList;
+import org.cloudcoder.app.client.model.NamedTestResult;
 import org.cloudcoder.app.client.model.QuizInProgress;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
@@ -144,6 +145,7 @@ public class DevelopmentPage extends CloudCoderPage {
 		private Mode mode;
 		private Timer checkPendingSubmissionTimer;
 		private Runnable onCleanCallback;
+		private String[] testCaseNames;
 
 		public UI() {
 			SplitLayoutPanel dockLayoutPanel = new SplitLayoutPanel();
@@ -725,7 +727,7 @@ public class DevelopmentPage extends CloudCoderPage {
 		private void onReceiveSubmissionResult(SubmissionResult result) {
 			if (result==null){
 				addSessionObject(StatusMessage.error("Results from Builder are empty"));
-				addSessionObject(new TestResult[0]);
+				addSessionObject(new NamedTestResult[0]);
 				addSessionObject(new CompilerDiagnostic[0]);
 
 			} else {
@@ -746,17 +748,16 @@ public class DevelopmentPage extends CloudCoderPage {
 				{
 					// ?
 					addSessionObject(StatusMessage.error("Error testing submission"));
-					addSessionObject(new TestResult[0]);
+					addSessionObject(new NamedTestResult[0]);
 				} else if (result.getCompilationResult().getOutcome()==CompilationOutcome.FAILURE) {
 					// Code did not compile
 					addSessionObject(StatusMessage.error("Error compiling submission"));
-					addSessionObject(new TestResult[0]);
+					addSessionObject(new NamedTestResult[0]);
 				} else {
 					// Code compiled, and test results were sent back.
 
-					TestResult[] results=result.getTestResults();
-					// Great, got results back from server!
-					addSessionObject(results);
+					// Display the test results
+					displayTestResults(result);
 
 					// Add a status message about the results
 					if (result.isAllTestsPassed()) {
@@ -778,6 +779,65 @@ public class DevelopmentPage extends CloudCoderPage {
 				doneWithOnCleanCallback();
 			}
 
+		}
+
+		/**
+		 * Display the test results from given {@link SubmissionResult}.
+		 * This is complicated slightly by the requirement to display
+		 * test case names, which must be loaded via RPC.
+		 * 
+		 * @param submissionResult the {@link SubmissionResult} containing the
+		 *        test results to display
+		 */
+		private void displayTestResults(final SubmissionResult submissionResult) {
+			if (this.testCaseNames == null || this.testCaseNames.length != submissionResult.getTestResults().length) {
+				// Need to load test case names via RPC
+				RPC.getCoursesAndProblemsService.getTestCaseNamesForProblem(getSession().get(Problem.class).getProblemId(), new AsyncCallback<String[]>() {
+					@Override
+					public void onFailure(Throwable caught) {
+						// Hmm, couldn't get the test case names
+						getSession().add(StatusMessage.error("Could not get test case names", caught));
+						
+						// Add fake test case names
+						createFakeTestCaseNames(submissionResult.getTestResults());
+						displayNamedTestResults(submissionResult.getTestResults());
+					}
+					@Override
+					public void onSuccess(String[] result) {
+						if (result.length != submissionResult.getTestResults().length) {
+							// It is possible to receive an empty array if the user is
+							// not authorized to see this problem
+							createFakeTestCaseNames(submissionResult.getTestResults());
+						} else {
+							// Great, we have the test case names
+							testCaseNames = result;
+						}
+						displayNamedTestResults(submissionResult.getTestResults());
+					}
+				});
+			} else {
+				displayNamedTestResults(submissionResult.getTestResults());
+			}
+			
+		}
+
+		/**
+		 * @param results
+		 */
+		private void displayNamedTestResults(TestResult[] results) {
+			NamedTestResult[] namedTestResults = new NamedTestResult[results.length];
+			for (int i = 0; i < results.length; i++) {
+				namedTestResults[i] = new NamedTestResult(testCaseNames[i], results[i]);
+			}
+			addSessionObject(namedTestResults);
+		}
+
+		private void createFakeTestCaseNames(TestResult[] testResults) {
+			testCaseNames = new String[testResults.length];
+			int count = 0;
+			for (int i = 0; i < testResults.length; i++) {
+				testCaseNames[i] = "t" + (count++);
+			}
 		}
 
 		private void doEndQuiz() {
@@ -809,7 +869,7 @@ public class DevelopmentPage extends CloudCoderPage {
 	@Override
 	public void activate() {
 		addSessionObject(new ChangeList());
-		addSessionObject(new TestResult[0]);
+		addSessionObject(new NamedTestResult[0]);
 		addSessionObject(new CompilerDiagnostic[0]);
 		ui.activate(getSession(), getSubscriptionRegistrar());
 	}

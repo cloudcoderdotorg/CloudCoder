@@ -29,7 +29,6 @@ import org.cloudcoder.app.client.view.PageNavPanel;
 import org.cloudcoder.app.client.view.SectionSelectionView;
 import org.cloudcoder.app.client.view.StatusMessageView;
 import org.cloudcoder.app.client.view.UserAdminUsersListView;
-import org.cloudcoder.app.client.view.UserProgressListView;
 import org.cloudcoder.app.client.view.ViewUtil;
 import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.CourseRegistrationType;
@@ -432,14 +431,6 @@ public class UserAdminPage extends CloudCoderPage
          */
         public void activate(Session session, SubscriptionRegistrar subscriptionRegistrar) {
             session.subscribe(Session.Event.ADDED_OBJECT, this, subscriptionRegistrar);
-            
-            // Add a Section object to the Session if one hasn't been
-            // added already
-            Section section = session.get(Section.class);
-            if (section == null) {
-            	section = new Section(); // matches all sections
-            	session.add(section);
-            }
             
             // Activate views
             pageNavPanel.setBackHandler(new BackHomeHandler(session));

@@ -150,7 +150,7 @@ public interface IDatabase {
 	 * Note that no authentication is done to ensure that the caller
 	 * should be able to access the test cases.
 	 * 
-	 * @param problemId the Problem id
+	 * @param problemId         the Problem id
 	 * @return list of TestCases for the Problem
 	 */
 	public List<TestCase> getTestCasesForProblem(int problemId);
@@ -160,12 +160,15 @@ public interface IDatabase {
 	 * checking that the given authenticated {@link User} is allowed to access
 	 * the test cases for the problem.
 	 * 
-	 * @param authenticatedUser the authenticated User 
+	 * @param authenticatedUser the authenticated User
+	 * @param requireInstructor true if the operation should only succeed if the authenticated
+	 *                          user is an instructor in the course in which the
+	 *                          problem is assigned 
 	 * @param problemId         the Problem id
 	 * @return list of test cases, or null if the user is not authorized to access the test cases
 	 *         (i.e., is not an instructor for the {@link Course} in which the problem is assigned)
 	 */
-	public TestCase[] getTestCasesForProblem(User authenticatedUser, int problemId);
+	public TestCase[] getTestCasesForProblem(User authenticatedUser, boolean requireInstructor, int problemId);
 	
 	public void insertSubmissionReceipt(SubmissionReceipt receipt, TestResult[] testResultList);
 	public void getOrAddLatestSubmissionReceipt(User user, Problem problem);

@@ -150,12 +150,6 @@ public class StatisticsPage extends CloudCoderPage {
 		}-*/;
 
 		public void activate(final Session session, final SubscriptionRegistrar subscriptionRegistrar) {
-			// Make sure a Section has been selected (adding one if not)
-			Section section = session.get(Section.class);
-			if (section != null) {
-				session.add(new Section()); // add a Section matching all section
-			}
-			
 			// Activate views
 			statusMessageView.activate(session, subscriptionRegistrar);
 			studentProgressView.activate(session, subscriptionRegistrar);

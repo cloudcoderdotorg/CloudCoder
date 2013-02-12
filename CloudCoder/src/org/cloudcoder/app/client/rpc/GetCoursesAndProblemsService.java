@@ -115,6 +115,16 @@ public interface GetCoursesAndProblemsService extends RemoteService {
 	public TestCase[] getTestCasesForProblem(int problemId) throws CloudCoderAuthenticationException;
 	
 	/**
+	 * Get list of names of the {@link TestCase}s for given {@link Problem}.
+	 * No instructor privilege is required.
+	 * 
+	 * @param problemId the unique id of the {@link Problem}
+	 * @return list of test case names
+	 * @throws CloudCoderAuthenticationException
+	 */
+	public String[] getTestCaseNamesForProblem(int problemId) throws CloudCoderAuthenticationException;
+	
+	/**
 	 * Store given {@link ProblemAndTestCaseList} in the database.
 	 * The authenticated user must be registered as an instructor for the course
 	 * in which the problem is assigned.

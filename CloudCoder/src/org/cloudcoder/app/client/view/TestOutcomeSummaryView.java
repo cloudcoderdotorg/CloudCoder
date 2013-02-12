@@ -17,10 +17,10 @@
 
 package org.cloudcoder.app.client.view;
 
+import org.cloudcoder.app.client.model.NamedTestResult;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.page.SessionObserver;
 import org.cloudcoder.app.shared.model.TestOutcome;
-import org.cloudcoder.app.shared.model.TestResult;
 import org.cloudcoder.app.shared.util.Publisher;
 import org.cloudcoder.app.shared.util.Subscriber;
 import org.cloudcoder.app.shared.util.SubscriptionRegistrar;
@@ -78,8 +78,8 @@ public class TestOutcomeSummaryView extends Composite implements SessionObserver
 	 */
 	@Override
 	public void eventOccurred(Object key, Publisher publisher, Object hint) {
-		if (key == Session.Event.ADDED_OBJECT && (hint instanceof TestResult[])) {
-			TestResult[] testResultList = (TestResult[]) hint;
+		if (key == Session.Event.ADDED_OBJECT && (hint instanceof NamedTestResult[])) {
+			NamedTestResult[] testResultList = (NamedTestResult[]) hint;
 			
 			// Display empty state if there are no TestResults
 			if (testResultList.length == 0) {
@@ -89,9 +89,9 @@ public class TestOutcomeSummaryView extends Composite implements SessionObserver
 			
 			// Determine what percentage of tests passed
 			double passed = 0, total = 0;
-			for (TestResult testResult : testResultList) {
+			for (NamedTestResult testResult : testResultList) {
 				total += 1.0;
-				if (testResult.getOutcome() == TestOutcome.PASSED) {
+				if (testResult.getTestResult().getOutcome() == TestOutcome.PASSED) {
 					passed += 1.0;
 				}
 			}

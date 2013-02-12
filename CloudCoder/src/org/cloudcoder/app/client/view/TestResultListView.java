@@ -21,65 +21,78 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.cloudcoder.app.client.model.NamedTestResult;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.page.SessionObserver;
 import org.cloudcoder.app.shared.model.TestOutcome;
-import org.cloudcoder.app.shared.model.TestResult;
 import org.cloudcoder.app.shared.util.Publisher;
 import org.cloudcoder.app.shared.util.Subscriber;
 import org.cloudcoder.app.shared.util.SubscriptionRegistrar;
 
 import com.google.gwt.cell.client.ButtonCell;
+import com.google.gwt.cell.client.Cell.Context;
 import com.google.gwt.cell.client.CompositeCell;
 import com.google.gwt.cell.client.FieldUpdater;
 import com.google.gwt.cell.client.HasCell;
-import com.google.gwt.cell.client.Cell.Context;
 import com.google.gwt.user.cellview.client.Column;
 import com.google.gwt.user.cellview.client.DataGrid;
 import com.google.gwt.user.cellview.client.TextColumn;
 import com.google.gwt.user.client.ui.ResizeComposite;
 
 /**
- * View displaying the list of TestResults.
+ * View displaying the list of {@link NamedTestResult}s.
  * 
  * @author David Hovemeyer
  */
 public class TestResultListView extends ResizeComposite implements SessionObserver, Subscriber, IResultsTabPanelWidget {
-	private DataGrid<TestResult> cellTable;
+	private DataGrid<NamedTestResult> cellTable;
 	
 	public TestResultListView() {
-		cellTable = new DataGrid<TestResult>();
+		cellTable = new DataGrid<NamedTestResult>();
 		
-		cellTable.addColumn(new OutcomeColumn(), "Outcome");
+		TestCaseNameColumn testCaseNameColumn = new TestCaseNameColumn();
+		cellTable.addColumn(testCaseNameColumn, "Test name");
+		cellTable.setColumnWidth(testCaseNameColumn, "160px");
+		
+		OutcomeColumn outcomeColumn = new OutcomeColumn();
+		cellTable.addColumn(outcomeColumn, "Outcome");
+		cellTable.setColumnWidth(outcomeColumn, "160px");
+		
 		cellTable.addColumn(new MessageColumn(), "Message");
+		
 		cellTable.addColumn(new OutputColumn(new ExtractOutputText() {
 			@Override
-			public String getOutputText(TestResult testResult) {
-				return testResult.getStdout();
+			public String getOutputText(NamedTestResult testResult) {
+				return testResult.getTestResult().getStdout();
 			}
 		}), "Output");
+		
 		cellTable.addColumn(new OutputColumn(new ExtractOutputText() {
 			@Override
-			public String getOutputText(TestResult testResult) {
-				return testResult.getStderr();
+			public String getOutputText(NamedTestResult testResult) {
+				return testResult.getTestResult().getStderr();
 			}
 		}), "Error output");
 		
 		initWidget(cellTable);
 	}
 	
-	private static class OutcomeColumn extends TextColumn<TestResult> {
+	private static class TestCaseNameColumn extends TextColumn<NamedTestResult> {
 		@Override
-		public String getValue(TestResult object) {
-			return object.getOutcome().toString().toLowerCase();
+		public String getValue(NamedTestResult object) {
+			return object.getTestCaseName();
+		}
+	}
+	
+	private static class OutcomeColumn extends TextColumn<NamedTestResult> {
+		@Override
+		public String getValue(NamedTestResult object) {
+			return object.getTestResult().getOutcome().toString().toLowerCase();
 		}
 		
-		/* (non-Javadoc)
-		 * @see com.google.gwt.user.cellview.client.Column#getCellStyleNames(com.google.gwt.cell.client.Cell.Context, java.lang.Object)
-		 */
 		@Override
-		public String getCellStyleNames(Context context, TestResult object) {
-			if (object.getOutcome() == TestOutcome.PASSED) {
+		public String getCellStyleNames(Context context, NamedTestResult object) {
+			if (object.getTestResult().getOutcome() == TestOutcome.PASSED) {
 				return "cc-passedTest";
 			} else {
 				return "cc-failedTest";
@@ -87,21 +100,21 @@ public class TestResultListView extends ResizeComposite implements SessionObserv
 		}
 	}
 	
-	private static class MessageColumn extends TextColumn<TestResult> {
+	private static class MessageColumn extends TextColumn<NamedTestResult> {
 		@Override
-		public String getValue(TestResult object) {
-			return object.getMessage();
+		public String getValue(NamedTestResult object) {
+			return object.getTestResult().getMessage();
 		}
 	}
 	
-	private static abstract class ShowFullOutputButtonColumn extends Column<TestResult, String> {
+	private static abstract class ShowFullOutputButtonColumn extends Column<NamedTestResult, String> {
 		public ShowFullOutputButtonColumn() {
 			super(new ButtonCell());
 
 			// Set a FieldUpdater to handle the button click
-			setFieldUpdater(new FieldUpdater<TestResult, String>() {
+			setFieldUpdater(new FieldUpdater<NamedTestResult, String>() {
 				@Override
-				public void update(int index, TestResult object, String value) {
+				public void update(int index, NamedTestResult object, String value) {
 					// Show the TestResultOutputDialog.
 					TestResultOutputDialog dialog = new TestResultOutputDialog(getText(object));
 					dialog.center();
@@ -109,24 +122,21 @@ public class TestResultListView extends ResizeComposite implements SessionObserv
 			});
 		}
 
-		protected abstract String getText(TestResult object);
+		protected abstract String getText(NamedTestResult object);
 
-		/* (non-Javadoc)
-		 * @see com.google.gwt.user.cellview.client.Column#getValue(java.lang.Object)
-		 */
 		@Override
-		public String getValue(TestResult object) {
+		public String getValue(NamedTestResult object) {
 			return "Show all";
 		}
 	}
 	
-	private static abstract class OutputFirstLineColumn extends TextColumn<TestResult> {
+	private static abstract class OutputFirstLineColumn extends TextColumn<NamedTestResult> {
 		@Override
-		public String getValue(TestResult object) {
+		public String getValue(NamedTestResult object) {
 			return firstLine(getText(object));
 		}
 
-		protected abstract String getText(TestResult object);
+		protected abstract String getText(NamedTestResult object);
 		
 		private static String firstLine(String s) {
 			int eol = s.indexOf('\n');
@@ -135,42 +145,33 @@ public class TestResultListView extends ResizeComposite implements SessionObserv
 	}
 	
 	private interface ExtractOutputText {
-		public String getOutputText(TestResult testResult);
+		public String getOutputText(NamedTestResult testResult);
 	}
 	
-	private static class OutputColumn extends Column<TestResult, TestResult> {
+	private static class OutputColumn extends Column<NamedTestResult, NamedTestResult> {
 		public OutputColumn(ExtractOutputText extractor) {
-			super(new CompositeCell<TestResult>(getCells(extractor)));
+			super(new CompositeCell<NamedTestResult>(getCells(extractor)));
 		}
 		
-		private static List<HasCell<TestResult, ?>> getCells(final ExtractOutputText extractor) {
-			List<HasCell<TestResult, ?>> result = new ArrayList<HasCell<TestResult, ?>>();
+		private static List<HasCell<NamedTestResult, ?>> getCells(final ExtractOutputText extractor) {
+			List<HasCell<NamedTestResult, ?>> result = new ArrayList<HasCell<NamedTestResult, ?>>();
 			result.add(new ShowFullOutputButtonColumn(){
-				/* (non-Javadoc)
-				 * @see org.cloudcoder.app.client.view.TestResultListView.ShowFullOutputButtonColumn#getText(org.cloudcoder.app.shared.model.TestResult)
-				 */
 				@Override
-				protected String getText(TestResult object) {
+				protected String getText(NamedTestResult object) {
 					return extractor.getOutputText(object);
 				}
 			});
 			result.add(new OutputFirstLineColumn() {
-				/* (non-Javadoc)
-				 * @see org.cloudcoder.app.client.view.TestResultListView.OutputFirstLineColumn#getText(org.cloudcoder.app.shared.model.TestResult)
-				 */
 				@Override
-				protected String getText(TestResult object) {
+				protected String getText(NamedTestResult object) {
 					return extractor.getOutputText(object);
 				}
 			});
 			return result;
 		}
 
-		/* (non-Javadoc)
-		 * @see com.google.gwt.user.cellview.client.Column#getValue(java.lang.Object)
-		 */
 		@Override
-		public TestResult getValue(TestResult object) {
+		public NamedTestResult getValue(NamedTestResult object) {
 			return object;
 		}
 	}
@@ -178,7 +179,7 @@ public class TestResultListView extends ResizeComposite implements SessionObserv
 	public void activate(final Session session, final SubscriptionRegistrar subscriptionRegistrar) {
 		session.subscribe(Session.Event.ADDED_OBJECT, this, subscriptionRegistrar);
 		
-		TestResult[] testResultList = session.get(TestResult[].class);
+		NamedTestResult[] testResultList = session.get(NamedTestResult[].class);
 		if (testResultList != null) {
 			displayTestResults(testResultList);
 		}
@@ -186,18 +187,15 @@ public class TestResultListView extends ResizeComposite implements SessionObserv
 
 	@Override
 	public void eventOccurred(Object key, Publisher publisher, Object hint) {
-		if (key == Session.Event.ADDED_OBJECT && hint instanceof TestResult[]) {
-			displayTestResults((TestResult[]) hint);
+		if (key == Session.Event.ADDED_OBJECT && hint instanceof NamedTestResult[]) {
+			displayTestResults((NamedTestResult[]) hint);
 		}
 	}
 	
-	private void displayTestResults(TestResult[] testResultList) {
+	private void displayTestResults(NamedTestResult[] testResultList) {
 		cellTable.setRowData(Arrays.asList(testResultList));
 	}
 	
-	/* (non-Javadoc)
-	 * @see org.cloudcoder.app.client.view.ResultsTabPanelWidget#setSelected()
-	 */
 	@Override
 	public void setSelected() {
 		// Workaround for http://code.google.com/p/google-web-toolkit/issues/detail?id=7065

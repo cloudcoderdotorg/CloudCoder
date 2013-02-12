@@ -213,7 +213,22 @@ public class GetCoursesAndProblemsServiceImpl extends RemoteServiceServlet
 		// Make sure user is authenticated
 		User user = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
 
-		return Database.getInstance().getTestCasesForProblem(user, problemId);
+		return Database.getInstance().getTestCasesForProblem(user, true, problemId);
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.cloudcoder.app.client.rpc.GetCoursesAndProblemsService#getTestCaseNamesForProblem(int)
+	 */
+	@Override
+	public String[] getTestCaseNamesForProblem(int problemId) throws CloudCoderAuthenticationException {
+		// Make sure user is authenticated
+		User user = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
+		TestCase[] testCaseList = Database.getInstance().getTestCasesForProblem(user, false, problemId);
+		String[] result = new String[testCaseList.length];
+		for (int i = 0; i < testCaseList.length; i++) {
+			result[i] = testCaseList[i].getTestCaseName();
+		}
+		return result;
 	}
 	
 	/* (non-Javadoc)

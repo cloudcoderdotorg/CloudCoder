@@ -169,12 +169,8 @@ public class ProblemProgressView extends Composite implements Subscriber, Sessio
 	public void activate(final Session session, final SubscriptionRegistrar subscriptionRegistrar) {
 		this.session = session;
 
-		// Make sure a Section has been selected (adding one if not)
+		// Get current Section
 		currentSection = session.get(Section.class);
-		if (currentSection == null) {
-			currentSection = new Section(); // add Section selecting all sections
-			session.add(currentSection);
-		}
 		
 		session.subscribe(Session.Event.ADDED_OBJECT, this, subscriptionRegistrar);
 		problem = session.get(Problem.class);
@@ -198,12 +194,14 @@ public class ProblemProgressView extends Composite implements Subscriber, Sessio
 	}
 
 	private void getBestSubmissions() {
-		Section choice = session.get(Section.class);
+		if (currentSection == null) {
+			return; // need a section choice
+		}
 		
-		String loadingMessage = "Loading data" + (choice.getNumber() != 0 ? (" for section " + choice.getNumber()) : "") + "...";
+		String loadingMessage = "Loading data" + (currentSection.getNumber() != 0 ? (" for section " + currentSection.getNumber()) : "") + "...";
 		session.add(StatusMessage.pending(loadingMessage));
 		
-		RPC.getCoursesAndProblemsService.getBestSubmissionReceipts(problem, choice.getNumber(), new AsyncCallback<UserAndSubmissionReceipt[]>() {
+		RPC.getCoursesAndProblemsService.getBestSubmissionReceipts(problem, currentSection.getNumber(), new AsyncCallback<UserAndSubmissionReceipt[]>() {
 			@Override
 			public void onFailure(Throwable caught) {
 				session.add(StatusMessage.error("Could not get submission receipts for problem", caught));
