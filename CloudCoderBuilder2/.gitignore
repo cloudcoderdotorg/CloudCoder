@@ -2,3 +2,5 @@
 /log
 /dummy.properties
 /cloudcoderBuilder.jar
+/*.fifo
+/*.pid

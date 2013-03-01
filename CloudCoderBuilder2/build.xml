@@ -5,6 +5,7 @@
     <property name="target" value="1.6"/>
     <property name="source" value="1.6"/>
     <property name="model.class.jar" value="../CloudCoderModelClasses/cloudcoderModelClasses.jar"/>
+    <property name="json.jar" value="../CloudCoderModelClassesJSON/cloudcoderModelClassesJSON.jar"/>
 
 	<!-- Read CloudCoder global configuration properties. -->
 	<property file="../cloudcoder.properties"/>
@@ -14,6 +15,7 @@
 
     <path id="CloudCoderBuilder2.classpath">
 		<pathelement location="${model.class.jar}"/>
+		<pathelement location="${json.jar}"/>
 		<pathelement location="bin"/>
 		<fileset dir="lib" includes="**/*.jar"/>
     	<fileset dir="../CloudCoderLogging/lib" includes="*.jar"/>
@@ -34,7 +36,12 @@
     	<ant inheritall="false" dir="../CloudCoderModelClasses" target="jar" />
     </target>
 
-    <target depends="init,modelClasses" name="build">
+    <!-- make sure model classes JSON conversion jar file is built -->
+    <target name="modelClassesJSON">
+    	<ant inheritall="false" dir="../CloudCoderModelClassesJSON" target="jar" />
+    </target>
+
+    <target depends="init,modelClasses,modelClassesJSON" name="build">
         <echo message="${ant.project.name}: ${ant.file}"/>
         <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}">
             <src path="src"/>
@@ -88,6 +95,8 @@
 			<zipgroupfileset dir="lib" includes="**.jar"/>
 			<zipgroupfileset dir="../CloudCoderLogging/lib" includes="*.jar"/>
 			<zipgroupfileset file="${model.class.jar}" />
+			<zipgroupfileset file="${json.jar}" />
+			<zipgroupfileset dir="../CloudCoderModelClassesJSON/lib" includes="*.jar"/>
 
 			<fileset dir="bin" includes="**"/>
 			

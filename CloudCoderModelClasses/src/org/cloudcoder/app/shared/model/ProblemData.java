@@ -69,9 +69,15 @@ public class ProblemData implements Serializable, IProblemData {
 		public void set(IProblemData obj, String value) { obj.setBriefDescription(value); }
 		public String get(IProblemData obj) { return obj.getBriefDescription(); }
 	};
+	/** {@link ModelObjectField} for description (schema versions 0-2). */
+	public static final ModelObjectField<IProblemData, String> DESCRIPTION_V0_V2 =
+			new ModelObjectField<IProblemData, String>("description", String.class, 8192, ModelObjectIndexType.NONE, ModelObjectField.LITERAL) {
+		public void set(IProblemData obj, String value) { obj.setDescription(value); }
+		public String get(IProblemData obj) { return obj.getDescription(); }
+	};
 	/** {@link ModelObjectField} for description. */
 	public static final ModelObjectField<IProblemData, String> DESCRIPTION =
-			new ModelObjectField<IProblemData, String>("description", String.class, 8192, ModelObjectIndexType.NONE, ModelObjectField.LITERAL) {
+			new ModelObjectField<IProblemData, String>("description", String.class, 16384, ModelObjectIndexType.NONE, ModelObjectField.LITERAL) {
 		public void set(IProblemData obj, String value) { obj.setDescription(value); }
 		public String get(IProblemData obj) { return obj.getDescription(); }
 	};
@@ -138,7 +144,7 @@ public class ProblemData implements Serializable, IProblemData {
 		.add(PROBLEM_TYPE)
 		.add(TESTNAME)
 		.add(BRIEF_DESCRIPTION)
-		.add(DESCRIPTION)
+		.add(DESCRIPTION_V0_V2)
 		.add(SKELETON_V0_V1)
 		.add(SCHEMA_VERSION)
 		.add(AUTHOR_NAME)
@@ -160,11 +166,18 @@ public class ProblemData implements Serializable, IProblemData {
 	public static final ModelObjectSchema<IProblemData> SCHEMA_V2 = ModelObjectSchema.basedOn(SCHEMA_V1)
 		.increaseFieldSize(SKELETON)
 		.finishDelta();
+	
+	/**
+	 * Description of fields (schema version 3).
+	 */
+	public static final ModelObjectSchema<IProblemData> SCHEMA_V3 = ModelObjectSchema.basedOn(SCHEMA_V2)
+		.increaseFieldSize(DESCRIPTION)
+		.finishDelta();
 
 	/**
 	 * Description of fields (current schema).
 	 */
-	public static final ModelObjectSchema<IProblemData> SCHEMA = SCHEMA_V1;
+	public static final ModelObjectSchema<IProblemData> SCHEMA = SCHEMA_V3;
 
 	/**
 	 * Constructor.

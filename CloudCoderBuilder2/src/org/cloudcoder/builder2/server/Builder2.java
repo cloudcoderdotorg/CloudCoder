@@ -144,7 +144,7 @@ public class Builder2 implements Runnable {
 	 * @param programText   the submitted program text
 	 * @return a {@link SubmissionResult} for the submission
 	 */
-	private SubmissionResult testSubmission(Problem problem, List<TestCase> testCaseList, String programText) {
+	public static SubmissionResult testSubmission(Problem problem, List<TestCase> testCaseList, String programText) {
 		SubmissionResult result;
 		try {
 			// Based on the ProblemType, find a Tester

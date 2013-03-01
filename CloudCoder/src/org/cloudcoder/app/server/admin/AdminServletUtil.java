@@ -53,4 +53,16 @@ public abstract class AdminServletUtil {
 		resp.addHeader("WWW-Authenticate", "Basic realm=\"" + AdminAuthorizationFilter.CLOUDCODER_ADMIN_REALM_NAME + "\"");
 	}
 
+	/**
+	 * Send back a 403 (forbidden) response.
+	 * 
+	 * @param resp  the HttpServletResponse
+	 * @throws IOException
+	 */
+	public static void forbidden(HttpServletResponse resp) throws IOException {
+		resp.setContentType("text/plain");
+		resp.getWriter().println("You are not authorized to access this resource");
+		resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+	}
+
 }

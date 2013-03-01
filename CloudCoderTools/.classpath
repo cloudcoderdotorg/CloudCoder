@@ -16,5 +16,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/CloudCoderModelClassesPersistence"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/CloudCoder"/>
 	<classpathentry kind="lib" path="lib/aws-java-sdk-1.3.26.jar" sourcepath="lib/aws-java-sdk-1.3.26-sources.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/CloudCoderModelClassesJSON"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

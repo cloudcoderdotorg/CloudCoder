@@ -6,22 +6,27 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.text.ParseException;
+import java.util.Arrays;
 
 import org.cloudcoder.app.server.submitsvc.oop.OOPBuildServiceSubmission;
 import org.cloudcoder.app.server.submitsvc.oop.OutOfProcessSubmitService;
 import org.cloudcoder.app.server.submitsvc.oop.ServerTask;
 import org.cloudcoder.app.shared.model.CompilationOutcome;
+import org.cloudcoder.app.shared.model.Problem;
+import org.cloudcoder.app.shared.model.ProblemAndTestCaseList;
 import org.cloudcoder.app.shared.model.Submission;
 import org.cloudcoder.app.shared.model.SubmissionException;
 import org.cloudcoder.app.shared.model.SubmissionResult;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.TestOutcome;
 import org.cloudcoder.app.shared.model.TestResult;
+import org.cloudcoder.app.shared.model.json.JSONConversion;
+import org.cloudcoder.app.shared.model.json.ReflectionFactory;
 import org.dom4j.DocumentException;
 
 /**
  * Test a bunch of programs against a CloudCoder problem
- * specified by an XML file. This doesn't really have anything
+ * specified by a JSON file. This doesn't really have anything
  * with CloudCoder per se: it's just a convenient way to
  * automatically test a whole bunch of programs.
  * Requires that a Builder is running and connect to the
@@ -30,20 +35,32 @@ import org.dom4j.DocumentException;
  * @author David Hovemeyer
  */
 public class BatchTester {
-	private String problemXml;
+	private String problemJson;
 	private String fileNameList;
 	private ServerTask serverTask;
 	
-	public BatchTester(String problemXml, String fileNameList) {
-		this.problemXml = problemXml;
+	public BatchTester(String problemJson, String fileNameList) {
+		this.problemJson = problemJson;
 		this.fileNameList = fileNameList;
 	}
 
 	public void execute() throws IOException, DocumentException, ParseException, InterruptedException, SubmissionException {
-		FileReader r = new FileReader(problemXml);
-		ProblemWithTestCases problemWithTestCases;
+		FileReader r = new FileReader(problemJson);
+//		ProblemWithTestCases problemWithTestCases;
+//		try {
+//			problemWithTestCases = new ProblemReader().read(r);
+//		} finally {
+//			r.close();
+//		}
+		
+		ProblemAndTestCaseList problemWithTestCases = new ProblemAndTestCaseList();
+		
 		try {
-			problemWithTestCases = new ProblemReader().read(r);
+			JSONConversion.readProblemAndTestCaseData(
+					problemWithTestCases,
+					ReflectionFactory.forClass(Problem.class),
+					ReflectionFactory.forClass(TestCase.class),
+					r);
 		} finally {
 			r.close();
 		}
@@ -67,7 +84,7 @@ public class BatchTester {
 		}
 	}
 
-	private void testAll(String fileNameList, ProblemWithTestCases problemWithTestCases)
+	private void testAll(String fileNameList, ProblemAndTestCaseList problemWithTestCases)
 			throws FileNotFoundException, IOException, SubmissionException, InterruptedException {
 		BufferedReader reader = new BufferedReader(new FileReader(fileNameList));
 		try {
@@ -84,13 +101,13 @@ public class BatchTester {
 		}
 	}
 
-	private void testOne(ProblemWithTestCases problemWithTestCases, String fileName) throws IOException, SubmissionException, InterruptedException {
+	private void testOne(ProblemAndTestCaseList problemWithTestCases, String fileName) throws IOException, SubmissionException, InterruptedException {
 		String programText = readProgram(fileName);
 		
 		OOPBuildServiceSubmission future = new OOPBuildServiceSubmission(
 				new Submission(
 						problemWithTestCases.getProblem(),
-						problemWithTestCases.getTestCaseList(),
+						Arrays.asList(problemWithTestCases.getTestCaseList()),
 						programText));
 		
 		serverTask.submit(future);
@@ -115,8 +132,8 @@ public class BatchTester {
 		}
 		System.out.println("compiled: true");
 
-		for (int i = 0; i < problemWithTestCases.getTestCaseList().size(); i++) {
-			TestCase testCase = problemWithTestCases.getTestCaseList().get(i);
+		for (int i = 0; i < problemWithTestCases.getTestCaseList().length; i++) {
+			TestCase testCase = problemWithTestCases.getTestCaseList()[i];
 			TestResult testResult = result.getTestResults()[i];
 
 			String outcome;

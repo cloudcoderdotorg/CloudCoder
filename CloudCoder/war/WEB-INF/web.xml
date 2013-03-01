@@ -165,6 +165,14 @@
     <servlet-name>AdminProblems</servlet-name>
     <url-pattern>/admin/problems/*</url-pattern>
   </servlet-mapping>
+  <servlet>
+    <servlet-name>AdminExerciseData</servlet-name>
+    <servlet-class>org.cloudcoder.app.server.admin.ExerciseData</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>AdminExerciseData</servlet-name>
+    <url-pattern>/admin/exercisedata/*</url-pattern>
+  </servlet-mapping>
   
   <!-- General filters. -->
   <filter>
@@ -185,6 +193,10 @@
   <filter-mapping>
     <filter-name>AdminProblemsAuthorizationFilter</filter-name>
     <url-pattern>/admin/problems/*</url-pattern>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>AdminProblemsAuthorizationFilter</filter-name>
+    <url-pattern>/admin/exercisedata/*</url-pattern>
   </filter-mapping>
   
   <!-- Default page to serve -->

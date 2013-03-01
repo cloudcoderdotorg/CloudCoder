@@ -18,7 +18,11 @@
 package org.cloudcoder.builder2.server;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
+import org.cloudcoder.builder2.batch.BatchMain;
 import org.cloudcoder.daemon.DaemonController;
 import org.cloudcoder.daemon.IDaemon;
 import org.cloudcoder.daemon.JarRewriter;
@@ -81,6 +85,11 @@ public class Builder2DaemonController extends DaemonController {
 				}
 			}
 			jarRewriter.rewrite();
+		} else if (args.length >= 1 && args[0].equals("batch")) {
+			// Batch testing
+			List<String> argList = new ArrayList<String>(Arrays.asList(args));
+			argList.remove(0);
+			BatchMain.main(argList.toArray(new String[argList.size()]));
 		} else {
 			Builder2DaemonController controller = new Builder2DaemonController();
 			controller.exec(args);
