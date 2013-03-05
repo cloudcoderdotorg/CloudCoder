@@ -24,8 +24,10 @@ import java.util.List;
 
 import org.cloudcoder.builder2.batch.BatchMain;
 import org.cloudcoder.daemon.DaemonController;
+import org.cloudcoder.daemon.DefaultUpgradeCallback;
 import org.cloudcoder.daemon.IDaemon;
 import org.cloudcoder.daemon.JarRewriter;
+import org.cloudcoder.daemon.Upgrade;
 
 /**
  * {@link DaemonController} implementation for the Builder.
@@ -90,9 +92,18 @@ public class Builder2DaemonController extends DaemonController {
 			List<String> argList = new ArrayList<String>(Arrays.asList(args));
 			argList.remove(0);
 			BatchMain.main(argList.toArray(new String[argList.size()]));
+		} else if (args.length >= 1 && args[0].equals("upgrade")) {
+			doUpgrade();
 		} else {
 			Builder2DaemonController controller = new Builder2DaemonController();
 			controller.exec(args);
 		}
+	}
+
+	private static void doUpgrade() throws IOException {
+		Upgrade upgrader = new Upgrade("cloudcoderBuilder", "https://s3.amazonaws.com/cloudcoder-binaries", Builder2DaemonController.class);
+		upgrader.addConfigFile("cloudcoder.properties");
+		upgrader.addConfigFile("keystore.jks");
+		upgrader.upgradeJarFile(new DefaultUpgradeCallback());
 	}
 }

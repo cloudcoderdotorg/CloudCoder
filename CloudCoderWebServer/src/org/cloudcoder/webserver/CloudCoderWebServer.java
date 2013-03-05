@@ -52,6 +52,9 @@ public class CloudCoderWebServer extends WebServer {
 		addAdminCommand("listconfig", "org.cloudcoder.app.server.persist.ListCloudCoderProperties",
 				"Lists configuration parameters set in the current\n" +
 				"CloudCoder jarfile");
+		addAdminCommand("upgrade", "org.cloudcoder.webserver.UpgradeApp",
+				"Download the latest release and automatically configure\n" +
+				"to match the current jar file");
 	}
 	
 	public static void main(String[] args) throws Exception {

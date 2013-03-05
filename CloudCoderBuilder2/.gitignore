@@ -2,5 +2,8 @@
 /log
 /dummy.properties
 /cloudcoderBuilder.jar
+/cloudcoderBuilder-v*.jar
+/VERSION
+/addver.sh
 /*.fifo
 /*.pid

@@ -20,8 +20,8 @@
 			<attribute name="javadoc_location" value="http://jruby.org/apidocs/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/daemon-0.2.jar" sourcepath="lib/daemon-0.2.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/CloudCoderModelClassesJSON"/>
+	<classpathentry kind="lib" path="lib/daemon-0.4.jar" sourcepath="lib/daemon-0.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

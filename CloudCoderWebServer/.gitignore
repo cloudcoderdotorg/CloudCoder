@@ -5,5 +5,7 @@
 /instance-*.fifo
 /logs
 /cloudcoderApp.jar
+/cloudcoderApp-v*.jar
 /cloudCoder.pid
 /dummy.properties
+/VERSION

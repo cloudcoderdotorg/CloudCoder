@@ -198,7 +198,7 @@ public class UserAdminPage extends CloudCoderPage
             // Create users list
             this.userAdminUsersListView = new UserAdminUsersListView();
             centerPanel.add(userAdminUsersListView);
-            centerPanel.setWidgetTopBottom(userAdminUsersListView, ButtonPanel.HEIGHT_PX + 10.0, Unit.PX, 0.0, Unit.PX);
+            centerPanel.setWidgetTopBottom(userAdminUsersListView, ButtonPanel.HEIGHT_PX + 10.0, Unit.PX, StatusMessageView.HEIGHT_PX, Unit.PX);
             centerPanel.setWidgetLeftRight(userAdminUsersListView, 0.0, Unit.PX, 0.0, Unit.PX);
             
             // Create a StatusMessageView
