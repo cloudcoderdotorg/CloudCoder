@@ -18,7 +18,6 @@
 
 package org.cloudcoder.app.client.view;
 
-import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.EditedUser;
 import org.cloudcoder.app.shared.model.ICallback;
 import org.cloudcoder.app.shared.model.User;
@@ -28,38 +27,50 @@ import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.DialogBox;
 import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.HTML;
 
 /**
- * Dialog for creating a new {@link User} account in the context
- * of a {@link Course}.
+ * Dialog for editing an existing user.
  * 
  * @author Andrei Papancea
  * @author David Hovemeyer
  */
-public class NewUserDialog extends DialogBox {
+public class EditUserDialog extends DialogBox {
 	private EditUserView editUserView;
-	private Button addUserButton;
+	private Button editUserButton;
 	private Button cancelButton;
-	private ICallback<EditedUser> addUserCallback;
+	private ICallback<EditedUser> editUserCallback;
 
-	public NewUserDialog() {
+	/**
+	 * Constructor.
+	 * 
+	 * @param user                  the {@link User} to edit
+	 * @param userIsInstructor      true if the {@link User} is an instructor in the course
+	 * @param sectionNum            the section number in which the user is registered
+	 * @param verifyCurrentPassword true if the user must verify his/her current password
+	 */
+	public EditUserDialog(User user, boolean userIsInstructor, int sectionNum, boolean verifyCurrentPassword) {
 		setGlassEnabled(true);
 		
 		FlowPanel panel = new FlowPanel();
 		
-		this.editUserView = new EditUserView(false, true);
+		HTML passwordsMsg = new HTML("<div>Note: leave password fields blank to leave passwords unchanged</div>");
+		panel.add(passwordsMsg);
+		
+		this.editUserView = new EditUserView(verifyCurrentPassword, false);
+		editUserView.populate(user, sectionNum, userIsInstructor);
 		panel.add(editUserView);
-
+		
 		FlowPanel buttonPanel = new FlowPanel();
 		
-		this.addUserButton = new Button("Add User");
-		addUserButton.setStyleName("cc-floatRightButton", true);
-		buttonPanel.add(addUserButton);
-		addUserButton.addClickHandler(new ClickHandler() {
+		this.editUserButton = new Button("Edit User");
+		editUserButton.setStyleName("cc-floatRightButton", true);
+		buttonPanel.add(editUserButton);
+		editUserButton.addClickHandler(new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
 				if (editUserView.checkValidity()) {
-					addUserCallback.call(editUserView.getData());
+					editUserCallback.call(editUserView.getData());
 				}
 			}
 		});
@@ -70,7 +81,7 @@ public class NewUserDialog extends DialogBox {
 		cancelButton.addClickHandler(new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
-				NewUserDialog.this.hide();
+				hide();
 			}
 		});
 		
@@ -80,17 +91,12 @@ public class NewUserDialog extends DialogBox {
 	}
 	
 	/**
-	 * @param addUserCallback the addUserCallback to set
+	 * @param editUserCallback the editUserCallback to set
 	 */
-	public void setAddUserCallback(ICallback<EditedUser> addUserCallback) {
-		this.addUserCallback = addUserCallback;
+	public void setEditUserCallback(ICallback<EditedUser> editUserCallback) {
+		this.editUserCallback = editUserCallback;
 	}
-
-	/**
-	 * Return the {@link EditedUser}.
-	 * 
-	 * @return the {@link EditedUser}
-	 */
+	
 	public EditedUser getData() {
 		return editUserView.getData();
 	}

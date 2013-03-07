@@ -283,6 +283,18 @@ public interface IDatabase {
 	 */
 	public CourseRegistrationList findCourseRegistrations(User user, Course course);
 
+	/**
+	 * Find all {@link CourseRegistration}s for given user in given course.
+	 * There can be more than one: for example, if the user is an instructor
+	 * for multiple sections of the same course.
+	 * 
+	 * @param user    the user
+	 * @param courseId  the course id
+	 * @return list of {@link CourseRegistration}s, which will be empty if
+	 *         the user is not registered for the course
+	 */
+	public CourseRegistrationList findCourseRegistrations(User user, int courseId);
+
     /**
      * Add a new user record to the database, and register that person
      * for the course indicated by the given courseId.  The registration

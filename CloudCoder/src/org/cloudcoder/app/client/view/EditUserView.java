@@ -54,14 +54,23 @@ public class EditUserView extends Composite {
 	private RadioButton studentAccountButton;
 	private RadioButton instructorAccountButton;
 	private Label errorLabel;
+	private boolean requirePasswords;
+	private int userId;
 
 	/**
 	 * Constructor.
 	 * 
 	 * @param verifyCurrentPassword if the view should prompt the user to enter
 	 *                              his/her current password
+	 * @param requirePasswords      true if password and confirmation password are required
+	 *                              (if false, they are not, which is useful for editing
+	 *                              a user, and having a blank password mean that the
+	 *                              user's current password is left unchanged)
 	 */
-	public EditUserView(boolean verifyCurrentPassword) {
+	public EditUserView(boolean verifyCurrentPassword, boolean requirePasswords) {
+		this.requirePasswords = requirePasswords;
+		this.userId = 0;
+		
 		FlowPanel holder = new FlowPanel();
 		
 		this.validateNonEmpty = new ArrayList<TextBox>();
@@ -83,14 +92,14 @@ public class EditUserView extends Composite {
 		
 		// verify current password
 		if (verifyCurrentPassword) {
-			currentPassword = addPasswordTextBox(holder, "Current password");
+			currentPassword = addPasswordTextBox(holder, "Current password", true);
 		}
 
 		// password
-		passwd = addPasswordTextBox(holder, "Password");
+		passwd = addPasswordTextBox(holder, "Password", requirePasswords);
 
 		// re-enter password
-		passwd2 = addPasswordTextBox(holder, "Re-enter password");
+		passwd2 = addPasswordTextBox(holder, "Re-enter password", requirePasswords);
 		
 		// section
 		section = addTextBox(holder, "Section");
@@ -111,6 +120,35 @@ public class EditUserView extends Composite {
 		initWidget(holder);
 	}
 	
+	/**
+	 * Populate field value from given {@link User} object.
+	 * 
+	 * @param user the {@link User} object
+	 * @param sectionNum the section of the course in which the {@link User} is registered
+	 * @param isInstructor true if the {@link User} being edited is an instructor in the course 
+	 */
+	public void populate(User user, int sectionNum, boolean isInstructor) {
+		userId = user.getId();
+		username.setText(user.getUsername());
+		firstname.setText(user.getFirstname());
+		lastname.setText(user.getLastname());
+		email.setText(user.getEmail());
+		website.setText(user.getWebsite());
+		section.setText(String.valueOf(sectionNum));
+		studentAccountButton.setValue(!isInstructor);
+		instructorAccountButton.setValue(isInstructor);
+	}
+	
+	/**
+	 * Disable UI fields that should only be editable by an instructor. 
+	 */
+	public void disableInstructorFields() {
+		username.setEnabled(false);
+		section.setEnabled(false);
+		studentAccountButton.setEnabled(false);
+		instructorAccountButton.setEnabled(false);
+	}
+	
 	private TextBox addTextBox(FlowPanel holder, String labelText) {
 		return addTextBox(holder, labelText, true);
 	}
@@ -125,11 +163,13 @@ public class EditUserView extends Composite {
 		return textBox;
 	}
 
-	private PasswordTextBox addPasswordTextBox(FlowPanel holder, String labelText) {
+	private PasswordTextBox addPasswordTextBox(FlowPanel holder, String labelText, boolean required) {
 		holder.add(new Label(labelText));
 		PasswordTextBox textBox = new PasswordTextBox();
 		holder.add(textBox);
-		validateNonEmpty.add(textBox);
+		if (required) {
+			validateNonEmpty.add(textBox);
+		}
 		return textBox;
 	}
 	
@@ -175,6 +215,7 @@ public class EditUserView extends Composite {
 	
 	public EditedUser getData() {
 		User user = new User();
+		user.setId(userId); // use user id set by populate() (if there was one)
 		user.setUsername(username.getValue().trim());
 		user.setFirstname(firstname.getValue().trim());
 		user.setLastname(lastname.getValue().trim());

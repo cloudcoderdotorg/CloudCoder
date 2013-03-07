@@ -17,6 +17,9 @@
 
 package org.cloudcoder.app.client.rpc;
 
+import org.cloudcoder.app.shared.model.Course;
+import org.cloudcoder.app.shared.model.CourseRegistration;
+import org.cloudcoder.app.shared.model.CourseRegistrationList;
 import org.cloudcoder.app.shared.model.CourseRegistrationType;
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
 import org.cloudcoder.app.shared.model.EditedUser;
@@ -64,6 +67,30 @@ public interface UserService extends RemoteService
      */
     Boolean editUser(User user) throws CloudCoderAuthenticationException;
     
+    /**
+     * Update the user and course registration information specified
+     * by given {@link EditedUser} object.  The authenticated user must
+     * be an instructor in the course.
+     * 
+     * @param editedUser  the {@link EditedUser}
+     * @param course      the {@link Course}
+     * @return true if successful, false otherwise
+     * @throws CloudCoderAuthenticationException
+     */
+    Boolean editUser(EditedUser editedUser, Course course) throws CloudCoderAuthenticationException;
+    
     
     void editCourseRegistrationType(int userId, int courseId, CourseRegistrationType type) throws CloudCoderAuthenticationException;
+    
+    /**
+     * Get the {@link CourseRegistrationList} with all of the given {@link User}'s
+     * {@link CourseRegistration}s for given {@link Course}.
+     * The authenticated user must be an instructor in the course.
+     * 
+     * @param course the {@link Course}
+     * @param user   the {@link User}
+     * @return the {@link CourseRegistrationList}, or null if the authenticated user
+     *         is not an instructor in the course
+     */
+    CourseRegistrationList getUserCourseRegistrationList(Course course, User user) throws CloudCoderAuthenticationException;
 }

@@ -246,7 +246,24 @@ public class ConfigurationUtil
     
     static void updateUserById(Connection conn, User user) throws SQLException
     {
-        if (user.getPasswordHash().length()!=60 && !user.getPasswordHash().startsWith("$2")) {
+    	// Special case/hack:
+    	// If the password hash is null, then keep the user's existing password.
+    	if (user.getPasswordHash() == null) {
+    		PreparedStatement stmt = null;
+    		ResultSet resultSet = null;
+    		try {
+    			stmt = conn.prepareStatement("select password_hash from cc_users where id = ?");
+    			stmt.setInt(1, user.getId());
+    			resultSet = stmt.executeQuery();
+    			if (!resultSet.next()) {
+    				throw new SQLException("Cannot find current password for user " + user.getId());
+    			}
+    			user.setPasswordHash(resultSet.getString(1));
+    		} finally {
+    			DBUtil.closeQuietly(resultSet);
+    			DBUtil.closeQuietly(stmt);
+    		}
+    	} else if (user.getPasswordHash().length()!=60 || !user.getPasswordHash().startsWith("$2")) {
             //XXX hack alert!  Not sure how to know if we've been
             // given a hashed password or a fresh password to be
             // hashed.  So I'm relying on two things:

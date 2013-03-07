@@ -29,6 +29,7 @@ import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.DialogBox;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTML;
+import com.google.gwt.user.client.ui.InlineHTML;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.TextBox;
 
@@ -42,6 +43,7 @@ public class ImportProblemDialog extends DialogBox {
 	private Label exerciseHashLabel;
 	private TextBox exerciseHashTextBox;
 	private ICallback<ProblemAndTestCaseList> resultCallback;
+	private Button cancelButton;
 	private Button importButton;
 	private Course course;
 	
@@ -61,7 +63,7 @@ public class ImportProblemDialog extends DialogBox {
 		html.setWidth("480px");
 		panel.add(html);
 		
-		panel.add(new HTML("<br />"));
+		panel.add(new InlineHTML("<br />"));
 		
 		this.exerciseHashLabel = new Label("Exercise hash:");
 		panel.add(exerciseHashLabel);
@@ -70,7 +72,18 @@ public class ImportProblemDialog extends DialogBox {
 		exerciseHashTextBox.setWidth("400px");
 		panel.add(exerciseHashTextBox);
 		
-		panel.add(new HTML("<br />"));
+		panel.add(new InlineHTML("<br />"));
+		
+		this.cancelButton = new Button("Cancel");
+		cancelButton.addClickHandler(new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				hide();
+			}
+		});
+		panel.add(cancelButton);
+		
+		panel.add(new InlineHTML(" "));
 		
 		this.importButton = new Button("Import exercise!");
 		importButton.addClickHandler(new ClickHandler() {

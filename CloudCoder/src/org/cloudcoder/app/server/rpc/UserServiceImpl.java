@@ -22,6 +22,7 @@ import java.util.List;
 import org.cloudcoder.app.client.rpc.UserService;
 import org.cloudcoder.app.server.persist.Database;
 import org.cloudcoder.app.shared.model.Course;
+import org.cloudcoder.app.shared.model.CourseRegistrationList;
 import org.cloudcoder.app.shared.model.CourseRegistrationType;
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
 import org.cloudcoder.app.shared.model.EditedUser;
@@ -81,9 +82,33 @@ public class UserServiceImpl extends RemoteServiceServlet implements UserService
     {
         logger.warn("Editing userid "+user.getId()+", username "+user.getUsername());
         User authenticatedUser = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
+        // FIXME: need to ensure that the authenticated user has permission to edit the user
         Database.getInstance().editUser(user);
         return true;
     }
+    
+    @Override
+    public Boolean editUser(EditedUser editedUser, Course course) throws CloudCoderAuthenticationException {
+    	User authenticatedUser = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
+    	
+    	CourseRegistrationList authUserRegList = Database.getInstance().findCourseRegistrations(authenticatedUser, course);
+    	if (!authUserRegList.isInstructor()) {
+    		// Not authorized
+    		return false;
+    	}
+    	
+    	if (editedUser.getUser() == null) {
+    		logger.warn("EditedUser object doesn't seem to have a User in it");
+    		return false;
+    	}
+    	
+    	// Edit user information
+    	Database.getInstance().editUser(editedUser.getUser());
+    	
+    	// This IDatabase method isn't actually implemented yet:
+    	//Database.getInstance().editRegistrationType(editedUser.getUser().getId(), course.getId(), editedUser.getRegistrationType());
+    	return true;
+    }    
     
     @Override
     public void editCourseRegistrationType(int userId, int courseId, CourseRegistrationType type)
@@ -91,8 +116,24 @@ public class UserServiceImpl extends RemoteServiceServlet implements UserService
     {
         logger.warn("Editing registration type of "+userId+" in course "+courseId);
         User authenticatedUser = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
+        CourseRegistrationList authUserRegList = Database.getInstance().findCourseRegistrations(authenticatedUser, courseId);
+        if (!authUserRegList.isInstructor()) {
+        	logger.warn("Attempt by non-instructor {} to edit registrations for {}", authenticatedUser.getId(), userId);
+        	return;
+        }
         Database.getInstance().editRegistrationType(userId, courseId, type);
     }
 
-    
+    @Override
+    public CourseRegistrationList getUserCourseRegistrationList(Course course, User user) throws CloudCoderAuthenticationException {
+    	User authenticatedUser = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
+    	
+    	// Check that the authenticated user is an instructor in the course
+    	CourseRegistrationList authUserRegList = Database.getInstance().findCourseRegistrations(authenticatedUser, course);
+    	if (!authUserRegList.isInstructor()) {
+    		return null;
+    	}
+    	
+    	return Database.getInstance().findCourseRegistrations(user, course);
+    }
 }

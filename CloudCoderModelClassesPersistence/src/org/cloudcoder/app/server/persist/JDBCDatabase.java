@@ -1367,6 +1367,21 @@ public class JDBCDatabase implements IDatabase {
 	}
 	
 	@Override
+	public CourseRegistrationList findCourseRegistrations(final User user, final int courseId) {
+		return databaseRun(new AbstractDatabaseRunnableNoAuthException<CourseRegistrationList>() {
+			@Override
+			public CourseRegistrationList run(Connection conn) throws SQLException {
+				int userId = user.getId();
+				return doGetCourseRegistrations(conn, courseId, userId, this);
+			}
+			@Override
+			public String getDescription() {
+				return " finding course registration for user/course";
+			}
+		});
+	}
+	
+	@Override
 	public List<UserAndSubmissionReceipt> getBestSubmissionReceipts(
 			final Course unused, final int section, final Problem problem) {
 		return databaseRun(new AbstractDatabaseRunnableNoAuthException<List<UserAndSubmissionReceipt>>() {

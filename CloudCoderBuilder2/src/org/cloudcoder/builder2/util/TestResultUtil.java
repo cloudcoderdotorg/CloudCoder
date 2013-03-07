@@ -216,13 +216,12 @@ public class TestResultUtil {
 		buf.append(outcome.getShortMessage());
 
 		if (!testCase.isSecret()) {
-			buf.append(outcome+"\n"+
-			        "input: (" + testCase.getInput() + ")\n");
+			buf.append(" for input (" + testCase.getInput() + ")");
 			if (problem.getProblemType().isOutputLiteral()) {
-				buf.append("expected output: " + testCase.getOutput()+"\n");
+				buf.append(", expected output=" + testCase.getOutput());
 				if (output!=null && outcome!=TestOutcome.PASSED) {
 				    // include the actual output, if we have it
-				    buf.append("actual output: "+output);
+				    buf.append(", actual output="+output);
 				}
 			}
 		}

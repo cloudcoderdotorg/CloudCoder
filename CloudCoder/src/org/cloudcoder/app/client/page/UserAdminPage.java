@@ -17,12 +17,12 @@
 
 package org.cloudcoder.app.client.page;
 
-import org.cloudcoder.app.client.model.Section;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.model.UserSelection;
 import org.cloudcoder.app.client.rpc.RPC;
 import org.cloudcoder.app.client.view.ButtonPanel;
+import org.cloudcoder.app.client.view.EditUserDialog;
 import org.cloudcoder.app.client.view.IButtonPanelAction;
 import org.cloudcoder.app.client.view.NewUserDialog;
 import org.cloudcoder.app.client.view.PageNavPanel;
@@ -30,7 +30,10 @@ import org.cloudcoder.app.client.view.SectionSelectionView;
 import org.cloudcoder.app.client.view.StatusMessageView;
 import org.cloudcoder.app.client.view.UserAdminUsersListView;
 import org.cloudcoder.app.client.view.ViewUtil;
+import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
 import org.cloudcoder.app.shared.model.Course;
+import org.cloudcoder.app.shared.model.CourseRegistration;
+import org.cloudcoder.app.shared.model.CourseRegistrationList;
 import org.cloudcoder.app.shared.model.CourseRegistrationType;
 import org.cloudcoder.app.shared.model.EditedUser;
 import org.cloudcoder.app.shared.model.ICallback;
@@ -75,6 +78,8 @@ import com.google.gwt.user.client.ui.VerticalPanel;
  */
 public class UserAdminPage extends CloudCoderPage
 {
+	private static final boolean NEW_EDIT_USER_DIALOG = true;
+	
     private enum UserAction implements IButtonPanelAction {
         NEW("Add", "Add a new user to course"),
         EDIT("Edit", "Edit user information"),
@@ -466,16 +471,95 @@ public class UserAdminPage extends CloudCoderPage
             //TODO get the course type?
             //TODO wtf is the in the user record and how does it get there?
             CourseRegistrationType type=null;
-            EditUserPopupPanel pop = new EditUserPopupPanel( 
-                    chosen, 
-                    course,
-                    type);
-            pop.center();
-            pop.setGlassEnabled(true);
-            pop.show();
+
+            if (NEW_EDIT_USER_DIALOG) {
+            	doEditUser(chosen, course);
+            } else {
+	            EditUserPopupPanel pop = new EditUserPopupPanel( 
+	                    chosen, 
+	                    course,
+	                    type);
+	            pop.center();
+	            pop.setGlassEnabled(true);
+	            pop.show();
+            }
         }
+
+		private void doEditUser(final User chosen, final Course course) {
+			RPC.usersService.getUserCourseRegistrationList(course, chosen, new AsyncCallback<CourseRegistrationList>() {
+				@Override
+				public void onFailure(Throwable caught) {
+					if (caught instanceof CloudCoderAuthenticationException) {
+						recoverFromServerSessionTimeout(new Runnable() {
+							@Override
+							public void run() {
+								doEditUser(chosen, course);
+							}
+						});
+					} else {
+						getSession().add(StatusMessage.error("Could not find course registrations for user", caught));
+					}
+				}
+				
+				public void onSuccess(CourseRegistrationList result) {
+					if (result == null) {
+						getSession().add(StatusMessage.error("You are not an instructor?"));
+					} else if (result.getList().isEmpty()) {
+						getSession().add(StatusMessage.error("Selected user is not registered in the course?"));
+					} else {
+						// FIXME: right now we only support a single registration per user
+						CourseRegistration firstCourseRegistration = result.getList().get(0);
+						
+				        final EditUserDialog editUserDialog = new EditUserDialog(
+				        		chosen,
+				        		firstCourseRegistration.getRegistrationType().compareTo(CourseRegistrationType.INSTRUCTOR) >= 0,
+				        		firstCourseRegistration.getSection(),
+				        		false);
+				        editUserDialog.setEditUserCallback(new ICallback<EditedUser>() {
+				        	@Override
+				        	public void call(EditedUser value) {
+				        		editUserDialog.hide();
+				        		
+				        		// If the password field was not left blank,
+				        		// then set the password hash in the User object
+				        		// to the (plaintext) password, so the hash can
+				        		// be updated.  Otherwise, leave it null as a signal
+				        		// to keep the current password.
+				        		if (!value.getPassword().equals("")) {
+				        			value.getUser().setPasswordHash(value.getPassword());
+				        		}
+				        		
+				        		UserAdminPage.UI.this.doEditUserRPC(value, course);
+				        	}
+						});
+				        editUserDialog.center();
+					}
+				}
+			});
+		}
         
-        private void handleDeleteUser() {
+        /**
+         * Attempt RPC call(s) to update user information.
+         * 
+		 * @param value the {@link EditedUser} object with updated user information
+		 */
+		protected void doEditUserRPC(final EditedUser editedUser, Course course) {
+			RPC.usersService.editUser(editedUser, course, new AsyncCallback<Boolean>() {
+				@Override
+				public void onFailure(Throwable caught) {
+					getSession().add(StatusMessage.error("Could not update user " + editedUser.getUser().getUsername(), caught));
+				}
+				
+				@Override
+				public void onSuccess(Boolean result) {
+					// Huzzah!
+					getSession().add(StatusMessage.goodNews("Successfully updated user " + editedUser.getUser().getUsername()));
+					reloadUsers();
+				}
+			});
+		}
+
+		private void handleDeleteUser() {
             GWT.log("Delete User not implemented");
             Window.alert("Not implemented yet, sorry");
         }

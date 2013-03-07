@@ -214,6 +214,7 @@ public class ProblemAdminPage extends CloudCoderPage {
 				
 			case DELETE:
 				handleDeleteProblem();
+				break;
 
 			case STATISTICS:
 				handleStatistics();
