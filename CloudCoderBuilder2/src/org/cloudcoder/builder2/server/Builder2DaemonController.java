@@ -17,15 +17,21 @@
 
 package org.cloudcoder.builder2.server;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
 
 import org.cloudcoder.builder2.batch.BatchMain;
 import org.cloudcoder.daemon.DaemonController;
 import org.cloudcoder.daemon.DefaultUpgradeCallback;
 import org.cloudcoder.daemon.IDaemon;
+import org.cloudcoder.daemon.IOUtil;
 import org.cloudcoder.daemon.JarRewriter;
 import org.cloudcoder.daemon.Upgrade;
 
@@ -84,6 +90,14 @@ public class Builder2DaemonController extends DaemonController {
 					String entry = arg.substring(0, eq);
 					String fileName = arg.substring(eq + 1);
 					jarRewriter.replaceEntry(entry, new JarRewriter.FileEntryData(fileName));
+				} else if (arg.startsWith("--fromWebappJar=")) {
+					// Copy configuration properties and keystore from a configured webapp jarfile.
+					arg = arg.substring("--fromWebappJar=".length());
+					System.out.println("Copying cloudcoder.properties and keystore.jks from " + arg + "...");
+					extractJarEntry(arg, "cloudcoder.properties", "cloudcoder.properties");
+					extractJarEntry(arg, "war/WEB-INF/classes/keystore.jks", "keystore.jks");
+					jarRewriter.replaceEntry("cloudcoder.properties", new JarRewriter.FileEntryData("cloudcoder.properties"));
+					jarRewriter.replaceEntry("keystore.jks", new JarRewriter.FileEntryData("keystore.jks"));
 				}
 			}
 			jarRewriter.rewrite();
@@ -97,6 +111,32 @@ public class Builder2DaemonController extends DaemonController {
 		} else {
 			Builder2DaemonController controller = new Builder2DaemonController();
 			controller.exec(args);
+		}
+	}
+
+	/**
+	 * Extract an entry from a jarfile to a local file.
+	 * 
+	 * @param jarFile   the jarfile
+	 * @param entryName the entry
+	 * @param outFile   the local file
+	 * @throws IOException 
+	 */
+	private static void extractJarEntry(String jarFile, String entryName, String outFile) throws IOException {
+		JarFile jf = new JarFile(jarFile);
+		ZipEntry zipEntry = jf.getEntry(entryName);
+		if (zipEntry == null) {
+			throw new IOException("Entry not found: " + entryName);
+		}
+		InputStream in = null;
+		OutputStream out = null;
+		try {
+			in = jf.getInputStream(zipEntry);
+			out = new FileOutputStream(outFile);
+			IOUtil.copy(in, out);
+		} finally {
+			IOUtil.closeQuietly(in);
+			IOUtil.closeQuietly(out);
 		}
 	}
 

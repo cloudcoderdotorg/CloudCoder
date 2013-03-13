@@ -1,6 +1,6 @@
 // CloudCoder - a web-based pedagogical programming environment
-// Copyright (C) 2011-2012, Jaime Spacco <jspacco@knox.edu>
-// Copyright (C) 2011-2012, David H. Hovemeyer <david.hovemeyer@gmail.com>
+// Copyright (C) 2011-2013, Jaime Spacco <jspacco@knox.edu>
+// Copyright (C) 2011-2013, David H. Hovemeyer <david.hovemeyer@gmail.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -17,6 +17,7 @@
 
 package org.cloudcoder.app.server.persist;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -28,6 +29,7 @@ import java.util.Properties;
 import java.util.Scanner;
 
 import org.cloudcoder.daemon.JarRewriter;
+import org.cloudcoder.daemon.Util;
 
 /**
  * Configure a CloudCoder executable jarfile, either by reading configuration
@@ -270,21 +272,46 @@ public class ConfigureCloudCoder
 
 		// Create the new configured jarfile
 		String editJar=ConfigurationUtil.ask(keyboard, "What is the name of the jarfile containing all of the code for CloudCoder?", "cloudcoderApp.jar");
-		copyJarfileWithNewProperties(editJar, "cloudcoder.properties");
+		copyJarfileWithNewPropertiesAndKeystore(editJar, "cloudcoder.properties");
 		System.out.println("Wrote new configuration properties to cloudcoder.properties contained in jarfile "+editJar);
 
-		String configBuilder=ConfigurationUtil.ask(keyboard, "Would you like to set these configuration properties for your CloudCoder builder?",ConfigurationUtil.YES);
-		if (configBuilder.equals(ConfigurationUtil.YES)) {
-			String buildJarfileName=ConfigurationUtil.ask(keyboard, "What is the name of the jarfile containing the code for the CloudCoder builder?", "cloudcoderBuilder.jar");
-			copyJarfileWithNewProperties(buildJarfileName, "cloudcoder.properties");
-			System.out.println("Wrote new configuration properties to cloudcoder.properties contained in jarfile "+buildJarfileName);
-		}
+		// Note: need to implement a better way of configuring a builder jarfile
+		// by cloning the configuration from a configured webapp jarfile.
+//		String configBuilder=ConfigurationUtil.ask(keyboard, "Would you like to set these configuration properties for your CloudCoder builder?",ConfigurationUtil.YES);
+//		if (configBuilder.equals(ConfigurationUtil.YES)) {
+//			String buildJarfileName=ConfigurationUtil.ask(keyboard, "What is the name of the jarfile containing the code for the CloudCoder builder?", "cloudcoderBuilder.jar");
+//			copyJarfileWithNewProperties(buildJarfileName, "cloudcoder.properties");
+//			System.out.println("Wrote new configuration properties to cloudcoder.properties contained in jarfile "+buildJarfileName);
+//		}
 	}
 
-	private void copyJarfileWithNewProperties(String jarfileName, String propertiesFileName)
+	private void copyJarfileWithNewPropertiesAndKeystore(String jarfileName, String propertiesFileName)
 			throws Exception {
+
 		JarRewriter jarRewriter = new JarRewriter(jarfileName);
 		jarRewriter.replaceEntry(propertiesFileName, new JarRewriter.PropertiesEntryData(config));
+		
+		// If necessary, create a new keystore and include it
+		String keystoreName = config.getProperty("cloudcoder.submitsvc.ssl.keystore");
+		String keystoreJarPath = "war/WEB-INF/classes/" + keystoreName;
+		if (keystoreName != null && getClass().getClassLoader().getResource(keystoreJarPath) == null) {
+			File keystoreFile = new File(keystoreName);
+			if (!keystoreFile.exists()) {
+				// Create a new keystore
+				System.out.println("Creating new keystore " + keystoreName + "...");
+				String keystorePasswd = config.getProperty("cloudcoder.submitsvc.ssl.keystore.password");
+				String keystoreHostname = config.getProperty("cloudcoder.submitsvc.ssl.cn");
+				Util.exec("keytool", "-genkey", "-noprompt",
+						"-alias", "cloudcoder",
+						"-storepass", keystorePasswd,
+						"-keystore", keystoreName,
+						"-validity", "3600",
+						"-keypass", keystorePasswd,
+						"-dname", "CN=" + keystoreHostname + ", OU=None, L=None, ST=None, C=None");
+			}
+			jarRewriter.replaceEntry(keystoreJarPath, new JarRewriter.FileEntryData(keystoreName));
+		}
+		
 		jarRewriter.rewrite();
 	}
 	
