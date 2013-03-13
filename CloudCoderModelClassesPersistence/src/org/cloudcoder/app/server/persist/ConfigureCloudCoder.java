@@ -223,12 +223,19 @@ public class ConfigureCloudCoder
 			} catch (Exception e) {
 				// ignore
 			}
-			if (origConfig != null) {
+			
+			if (origConfig == null || origConfig.getProperty("dummy", "false").toLowerCase().equals("true")) {
+				// Either there were no previous configuration properties,
+				// or this is a distribution jarfile with dummy properties.
+				// In either case, the origConfig should be an empty
+				// Properties object.
+				origConfig = new Properties();
+			} else {
 				String reuse = ConfigurationUtil.ask(keyboard, "It looks like you have already configured CloudCoder.\n" + 
 						"Use the previous configuration settings as defaults?", "yes");
 				if (!reuse.trim().toLowerCase().equals("yes")) {
 					// Don't use
-					origConfig = null;
+					origConfig = new Properties();
 				}
 			}
 

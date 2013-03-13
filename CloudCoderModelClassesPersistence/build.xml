@@ -14,7 +14,7 @@
 
 	<target name="javac" depends="modelClasses">
 		<mkdir dir="bin"/>
-		<javac source="1.6" target="1.6" srcdir="src" destdir="bin">
+		<javac source="1.6" target="1.6" srcdir="src" destdir="bin" debug="true">
 			<classpath refid="CloudCoderModelClassesPersistence.classpath"/>
 		</javac>
 	</target>
