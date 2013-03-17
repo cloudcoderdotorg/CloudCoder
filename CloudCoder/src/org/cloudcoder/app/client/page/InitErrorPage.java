@@ -19,6 +19,8 @@ package org.cloudcoder.app.client.page;
 
 import java.util.Arrays;
 
+import org.cloudcoder.app.client.PageStack;
+import org.cloudcoder.app.client.model.PageId;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.rpc.RPC;
@@ -117,5 +119,14 @@ public class InitErrorPage extends CloudCoderPage {
 	public boolean isActivity() {
 		return false;
 	}
+	
+	@Override
+	public PageId getPageId() {
+		return PageId.INIT_ERROR;
+	}
 
+	@Override
+	public void initDefaultPageStack(PageStack pageStack) {
+		throw new IllegalStateException("Not an activity");
+	}
 }

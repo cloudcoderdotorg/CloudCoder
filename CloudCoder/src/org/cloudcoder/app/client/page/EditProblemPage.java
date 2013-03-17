@@ -20,6 +20,8 @@ package org.cloudcoder.app.client.page;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.cloudcoder.app.client.PageStack;
+import org.cloudcoder.app.client.model.PageId;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.rpc.RPC;
@@ -115,12 +117,29 @@ public class EditProblemPage extends CloudCoderPage {
 			saveButton.addClickHandler(new ClickHandler() {
 				@Override
 				public void onClick(ClickEvent event) {
-					handleSaveProblem();
+					handleSaveProblem(new Runnable() { public void run() {} });
 				}
 			});
 			northPanel.add(saveButton);
 			northPanel.setWidgetLeftWidth(saveButton, 0.0, Unit.PX, SAVE_BUTTON_WIDTH_PX, Unit.PX);
 			northPanel.setWidgetBottomHeight(saveButton, CENTER_PANEL_V_SEP_PX, Unit.PX, SAVE_BUTTON_HEIGHT_PX, Unit.PX);
+			
+			Button saveAndTestButton = new Button("Save and test");
+			saveAndTestButton.addClickHandler(new ClickHandler() {
+				@Override
+				public void onClick(ClickEvent event) {
+					handleSaveProblem(new Runnable() {
+						@Override
+						public void run() {
+							// After saving the problem, go to DevelopmentPage
+							getSession().get(PageStack.class).push(PageId.DEVELOPMENT);
+						}
+					});
+				}
+			});
+			northPanel.add(saveAndTestButton);
+			northPanel.setWidgetLeftWidth(saveAndTestButton, SAVE_BUTTON_WIDTH_PX + 8.0, Unit.PX, SAVE_BUTTON_WIDTH_PX, Unit.PX);
+			northPanel.setWidgetBottomHeight(saveAndTestButton, CENTER_PANEL_V_SEP_PX, Unit.PX, SAVE_BUTTON_HEIGHT_PX, Unit.PX);
 			
 			dockLayoutPanel.addNorth(northPanel, PageNavPanel.HEIGHT_PX + SAVE_BUTTON_HEIGHT_PX + CENTER_PANEL_V_SEP_PX);
 			
@@ -152,7 +171,7 @@ public class EditProblemPage extends CloudCoderPage {
 			initWidget(dockLayoutPanel);
 		}
 
-		protected void handleSaveProblem() {
+		protected void handleSaveProblem(Runnable afterSave) {
 			// Commit the contents of all editors
 			if (!commitAll()) {
 				getSession().add(StatusMessage.error("One or more field values is invalid"));
@@ -165,12 +184,12 @@ public class EditProblemPage extends CloudCoderPage {
 			// Attempt to store the problem and its test cases in the database
 			final ProblemAndTestCaseList problemAndTestCaseList = getSession().get(ProblemAndTestCaseList.class);
 			final Course course = getCurrentCourse();
-			saveProblem(problemAndTestCaseList, course);
+			saveProblem(problemAndTestCaseList, course, afterSave);
 		}
 
 		protected void saveProblem(
 				final ProblemAndTestCaseList problemAndTestCaseList,
-				final Course course) {
+				final Course course, final Runnable afterSave) {
 			RPC.getCoursesAndProblemsService.storeProblemAndTestCaseList(problemAndTestCaseList, course, new AsyncCallback<ProblemAndTestCaseList>() {
 				@Override
 				public void onSuccess(ProblemAndTestCaseList result) {
@@ -187,6 +206,9 @@ public class EditProblemPage extends CloudCoderPage {
 					for (TestCaseEditor editor : testCaseEditorList) {
 						editor.setTestCase(currentTestCases[count++]);
 					}
+					
+					// Call the afterSave callback
+					afterSave.run();
 				}
 				
 				@Override
@@ -195,7 +217,7 @@ public class EditProblemPage extends CloudCoderPage {
 						recoverFromServerSessionTimeout(new Runnable() {
 							public void run() {
 								// Try again!
-								saveProblem(problemAndTestCaseList, course);
+								saveProblem(problemAndTestCaseList, course, afterSave);
 							}
 						});
 					} else {
@@ -288,7 +310,8 @@ public class EditProblemPage extends CloudCoderPage {
 							// reload the problem list for the Course.
 							getSession().remove(ProblemAndSubmissionReceipt[].class);
 							
-							session.notifySubscribers(Session.Event.COURSE_ADMIN, course);
+							// Go back to previous page.
+							session.get(PageStack.class).pop();
 						}
 					});
 				}
@@ -511,4 +534,14 @@ public class EditProblemPage extends CloudCoderPage {
 		return true;
 	}
 	
+	@Override
+	public PageId getPageId() {
+		return PageId.EDIT_PROBLEM;
+	}
+	
+	@Override
+	public void initDefaultPageStack(PageStack pageStack) {
+		pageStack.push(PageId.COURSES_AND_PROBLEMS);
+		pageStack.push(PageId.PROBLEM_ADMIN);
+	}
 }

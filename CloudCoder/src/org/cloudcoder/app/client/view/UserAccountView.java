@@ -88,7 +88,6 @@ public class UserAccountView extends ResizeComposite implements Subscriber, Sess
     public void activate(final Session session, SubscriptionRegistrar subscriptionRegistrar)
     {
         this.session = session;
-        session.subscribe(Session.Event.USER_ACCOUNT, this, subscriptionRegistrar);
         
         // Set selection model.
         // When a User record is selected, it will be added to the Session.
@@ -122,10 +121,10 @@ public class UserAccountView extends ResizeComposite implements Subscriber, Sess
      */
     @Override
     public void eventOccurred(Object key, Publisher publisher, Object hint) {
-        if (key == Session.Event.USER_ACCOUNT && (hint instanceof Course)) {
-            // load all the users for the current course
-            loadUser(session);
-        }
+//        if (key == Session.Event.USER_ACCOUNT && (hint instanceof Course)) {
+//            // load all the users for the current course
+//            loadUser(session);
+//        }
     }
     
     public void loadUser(final Session session) {

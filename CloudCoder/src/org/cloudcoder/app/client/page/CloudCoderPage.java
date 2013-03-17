@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.cloudcoder.app.client.CloudCoder;
+import org.cloudcoder.app.client.PageStack;
+import org.cloudcoder.app.client.model.PageId;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.rpc.RPC;
@@ -233,4 +235,21 @@ public abstract class CloudCoderPage {
 		return courseSelection != null ? courseSelection.getCourse() : null;
 	}
 
+	/**
+	 * @return the {@link PageId} for this page
+	 */
+	public abstract PageId getPageId();
+
+	/**
+	 * Push {@link PageId}s onto the given {@link PageStack}
+	 * to create a reasonable default navigation history for this page.
+	 * Pages should push all of the pages that are typically
+	 * visited prior to this page.
+	 * Only pages where {@link #isActivity()} returns true need
+	 * to implement this method.
+	 * 
+	 * @param pageStack the {@link PageStack}
+	 */
+	public abstract void initDefaultPageStack(PageStack pageStack);
+	
 }

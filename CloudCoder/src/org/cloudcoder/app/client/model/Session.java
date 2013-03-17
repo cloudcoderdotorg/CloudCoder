@@ -22,15 +22,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.cloudcoder.app.shared.model.Course;
-import org.cloudcoder.app.shared.model.ProblemAndTestCaseList;
 import org.cloudcoder.app.shared.util.Publisher;
 
 /**
  * Client-side session object.
  * Can hold any number of objects, but only one object of any given
- * class is allowed.  The session is also used to distribute events
- * (such as logging in, logging out, switching pages, etc.)
- * that various page objects will want to know about.
+ * class is allowed.
  */
 public class Session extends Publisher {
 	private Map<Class<?>, Object> data;
@@ -45,38 +42,8 @@ public class Session extends Publisher {
 		/** An object was removed from the session. The hint is the object removed. */
 		REMOVED_OBJECT,
 		
-		/** The user has chosen to view his account. */
-		USER_ACCOUNT,
-		
-		/** The user logged in. Hint is the User object. */
-		LOGIN,
-		
 		/** The user logged out.  Hint is null. */
 		LOGOUT,
-		
-		/** A Problem was chosen.  Hint is the problem. */
-		PROBLEM_CHOSEN,
-		
-		/** The user has requested to return to the home page. */
-		BACK_HOME,
-		
-		/** Instructor has chosen to navigate to the course admin page for a course. Hint is the {@link Course}. */
-		COURSE_ADMIN,
-		
-		/** Instructor has chosen to navigate to the user admin page for a course. Hint is the {@link Course}. */
-		USER_ADMIN,
-		
-		/** Instructor has chosen to edit a problem and its test cases. Hint is the {@link ProblemAndTestCaseList}. */
-		EDIT_PROBLEM,
-		
-		/** Start a quiz for currently-selected {@link Problem}. */
-		START_QUIZ,
-		
-		/** View statistics (student progress) on the currently-selected {@link Problem}. */ 
-		STATISTICS,
-		
-		/** View progress of single student in a {@link Course}. */
-		USER_PROGRESS,
 	}
 	
 	/**
@@ -94,6 +61,7 @@ public class Session extends Publisher {
 	 */
 	public void add(Object obj) {
 		if (obj instanceof Course) {
+			// Should add CourseSelection instead
 			throw new IllegalArgumentException("Attempt to add Course to Session");
 		}
 		data.put(obj.getClass(), obj);

@@ -17,6 +17,8 @@
 
 package org.cloudcoder.app.client.page;
 
+import org.cloudcoder.app.client.PageStack;
+import org.cloudcoder.app.client.model.PageId;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.UserSelection;
 import org.cloudcoder.app.client.view.PageNavPanel;
@@ -101,12 +103,7 @@ public class UserProgressPage extends CloudCoderPage {
 			
 			// Add back/logout handlers
 			pageNavPanel.setLogoutHandler(new LogoutHandler(session));
-			pageNavPanel.setBackHandler(new Runnable() {
-				public void run() {
-					// Go back to the user admin page
-					session.notifySubscribers(Session.Event.USER_ADMIN, null);
-				}
-			});
+			pageNavPanel.setBackHandler(new PageBackHandler(session));
 		}
 	}
 
@@ -139,4 +136,14 @@ public class UserProgressPage extends CloudCoderPage {
 		return false;
 	}
 
+	@Override
+	public PageId getPageId() {
+		return PageId.USER_PROGRESS;
+	}
+	
+	@Override
+	public void initDefaultPageStack(PageStack pageStack) {
+		pageStack.push(PageId.COURSES_AND_PROBLEMS);
+		pageStack.push(PageId.USER_ADMIN);
+	}
 }

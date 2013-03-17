@@ -1,6 +1,6 @@
 // CloudCoder - a web-based pedagogical programming environment
-// Copyright (C) 2011-2012, Jaime Spacco <jspacco@knox.edu>
-// Copyright (C) 2011-2012, David H. Hovemeyer <david.hovemeyer@gmail.com>
+// Copyright (C) 2011-2013, Jaime Spacco <jspacco@knox.edu>
+// Copyright (C) 2011-2013, David H. Hovemeyer <david.hovemeyer@gmail.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -17,15 +17,16 @@
 
 package org.cloudcoder.app.client;
 
+import org.cloudcoder.app.client.model.PageId;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.page.CloudCoderPage;
-import org.cloudcoder.app.client.page.ProblemAdminPage;
 import org.cloudcoder.app.client.page.CoursesAndProblemsPage2;
 import org.cloudcoder.app.client.page.DevelopmentPage;
 import org.cloudcoder.app.client.page.EditProblemPage;
 import org.cloudcoder.app.client.page.InitErrorPage;
 import org.cloudcoder.app.client.page.LoginPage;
+import org.cloudcoder.app.client.page.ProblemAdminPage;
 import org.cloudcoder.app.client.page.QuizPage;
 import org.cloudcoder.app.client.page.StatisticsPage;
 import org.cloudcoder.app.client.page.UserAccountPage;
@@ -53,6 +54,7 @@ import com.google.gwt.user.client.ui.RootLayoutPanel;
  */
 public class CloudCoder implements EntryPoint, Subscriber {
 	private Session session;
+	private PageStack pageStack;
 	private SubscriptionRegistrar subscriptionRegistrar;
 	private CloudCoderPage currentPage;
 	
@@ -61,7 +63,12 @@ public class CloudCoder implements EntryPoint, Subscriber {
 	 */
 	public void onModuleLoad() {
 		session = new Session();
+		pageStack = new PageStack();
+		session.add(pageStack);
 		subscriptionRegistrar = new DefaultSubscriptionRegistrar();
+		
+		// Subscribe to PAGE_CHANGE events in the PageStack
+		pageStack.subscribe(PageStack.Event.PAGE_CHANGE, this, subscriptionRegistrar);
 
 		// Subscribe to all Session events
 		session.subscribeToAll(Session.Event.values(), this, subscriptionRegistrar);
@@ -136,26 +143,69 @@ public class CloudCoder implements EntryPoint, Subscriber {
 
 	protected CloudCoderPage getPageForActivity(Activity result) {
 		String name = result.getName();
-		if (name.equals(CoursesAndProblemsPage2.class.getName())) {
-			return new CoursesAndProblemsPage2();
-		} else if (name.equals(DevelopmentPage.class.getName())) {
-			return new DevelopmentPage();
-		} else if (name.equals(ProblemAdminPage.class.getName())) {
-			return new ProblemAdminPage();
-		} else if (name.equals(EditProblemPage.class.getName())) {
-			return new EditProblemPage();
-		} else if (name.equals(QuizPage.class.getName())) {
-			return new QuizPage();
-		} else if (name.equals(StatisticsPage.class.getName())) {
-			return new StatisticsPage();
-		} else if (name.equals(UserProgressPage.class.getName())) {
-			return new UserProgressPage();
+		
+		CloudCoderPage page = null;
+		
+		// The activity name must be the string representation of a PageId.
+		try {
+			PageId pageId = PageId.valueOf(name);
+			
+			page = createPageForPageId(pageId);
+		} catch (IllegalArgumentException e) {
+			GWT.log("Illegal activity name: " + name);
+			page = new CoursesAndProblemsPage2();
 		}
 		
-		// This shouldn't happen (can't find page for Activity),
-		// but if it does, go to the courses and problems page.
-		GWT.log("Can't find activity " + result.getName());
-		return new CoursesAndProblemsPage2();
+		// Create a reasonable PageStack.
+		// (Note that we need to disable notifications while we do this,
+		// since we're not actually navigating pages.)
+		PageStack pageStack = session.get(PageStack.class);
+		pageStack.setNotifications(false);
+		page.initDefaultPageStack(pageStack);
+		pageStack.push(page.getPageId());
+		pageStack.setNotifications(true);
+		
+		return page;
+	}
+
+	private CloudCoderPage createPageForPageId(PageId pageId) {
+		CloudCoderPage page;
+		switch (pageId) {
+		case COURSES_AND_PROBLEMS:
+			page = new CoursesAndProblemsPage2();
+			break;
+		case DEVELOPMENT:
+			page = new DevelopmentPage();
+			break;
+		case PROBLEM_ADMIN:
+			page = new ProblemAdminPage();
+			break;
+		case EDIT_PROBLEM:
+			page= new EditProblemPage();
+			break;
+		case USER_ADMIN:
+			page = new UserAdminPage();
+			break;
+		case STATISTICS:
+			page = new StatisticsPage();
+			break;
+		case USER_PROGRESS:
+			page = new UserProgressPage();
+			break;
+		case QUIZ:
+			page = new QuizPage();
+			break;
+		case USER_ACCOUNT:
+			page = new UserAccountPage();
+			break;
+		default:
+			// This shouldn't happen (can't find page for Activity),
+			// but if it does, go to the courses and problems page.
+			GWT.log("Don't know what kind of page to create for " + pageId);
+			page = new CoursesAndProblemsPage2();
+			break;
+		}
+		return page;
 	}
 	
 	protected Activity getActivityForPage(CloudCoderPage page) {
@@ -170,7 +220,8 @@ public class CloudCoder implements EntryPoint, Subscriber {
 	 * @return the {@link Activity}
 	 */
 	public static Activity getActivityForSessionAndPage(CloudCoderPage page, Session session) {
-		Activity activity = new Activity(page.getClass().getName());
+		// The activity name is the page's PageId (as a string)
+		Activity activity = new Activity(page.getPageId().toString());
 		
 		// Record the Session objects (the ones that are ActivityObjects)
 		for (Object obj : session.getObjects()) {
@@ -225,26 +276,18 @@ public class CloudCoder implements EntryPoint, Subscriber {
 	@Override
 	public void eventOccurred(Object key, Publisher publisher, Object hint) {
 		// This is where we monitor for events that indicate page changes.
-		if (key == Session.Event.LOGIN || key == Session.Event.BACK_HOME) {
-			changePage(new CoursesAndProblemsPage2());
-		} else if (key == Session.Event.PROBLEM_CHOSEN) {
-			changePage(new DevelopmentPage());
-		} else if (key == Session.Event.COURSE_ADMIN) {
-		    changePage(new ProblemAdminPage());
-		} else if (key == Session.Event.USER_ADMIN) {
-		    changePage(new UserAdminPage());
+		// The PageStack makes this pretty straightforward.
+		if (key == PageStack.Event.PAGE_CHANGE) {
+			PageId current = session.get(PageStack.class).getTop();
+			changePage(createPageForPageId(current));
 		} else if (key == Session.Event.LOGOUT) {
+			// On logout, clear the Session and PageStack,
+			// add the PageStack back to the Session,
+			// and go back to the LoginPage.
+			session.clear();
+			pageStack.clear();
+			session.add(pageStack);
 			changePage(new LoginPage());
-		} else if (key == Session.Event.EDIT_PROBLEM) {
-			changePage(new EditProblemPage());
-		} else if (key == Session.Event.USER_ACCOUNT) {
-		    changePage(new UserAccountPage());
-		} else if (key == Session.Event.START_QUIZ) {
-			changePage(new QuizPage());
-		} else if (key == Session.Event.STATISTICS) {
-			changePage(new StatisticsPage());
-		} else if (key == Session.Event.USER_PROGRESS) {
-			changePage(new UserProgressPage());
 		}
 	}
 }

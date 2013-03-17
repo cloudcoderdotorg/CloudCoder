@@ -1,6 +1,6 @@
 // CloudCoder - a web-based pedagogical programming environment
-// Copyright (C) 2011-2012, Jaime Spacco <jspacco@knox.edu>
-// Copyright (C) 2011-2012, David H. Hovemeyer <david.hovemeyer@gmail.com>
+// Copyright (C) 2011-2013, Jaime Spacco <jspacco@knox.edu>
+// Copyright (C) 2011-2013, David H. Hovemeyer <david.hovemeyer@gmail.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -17,43 +17,26 @@
 
 package org.cloudcoder.app.client.page;
 
+import org.cloudcoder.app.client.PageStack;
 import org.cloudcoder.app.client.model.Session;
-import org.cloudcoder.app.client.rpc.RPC;
-
-import com.google.gwt.core.client.GWT;
-import com.google.gwt.user.client.rpc.AsyncCallback;
 
 /**
- * Page logout handler.
+ * Handler for navigating to previous page.
  * 
  * @author David Hovemeyer
  */
-public class LogoutHandler implements Runnable {
+public class PageBackHandler implements Runnable {
+
 	private Session session;
 	
-	public LogoutHandler(Session session) {
+	public PageBackHandler(Session session) {
 		this.session = session;
 	}
-
+	
 	@Override
 	public void run() {
-		AsyncCallback<Void> callback = new AsyncCallback<Void>() {
-			@Override
-			public void onFailure(Throwable caught) {
-				GWT.log("Could not log out?", caught);
-
-				// Well, at least we tried.
-				// Publish the LOGOUT event.
-				session.notifySubscribers(Session.Event.LOGOUT, null);
-			}
-
-			@Override
-			public void onSuccess(Void result) {
-				// Publish the LOGOUT event.
-				session.notifySubscribers(Session.Event.LOGOUT, null);
-			}
-		};
-
-		RPC.loginService.logout(callback);
+		// Just pop the current page from the PageStack
+		session.get(PageStack.class).pop();
 	}
+
 }

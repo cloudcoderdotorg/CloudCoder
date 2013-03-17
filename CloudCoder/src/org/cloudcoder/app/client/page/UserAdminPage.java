@@ -17,6 +17,8 @@
 
 package org.cloudcoder.app.client.page;
 
+import org.cloudcoder.app.client.PageStack;
+import org.cloudcoder.app.client.model.PageId;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.model.UserSelection;
@@ -438,7 +440,7 @@ public class UserAdminPage extends CloudCoderPage
             session.subscribe(Session.Event.ADDED_OBJECT, this, subscriptionRegistrar);
             
             // Activate views
-            pageNavPanel.setBackHandler(new BackHomeHandler(session));
+            pageNavPanel.setBackHandler(new PageBackHandler(session));
             pageNavPanel.setLogoutHandler(new LogoutHandler(session));
             sectionSelectionView.activate(session, subscriptionRegistrar);
             userAdminUsersListView.activate(session, subscriptionRegistrar);
@@ -608,7 +610,7 @@ public class UserAdminPage extends CloudCoderPage
             if (selectedUser == null) {
             	return;
             }
-            getSession().notifySubscribers(Session.Event.USER_PROGRESS, null);
+            getSession().get(PageStack.class).push(PageId.USER_PROGRESS);
         }
     }
     
@@ -652,5 +654,15 @@ public class UserAdminPage extends CloudCoderPage
     @Override
     public boolean isActivity() {
         return true;
+    }
+    
+    @Override
+    public PageId getPageId() {
+    	return PageId.USER_ADMIN;
+    }
+
+    @Override
+    public void initDefaultPageStack(PageStack pageStack) {
+    	pageStack.push(PageId.COURSES_AND_PROBLEMS);
     }
 }
