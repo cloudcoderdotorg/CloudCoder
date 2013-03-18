@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -48,6 +49,7 @@ import org.cloudcoder.app.shared.model.CourseAndCourseRegistration;
 import org.cloudcoder.app.shared.model.CourseRegistration;
 import org.cloudcoder.app.shared.model.CourseRegistrationList;
 import org.cloudcoder.app.shared.model.Module;
+import org.cloudcoder.app.shared.model.ModuleNameComparator;
 import org.cloudcoder.app.shared.model.OperationResult;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemAndSubmissionReceipt;
@@ -436,7 +438,12 @@ public class GetCoursesAndProblemsServiceImpl extends RemoteServiceServlet
 		// Make sure user is authenticated
 		User user = ServletUtil.checkClientIsAuthenticated(getThreadLocalRequest());
 
-		return Database.getInstance().getModulesForCourse(user, course);
+		Module[] modulesForCourse = Database.getInstance().getModulesForCourse(user, course);
+		
+		// Sort using ModuleNameComparator
+		Arrays.sort(modulesForCourse, new ModuleNameComparator());
+		
+		return modulesForCourse;
 	}
 	
 	/* (non-Javadoc)

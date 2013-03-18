@@ -207,6 +207,14 @@ public class EditProblemPage extends CloudCoderPage {
 						editor.setTestCase(currentTestCases[count++]);
 					}
 					
+					// Make the Problem in the session the one in the
+					// ProblemAndTestCaseList.  This is important in case the
+					// afterSave callback is going to switch to the DevelopmentPage
+					// (i.e., if the "Save and test" button was clicked),
+					// and we want to make sure the problem in the session is the
+					// one we're editing.
+					getSession().add(problemAndTestCaseList.getProblem());
+					
 					// Call the afterSave callback
 					afterSave.run();
 				}

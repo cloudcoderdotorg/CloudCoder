@@ -251,13 +251,16 @@ public class DevelopmentPage extends CloudCoderPage {
 			pageNavPanel.setBackHandler(new PageBackHandler(session) {
 				@Override
 				public void run() {
-					// Before executing superclass run method, remove
-					// Problem and QuizInProgress (if any) from the session.
+					// If the Session has a QuizInProgress, remove it and
+					// also the Problem.
 					// This prevents issues such as a quiz problem that
 					// should no longer be accessible lingering in the
 					// user's client-side session.
-					session.remove(Problem.class);
-					session.remove(QuizInProgress.class);
+					if (session.get(QuizInProgress.class) != null) {
+						session.remove(Problem.class);
+						session.remove(QuizInProgress.class);
+					}
+					
 					super.run();
 				}
 			});
