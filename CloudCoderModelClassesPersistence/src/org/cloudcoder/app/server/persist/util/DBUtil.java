@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package org.cloudcoder.app.server.persist;
+package org.cloudcoder.app.server.persist.util;
 
 import java.io.File;
 import java.io.FileReader;
@@ -44,7 +44,6 @@ import org.cloudcoder.app.shared.model.ModelObjectIndexType;
 import org.cloudcoder.app.shared.model.ModelObjectSchema;
 import org.cloudcoder.app.shared.model.ModelObjectSchema.Delta;
 import org.cloudcoder.app.shared.model.ModelObjectSchema.PersistModelObjectDelta;
-import org.cloudcoder.app.shared.model.Problem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -375,72 +374,6 @@ public class DBUtil {
 			closeQuietly(stmt);
 		}
 	}
-
-
-//    // Use introspection to store an arbitrary bean in the database.
-//    // Eventually we could use this sort of approach to replace much
-//    // of our hand-written JDBC code, although I don't know how great
-//    // and idea that would be (for example, it might not yield adequate
-//    // performance.)  For just creating the database, it should be
-//    // fine.
-//    static void storeBean(Connection conn, Object bean, ModelObjectSchema schema, String tableName) throws SQLException {
-//    	StringBuilder buf = new StringBuilder();
-//    	
-//    	buf.append("insert into " + tableName);
-//    	buf.append(" values (");
-//    	buf.append(getInsertPlaceholdersNoId(schema));
-//    	buf.append(")");
-//    	
-//    	PreparedStatement stmt = null;
-//    	ResultSet genKeys = null;
-//    	
-//    	try {
-//    		stmt = conn.prepareStatement(buf.toString(), schema.hasUniqueId() ? PreparedStatement.RETURN_GENERATED_KEYS : 0);
-//    		
-//    		// Now for the magic: iterate through the schema fields
-//    		// and bind the query parameters based on the bean properties.
-//    		int index = 1;
-//    		for (ModelObjectField field : schema.getFieldList()) {
-//    			if (field.isUniqueId()) {
-//    				continue;
-//    			}
-//    			try {
-//    				Object value = BeanUtil.getProperty(bean, field.getPropertyName());
-//    				if (value instanceof Enum) {
-//    					// Enum values are converted to integers
-//    					value = Integer.valueOf(((Enum<?>)value).ordinal());
-//    				}
-//    				stmt.setObject(index++, value);
-//    			} catch (Exception e) {
-//    				throw new SQLException(
-//    						"Couldn't get property " + field.getPropertyName() +
-//    						" of " + bean.getClass().getName() + " object");
-//    			}
-//    		}
-//    		
-//    		// Execute the insert
-//    		stmt.executeUpdate();
-//    		
-//    		if (schema.hasUniqueId()) {
-//    			genKeys = stmt.getGeneratedKeys();
-//    			if (!genKeys.next()) {
-//    				throw new SQLException("Couldn't get generated id for " + bean.getClass().getName()); 
-//    			}
-//    			int id = genKeys.getInt(1);
-//    			
-//    			// Set the unique id value in the bean
-//    			try {
-//    				BeanUtil.setProperty(bean, schema.getUniqueIdField().getPropertyName(), id);
-//    			} catch (Exception e) {
-//    				e.printStackTrace();
-//    				throw new SQLException("Couldn't set generated unique id for " + bean.getClass().getName(), e);
-//    			}
-//    		}
-//    	} finally {
-//    		closeQuietly(genKeys);
-//    		closeQuietly(stmt);
-//    	}
-//    }
 
 	/**
 	 * Connect to the database server without connecting to a specific
@@ -781,7 +714,7 @@ public class DBUtil {
 		Properties properties = new Properties();
 	
 		// See if we can load "cloudcoder.properties" as an embedded resource.
-		URL u = CreateWebappDatabase.class.getClassLoader().getResource("cloudcoder.properties");
+		URL u = DBUtil.class.getClassLoader().getResource("cloudcoder.properties");
 		if (u != null) {
 			InputStream in = u.openStream();
 			try {

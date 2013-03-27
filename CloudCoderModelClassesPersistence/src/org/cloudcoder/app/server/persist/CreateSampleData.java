@@ -20,6 +20,7 @@ package org.cloudcoder.app.server.persist;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import org.cloudcoder.app.server.persist.util.DBUtil;
 import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.IProblem;
 import org.cloudcoder.app.shared.model.IProblemData;

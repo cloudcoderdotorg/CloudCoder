@@ -28,6 +28,7 @@ import java.util.Map;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
+import org.cloudcoder.app.server.persist.util.AbstractDatabaseRunnableNoAuthException;
 import org.cloudcoder.app.shared.model.ModelObjectSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

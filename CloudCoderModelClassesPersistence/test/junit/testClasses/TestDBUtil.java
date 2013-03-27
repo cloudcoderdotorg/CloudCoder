@@ -4,7 +4,7 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 
-import org.cloudcoder.app.server.persist.DBUtil;
+import org.cloudcoder.app.server.persist.util.DBUtil;
 import org.junit.Test;
 
 public class TestDBUtil

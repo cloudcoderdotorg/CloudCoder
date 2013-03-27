@@ -6,6 +6,8 @@ import java.sql.SQLException;
 import java.util.Properties;
 import java.util.Scanner;
 
+import org.cloudcoder.app.server.persist.util.DBUtil;
+import org.cloudcoder.app.server.persist.util.SchemaUtil;
 import org.cloudcoder.app.shared.model.ModelObjectSchema;
 
 public class MigrateDatabase {

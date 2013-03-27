@@ -9,6 +9,9 @@
     (see http://code.google.com/p/google-web-toolkit/issues/detail?id=4348) 
    -->
   <inherits name='com.google.gwt.layout.Hajo2' />
+  
+  <!-- For JQuery-UI Slider widget: see http://www.zackgrossbart.com/hackito/gwt-slider/ -->
+  <inherits name="com.google.gwt.json.JSON" />
 
   <!-- Inherit the default GWT style sheet.  You can change       -->
   <!-- the theme of your GWT application by uncommenting          -->
@@ -20,9 +23,6 @@
 
   <!-- Other module inherits                                      -->
   <inherits name='edu.ycp.cs.dh.acegwt.AceGWT'/>
-  <!--
-  <inherits name="com.summatech.gwt.GwtTimepicker" />
-  -->
   
   <!-- Specify the app entry point class.                         -->
   <entry-point class='org.cloudcoder.app.client.CloudCoder'/>

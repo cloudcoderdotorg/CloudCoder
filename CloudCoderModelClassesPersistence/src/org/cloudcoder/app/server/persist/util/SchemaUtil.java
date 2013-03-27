@@ -15,26 +15,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package org.cloudcoder.app.server.persist;
+package org.cloudcoder.app.server.persist.util;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Properties;
-import java.util.Scanner;
 
 import org.cloudcoder.app.shared.model.IModelObject;
 import org.cloudcoder.app.shared.model.ModelObjectField;
 import org.cloudcoder.app.shared.model.ModelObjectIndexType;
 import org.cloudcoder.app.shared.model.ModelObjectSchema;
-import org.cloudcoder.app.shared.model.ModelObjectSchema.Delta;
 import org.cloudcoder.app.shared.model.ModelObjectSchema.AddFieldDelta;
+import org.cloudcoder.app.shared.model.ModelObjectSchema.Delta;
 import org.cloudcoder.app.shared.model.ModelObjectSchema.DeltaType;
 import org.cloudcoder.app.shared.model.ModelObjectSchema.IncreaseFieldSizeDelta;
 import org.cloudcoder.app.shared.model.ModelObjectSchema.PersistModelObjectDelta;
-import org.cloudcoder.app.shared.model.Problem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -301,6 +298,7 @@ public class SchemaUtil {
 		}
 	}
 
+	/*
 	public static void main(String[] args) throws Exception {
 		Scanner keyboard = new Scanner(System.in);
 		
@@ -330,4 +328,5 @@ public class SchemaUtil {
 			}
 		}
 	}
+	*/
 }

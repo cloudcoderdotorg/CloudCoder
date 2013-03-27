@@ -21,7 +21,6 @@ import org.cloudcoder.app.client.PageStack;
 import org.cloudcoder.app.client.model.PageId;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
-import org.cloudcoder.app.client.model.UserSelection;
 import org.cloudcoder.app.client.rpc.RPC;
 import org.cloudcoder.app.client.view.ButtonPanel;
 import org.cloudcoder.app.client.view.EditUserDialog;
@@ -40,6 +39,7 @@ import org.cloudcoder.app.shared.model.CourseRegistrationType;
 import org.cloudcoder.app.shared.model.EditedUser;
 import org.cloudcoder.app.shared.model.ICallback;
 import org.cloudcoder.app.shared.model.User;
+import org.cloudcoder.app.shared.model.UserSelection;
 import org.cloudcoder.app.shared.util.Publisher;
 import org.cloudcoder.app.shared.util.Subscriber;
 import org.cloudcoder.app.shared.util.SubscriptionRegistrar;
@@ -456,7 +456,7 @@ public class UserAdminPage extends CloudCoderPage
         
         @Override
         public void eventOccurred(Object key, Publisher publisher, Object hint) {
-        	if (key == Session.Event.ADDED_OBJECT && hint instanceof UserSelection) {
+        	if (key == Session.Event.ADDED_OBJECT && hint instanceof org.cloudcoder.app.shared.model.UserSelection) {
         		userManagementButtonPanel.updateButtonEnablement();
         	}
         }

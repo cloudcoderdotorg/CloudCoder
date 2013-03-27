@@ -20,17 +20,20 @@ package org.cloudcoder.app.server.persist;
 import java.io.InputStream;
 import java.util.List;
 
+import org.cloudcoder.app.server.persist.util.AbstractDatabaseRunnable;
+import org.cloudcoder.app.server.persist.util.AbstractDatabaseRunnableNoAuthException;
 import org.cloudcoder.app.shared.model.Change;
+import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
 import org.cloudcoder.app.shared.model.ConfigurationSetting;
 import org.cloudcoder.app.shared.model.ConfigurationSettingName;
 import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.CourseRegistration;
 import org.cloudcoder.app.shared.model.CourseRegistrationList;
 import org.cloudcoder.app.shared.model.CourseRegistrationType;
-import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
 import org.cloudcoder.app.shared.model.EditedUser;
 import org.cloudcoder.app.shared.model.IModelObject;
 import org.cloudcoder.app.shared.model.Module;
+import org.cloudcoder.app.shared.model.NamedTestResult;
 import org.cloudcoder.app.shared.model.OperationResult;
 import org.cloudcoder.app.shared.model.Pair;
 import org.cloudcoder.app.shared.model.Problem;
@@ -38,6 +41,7 @@ import org.cloudcoder.app.shared.model.ProblemAndSubmissionReceipt;
 import org.cloudcoder.app.shared.model.ProblemAndTestCaseList;
 import org.cloudcoder.app.shared.model.ProblemList;
 import org.cloudcoder.app.shared.model.ProblemSummary;
+import org.cloudcoder.app.shared.model.ProblemText;
 import org.cloudcoder.app.shared.model.Quiz;
 import org.cloudcoder.app.shared.model.RepoProblem;
 import org.cloudcoder.app.shared.model.RepoProblemAndTestCaseList;
@@ -46,6 +50,7 @@ import org.cloudcoder.app.shared.model.RepoProblemSearchResult;
 import org.cloudcoder.app.shared.model.RepoProblemTag;
 import org.cloudcoder.app.shared.model.StartedQuiz;
 import org.cloudcoder.app.shared.model.SubmissionReceipt;
+import org.cloudcoder.app.shared.model.SubmissionStatus;
 import org.cloudcoder.app.shared.model.Term;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.TestResult;
@@ -170,9 +175,39 @@ public interface IDatabase {
 	 */
 	public TestCase[] getTestCasesForProblem(User authenticatedUser, boolean requireInstructor, int problemId);
 	
+	/**
+	 * Insert a {@link SubmissionReceipt} and corresponding {@link TestResult}s
+	 * (to record a user's submission). 
+	 * 
+	 * @param receipt        the submission receipt
+	 * @param testResultList the test results
+	 */
 	public void insertSubmissionReceipt(SubmissionReceipt receipt, TestResult[] testResultList);
+	
+	/**
+	 * Get the latest {@link SubmissionReceipt} recording given {@link User}'s work
+	 * on given {@link Problem}.  Creates a new one with receipt type
+	 * {@link SubmissionStatus#STARTED} if there is not yet any
+	 * submission receipt for the user/problem.
+	 * 
+	 * @param user    the {@link User}
+	 * @param problem the {@link Problem}
+	 */
 	public void getOrAddLatestSubmissionReceipt(User user, Problem problem);
+	
+	/**
+	 * Add a {@link Problem} to the database.
+	 * 
+	 * @param problem the {@link Problem} to add.
+	 */
 	public void addProblem(Problem problem);
+	
+	/**
+	 * Add {@link TestCase} to a database for a given {@link Problem}.
+	 * 
+	 * @param problem      the problem
+	 * @param testCaseList the test cases
+	 */
 	public void addTestCases(Problem problem, List<TestCase> testCaseList);
 
 	public void insertUsersFromInputStream(InputStream in, Course course);
@@ -214,9 +249,9 @@ public interface IDatabase {
 	public Change getChange(int changeEventId);
 
 	/**
-	 * Insert TestResults.
+	 * Replace TestResults.
 	 * 
-	 * @param testResults         the TestResults
+	 * @param testResults         the TestResults which should overwrite the existing test results
 	 * @param submissionReceiptId the id of the SubmissionReceipt with which these
 	 *                            TestResults are associated
 	 */
@@ -551,5 +586,42 @@ public interface IDatabase {
 	 * @return the sections, or an empty array if the user is not an instructor in the course
 	 */
 	public Integer[] getSectionsForCourse(Course course, User authenticatedUser);
+
+	/**
+	 * Get all submission receipts for given user on given problem.
+	 * This operation should only be performed if the current user
+	 * is an instructor in the course containing the problem.
+	 * 
+	 * @param problem the {@link Problem}
+	 * @param user    the {@link User}
+	 * @return list of all of the user's submissions receipts for this problem
+	 */
+	public SubmissionReceipt[] getAllSubmissionReceiptsForUser(Problem problem, User user);
+
+	/**
+	 * Get the text of a submission specified by the given submission receipt.
+	 * The authenticated user must either be the submitter, or an instructor
+	 * in the course in which the problem was assigned.
+	 * 
+	 * @param authenticatedUser the authenticated user
+	 * @param submitter              the user the submission receipt belongs to
+	 * @param problem           the problem
+	 * @param receipt           the submission receipt
+	 * @return the problem text
+	 */
+	public ProblemText getSubmissionText(User authenticatedUser, User submitter, Problem problem, SubmissionReceipt receipt);
+
+	/**
+	 * Get test results for given submission.
+	 * Authenticated user must either be the submission's user,
+	 * or an instructor in the course containing the problem for
+	 * which the submission was submitted.
+	 * 
+	 * @param authenticatedUser the authenticated user
+	 * @param problem           the problem
+	 * @param receipt           the submission for the problem
+	 * @return the test results, or an empty list if the user isn't permitted to access them
+	 */
+	public NamedTestResult[] getTestResultsForSubmission(User authenticatedUser, Problem problem, SubmissionReceipt receipt);
 
 }

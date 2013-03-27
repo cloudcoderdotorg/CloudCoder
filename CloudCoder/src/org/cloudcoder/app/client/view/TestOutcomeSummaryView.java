@@ -17,9 +17,9 @@
 
 package org.cloudcoder.app.client.view;
 
-import org.cloudcoder.app.client.model.NamedTestResult;
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.page.SessionObserver;
+import org.cloudcoder.app.shared.model.NamedTestResult;
 import org.cloudcoder.app.shared.model.TestOutcome;
 import org.cloudcoder.app.shared.util.Publisher;
 import org.cloudcoder.app.shared.util.Subscriber;

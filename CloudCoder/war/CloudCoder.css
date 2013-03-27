@@ -244,3 +244,11 @@
 .cc-inlineFlowPanel {
 	display: inline;
 }
+
+/* I'm just fudging the position of the slider. */
+#ccSubSlider {
+	position: relative;
+	top: 6px !important;
+	left: 8px !important;
+	right: 16px !important;
+}

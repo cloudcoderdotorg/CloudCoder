@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package org.cloudcoder.app.server.persist;
+package org.cloudcoder.app.server.persist.util;
 
 import java.io.InputStream;
 import java.sql.Connection;
@@ -33,6 +33,7 @@ import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+import org.cloudcoder.app.server.persist.BCrypt;
 import org.cloudcoder.app.shared.model.CourseRegistration;
 import org.cloudcoder.app.shared.model.CourseRegistrationType;
 import org.cloudcoder.app.shared.model.User;
@@ -50,11 +51,11 @@ public class ConfigurationUtil
     private static final org.slf4j.Logger logger=LoggerFactory.getLogger(ConfigurationUtil.class);
 
 
-    static String ask(Scanner keyboard, String prompt) {
+    public static String ask(Scanner keyboard, String prompt) {
         return ConfigurationUtil.ask(keyboard, prompt, null);
     }
 
-    static<E> E choose(Scanner keyboard, String prompt, List<E> values) {
+    public static<E> E choose(Scanner keyboard, String prompt, List<E> values) {
         System.out.println(prompt);
         int count = 0;
         for (E val : values) {
@@ -65,17 +66,17 @@ public class ConfigurationUtil
         return values.get(choice);
     }
 
-    static int askInt(Scanner keyboard, String prompt) {
+    public static int askInt(Scanner keyboard, String prompt) {
         System.out.print(prompt);
         return Integer.parseInt(keyboard.nextLine().trim());
     }
 
-    static String askString(Scanner keyboard, String prompt) {
+    public static String askString(Scanner keyboard, String prompt) {
         System.out.print(prompt);
         return keyboard.nextLine();
     }
 
-    static CourseRegistration findRegistration(Connection conn, int userId, int courseId) throws SQLException
+    public static CourseRegistration findRegistration(Connection conn, int userId, int courseId) throws SQLException
     {
         PreparedStatement stmt = null;
         ResultSet resultSet = null;
@@ -100,7 +101,7 @@ public class ConfigurationUtil
         }
     }
     
-    static User findUser(Connection conn, String username) throws SQLException {
+    public static User findUser(Connection conn, String username) throws SQLException {
         PreparedStatement stmt = null;
         ResultSet resultSet = null;
 
@@ -123,7 +124,7 @@ public class ConfigurationUtil
         }
     }
     
-    static User findUser(Connection conn, int userid) throws SQLException {
+    public static User findUser(Connection conn, int userid) throws SQLException {
         PreparedStatement stmt = null;
         ResultSet resultSet = null;
 
@@ -244,7 +245,7 @@ public class ConfigurationUtil
         }
     }
     
-    static void updateUserById(Connection conn, User user) throws SQLException
+    public static void updateUserById(Connection conn, User user) throws SQLException
     {
     	// Special case/hack:
     	// If the password hash is null, then keep the user's existing password.
@@ -289,7 +290,7 @@ public class ConfigurationUtil
         }
     }
     
-    static void updateUserByUsername(Connection conn, User user) throws SQLException
+    public static void updateUserByUsername(Connection conn, User user) throws SQLException
     {
         String update="update " + User.SCHEMA.getDbTableName() +
         " set " + DBUtil.getUpdatePlaceholdersNoId(User.SCHEMA) +
@@ -308,7 +309,7 @@ public class ConfigurationUtil
         }
     }
 
-    static String ask(Scanner keyboard, String prompt, String defval) {
+    public static String ask(Scanner keyboard, String prompt, String defval) {
     	System.out.println(prompt);
     	System.out.print("[default: " + (defval != null ? defval : "") + "] ==> ");
     	String value = keyboard.nextLine();
@@ -478,7 +479,7 @@ public class ConfigurationUtil
         }
     }
 
-    static final String YES = "yes";
+    public static final String YES = "yes";
 
     /**
      * Configure log4j to log to stdout.

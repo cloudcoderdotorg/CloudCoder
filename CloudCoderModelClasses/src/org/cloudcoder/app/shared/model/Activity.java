@@ -32,7 +32,6 @@ public class Activity implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	private String name;
-	//private ActivityObject[] sessionObjectList;
 	
 	// GWT serialization cannot deal with supertype references.
 	// So, we need a separate field for each ActivityObject subclass
@@ -41,6 +40,7 @@ public class Activity implements Serializable {
 	private Problem problem;
 	private CourseSelection courseSelection;
 	private ProblemAndTestCaseList problemAndTestCaseList;
+	private UserSelection userSelection;
 	
 	/**
 	 * Default constructor.
@@ -80,6 +80,8 @@ public class Activity implements Serializable {
 			this.courseSelection = (CourseSelection) obj;
 		} else if (obj instanceof ProblemAndTestCaseList) {
 			this.problemAndTestCaseList = (ProblemAndTestCaseList) obj;
+		} else if (obj instanceof UserSelection) {
+			this.userSelection = (UserSelection) obj;
 		} else {
 			throw new IllegalArgumentException("Unknown ActivityObject subclass: " + obj.getClass().getName());
 		}
@@ -102,6 +104,9 @@ public class Activity implements Serializable {
 		}
 		if (problemAndTestCaseList != null) {
 			result.add(problemAndTestCaseList);
+		}
+		if (userSelection != null) {
+			result.add(userSelection);
 		}
 		
 		return result;

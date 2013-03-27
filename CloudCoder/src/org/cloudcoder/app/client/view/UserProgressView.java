@@ -21,19 +21,22 @@ import java.util.Arrays;
 
 import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
-import org.cloudcoder.app.client.model.UserSelection;
 import org.cloudcoder.app.client.page.SessionObserver;
 import org.cloudcoder.app.client.rpc.RPC;
 import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.CourseSelection;
+import org.cloudcoder.app.shared.model.ICallback;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemAndSubmissionReceipt;
 import org.cloudcoder.app.shared.model.SubmissionReceipt;
 import org.cloudcoder.app.shared.model.SubmissionStatus;
 import org.cloudcoder.app.shared.model.User;
+import org.cloudcoder.app.shared.model.UserSelection;
 import org.cloudcoder.app.shared.util.SubscriptionRegistrar;
 
 import com.google.gwt.cell.client.AbstractCell;
+import com.google.gwt.cell.client.ButtonCell;
+import com.google.gwt.cell.client.FieldUpdater;
 import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
 import com.google.gwt.safehtml.shared.SafeHtmlUtils;
 import com.google.gwt.user.cellview.client.Column;
@@ -54,6 +57,7 @@ public class UserProgressView extends Composite implements SessionObserver {
 	private UserSelection userSelection;
 	private ProblemAndSubmissionReceipt[] data;
 	private DataGrid<ProblemAndSubmissionReceipt> grid;
+	private ICallback<Problem> viewSubmissionsCallback;
 	
 	public UserProgressView() {
 		data = new ProblemAndSubmissionReceipt[0];
@@ -63,8 +67,20 @@ public class UserProgressView extends Composite implements SessionObserver {
 		grid.addColumn(new StartedColumn(), "Started");
 		grid.addColumn(new BestScoreColumn(), "Best score");
 		grid.addColumn(new BestScoreBarColumn(), "Best score bar");
+		grid.addColumn(new ViewSubmissionsColumn(), "Submissions");
 		
 		initWidget(grid);
+	}
+	
+	/**
+	 * Set callback to invoke when the view submissions button is clicked.
+	 * Callback argument is the {@link Problem}.
+	 * 
+	 * @param viewSubmissionsCallback the viewSubmissionsCallback to set
+	 */
+	public void setViewSubmissionsCallback(
+			ICallback<Problem> viewSubmissionsCallback) {
+		this.viewSubmissionsCallback = viewSubmissionsCallback;
 	}
 	
 	private class ProblemNameColumn extends TextColumn<ProblemAndSubmissionReceipt> {
@@ -140,6 +156,26 @@ public class UserProgressView extends Composite implements SessionObserver {
 		@Override
 		public ProblemAndSubmissionReceipt getValue(ProblemAndSubmissionReceipt object) {
 			return object;
+		}
+	}
+	
+	private class ViewSubmissionsColumn extends Column<ProblemAndSubmissionReceipt, String> {
+		public ViewSubmissionsColumn() {
+			super(new ButtonCell());
+			
+			setFieldUpdater(new FieldUpdater<ProblemAndSubmissionReceipt, String>() {
+				@Override
+				public void update(int index, ProblemAndSubmissionReceipt object, String value) {
+					if (viewSubmissionsCallback != null) {
+						viewSubmissionsCallback.call(object.getProblem());
+					}
+				}
+			});
+		}
+		
+		@Override
+		public String getValue(ProblemAndSubmissionReceipt object) {
+			return "View";
 		}
 	}
 	

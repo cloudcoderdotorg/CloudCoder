@@ -15,43 +15,37 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package org.cloudcoder.app.client.model;
+package org.cloudcoder.app.server.persist.txn;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
+
+import org.cloudcoder.app.server.persist.util.AbstractDatabaseRunnableNoAuthException;
 import org.cloudcoder.app.shared.model.TestCase;
-import org.cloudcoder.app.shared.model.TestResult;
 
 /**
- * A wrapper for {@link TestResult} that specifies the
- * name of the corresponding {@link TestCase}.
- * 
- * @author David Hovemeyer
+ * Transaction to get all {@link TestCase}s for given {@link Problem}.
  */
-public class NamedTestResult {
-	private String testCaseName;
-	private TestResult testResult;
-	
+public class GetTestCasesForProblem extends AbstractDatabaseRunnableNoAuthException<List<TestCase>> {
+	private final int problemId;
+
 	/**
 	 * Constructor.
 	 * 
-	 * @param testCaseName the name of the test case
-	 * @param testResult   the {@link TestResult}
+	 * @param problemId unique id of the {@link Problem}
 	 */
-	public NamedTestResult(String testCaseName, TestResult testResult) {
-		this.testCaseName = testCaseName;
-		this.testResult = testResult;
+	public GetTestCasesForProblem(int problemId) {
+		this.problemId = problemId;
 	}
-	
-	/**
-	 * @return the testCaseName
-	 */
-	public String getTestCaseName() {
-		return testCaseName;
+
+	@Override
+	public List<TestCase> run(Connection conn) throws SQLException {
+		return Queries.doGetTestCasesForProblem(conn, problemId, this);
 	}
-	
-	/**
-	 * @return the testResult
-	 */
-	public TestResult getTestResult() {
-		return testResult;
+
+	@Override
+	public String getDescription() {
+		return " getting test cases for problem";
 	}
 }

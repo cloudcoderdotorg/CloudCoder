@@ -15,23 +15,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package org.cloudcoder.app.server.persist;
+package org.cloudcoder.app.server.persist.util;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
 import org.cloudcoder.app.shared.model.CloudCoderAuthenticationException;
+import org.slf4j.Logger;
 
 /**
- * Variant of {@link AbstractDatabaseRunnable} whose run() method is guaranteed
- * not to throw {@link CloudCoderAuthenticationException}.  Subclass this for
- * database transactions that don't require user authentication.
+ * Interface for database transactions.
  * 
  * @author David Hovemeyer
  *
  * @param <E>
  */
-public abstract class AbstractDatabaseRunnableNoAuthException<E> extends AbstractDatabaseRunnable<E> implements DatabaseRunnable<E> {
-	@Override
-	public abstract E run(Connection conn) throws SQLException;
+public interface DatabaseRunnable<E> {
+	public E run(Connection conn) throws SQLException, CloudCoderAuthenticationException;
+	public String getDescription();
+	public void cleanup();
+	public void setLogger(Logger logger);
+	public Logger getLogger();
 }

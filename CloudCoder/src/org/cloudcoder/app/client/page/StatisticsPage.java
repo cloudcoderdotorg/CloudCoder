@@ -26,7 +26,9 @@ import org.cloudcoder.app.client.view.ProblemProgressView;
 import org.cloudcoder.app.client.view.SectionSelectionView;
 import org.cloudcoder.app.client.view.StatusMessageView;
 import org.cloudcoder.app.shared.model.CourseSelection;
+import org.cloudcoder.app.shared.model.ICallback;
 import org.cloudcoder.app.shared.model.Problem;
+import org.cloudcoder.app.shared.model.UserSelection;
 import org.cloudcoder.app.shared.util.Publisher;
 import org.cloudcoder.app.shared.util.Subscriber;
 import org.cloudcoder.app.shared.util.SubscriptionRegistrar;
@@ -155,6 +157,15 @@ public class StatisticsPage extends CloudCoderPage {
 			statusMessageView.activate(session, subscriptionRegistrar);
 			studentProgressView.activate(session, subscriptionRegistrar);
 			sectionSelectionView.activate(session, subscriptionRegistrar);
+			
+			studentProgressView.setViewUserSubmissionsCallback(new ICallback<UserSelection>() {
+				@Override
+				public void call(UserSelection value) {
+					// Switch to viewing user's submissions for this problem
+					session.add(value);
+					session.get(PageStack.class).push(PageId.USER_PROBLEM_SUBMISSIONS);
+				}
+			});
 			
 			// Set title
 			Problem problem = session.get(Problem.class);

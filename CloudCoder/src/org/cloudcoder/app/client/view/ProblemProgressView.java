@@ -24,15 +24,20 @@ import org.cloudcoder.app.client.model.Session;
 import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.page.SessionObserver;
 import org.cloudcoder.app.client.rpc.RPC;
+import org.cloudcoder.app.shared.model.ICallback;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.SubmissionReceipt;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.UserAndSubmissionReceipt;
+import org.cloudcoder.app.shared.model.UserSelection;
 import org.cloudcoder.app.shared.util.Publisher;
 import org.cloudcoder.app.shared.util.Subscriber;
 import org.cloudcoder.app.shared.util.SubscriptionRegistrar;
 
 import com.google.gwt.cell.client.AbstractCell;
+import com.google.gwt.cell.client.ButtonCell;
+import com.google.gwt.cell.client.FieldUpdater;
+import com.google.gwt.core.shared.GWT;
 import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
 import com.google.gwt.safehtml.shared.SafeHtmlUtils;
 import com.google.gwt.user.cellview.client.Column;
@@ -56,6 +61,8 @@ public class ProblemProgressView extends Composite implements Subscriber, Sessio
 	private UserAndSubmissionReceipt[] data;
 	private Session session;
 	private Section currentSection;
+	private ICallback<UserSelection> viewUserSubmissionsCallback;
+
 	
 	public ProblemProgressView() {
 		data = new UserAndSubmissionReceipt[0];
@@ -67,8 +74,19 @@ public class ProblemProgressView extends Composite implements Subscriber, Sessio
 		grid.addColumn(new StartedColumn(), "Started");
 		grid.addColumn(new BestScoreColumn(), "Best score");
 		grid.addColumn(new BestScoreBarColumn(), "Best score bar");
+		grid.addColumn(new ViewSubmissionsColumn(), "Submissions");
 		
 		initWidget(grid);
+	}
+	
+	/**
+	 * Set callback to invoke when the "View" button is pressed to
+	 * see a particular user's submissions.
+	 * 
+	 * @param viewUserSubmissionsCallback the viewUserSubmissionsCallback to set
+	 */
+	public void setViewUserSubmissionsCallback(ICallback<UserSelection> viewUserSubmissionsCallback) {
+		this.viewUserSubmissionsCallback = viewUserSubmissionsCallback;
 	}
 	
 	private class UsernameColumn extends TextColumn<UserAndSubmissionReceipt> {
@@ -162,6 +180,32 @@ public class ProblemProgressView extends Composite implements Subscriber, Sessio
 		@Override
 		public SubmissionReceipt getValue(UserAndSubmissionReceipt object) {
 			return object.getSubmissionReceipt();
+		}
+	}
+	
+	private class ViewSubmissionsColumn extends Column<UserAndSubmissionReceipt, String> {
+		public ViewSubmissionsColumn() {
+			super(new ButtonCell());
+			
+			setFieldUpdater(new FieldUpdater<UserAndSubmissionReceipt, String>() {
+				@Override
+				public void update(int index, UserAndSubmissionReceipt object, String value) {
+					GWT.log("Show submissions for " + object.getUser().getUsername());
+					if (viewUserSubmissionsCallback != null) {
+						UserSelection userSelection = new UserSelection(object.getUser());
+						session.add(userSelection);
+						viewUserSubmissionsCallback.call(userSelection);
+					}
+				}
+			});
+		}
+		
+		/* (non-Javadoc)
+		 * @see com.google.gwt.user.cellview.client.Column#getValue(java.lang.Object)
+		 */
+		@Override
+		public String getValue(UserAndSubmissionReceipt object) {
+			return "View";
 		}
 	}
 	

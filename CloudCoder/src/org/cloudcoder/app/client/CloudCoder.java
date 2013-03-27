@@ -31,6 +31,7 @@ import org.cloudcoder.app.client.page.QuizPage;
 import org.cloudcoder.app.client.page.StatisticsPage;
 import org.cloudcoder.app.client.page.UserAccountPage;
 import org.cloudcoder.app.client.page.UserAdminPage;
+import org.cloudcoder.app.client.page.UserProblemSubmissionsPage;
 import org.cloudcoder.app.client.page.UserProgressPage;
 import org.cloudcoder.app.client.rpc.RPC;
 import org.cloudcoder.app.shared.model.Activity;
@@ -197,6 +198,9 @@ public class CloudCoder implements EntryPoint, Subscriber {
 			break;
 		case USER_ACCOUNT:
 			page = new UserAccountPage();
+			break;
+		case USER_PROBLEM_SUBMISSIONS:
+			page = new UserProblemSubmissionsPage();
 			break;
 		default:
 			// This shouldn't happen (can't find page for Activity),

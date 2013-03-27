@@ -1,4 +1,4 @@
-package org.cloudcoder.app.server.persist;
+package org.cloudcoder.app.server.persist.util;
 
 import java.io.BufferedInputStream;
 import java.io.File;

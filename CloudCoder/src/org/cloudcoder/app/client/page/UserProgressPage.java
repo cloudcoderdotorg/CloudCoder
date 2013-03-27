@@ -20,13 +20,15 @@ package org.cloudcoder.app.client.page;
 import org.cloudcoder.app.client.PageStack;
 import org.cloudcoder.app.client.model.PageId;
 import org.cloudcoder.app.client.model.Session;
-import org.cloudcoder.app.client.model.UserSelection;
 import org.cloudcoder.app.client.view.PageNavPanel;
 import org.cloudcoder.app.client.view.StatusMessageView;
 import org.cloudcoder.app.client.view.UserProgressView;
 import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.CourseSelection;
+import org.cloudcoder.app.shared.model.ICallback;
+import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.User;
+import org.cloudcoder.app.shared.model.UserSelection;
 import org.cloudcoder.app.shared.util.SubscriptionRegistrar;
 
 import com.google.gwt.dom.client.Style.Unit;
@@ -78,6 +80,16 @@ public class UserProgressPage extends CloudCoderPage {
 			dockLayoutPanel.addSouth(southPanel, StatusMessageView.HEIGHT_PX);
 			
 			this.userProgressView = new UserProgressView();
+			userProgressView.setViewSubmissionsCallback(new ICallback<Problem>() {
+				@Override
+				public void call(Problem value) {
+					// Set the Problem. (The UserSelection should already be in the session.)
+					getSession().add(value);
+					
+					// Switch to UserProblemSubmissionsPage
+					getSession().get(PageStack.class).push(PageId.USER_PROBLEM_SUBMISSIONS);
+				}
+			});
 			dockLayoutPanel.add(userProgressView);
 			
 			initWidget(dockLayoutPanel);

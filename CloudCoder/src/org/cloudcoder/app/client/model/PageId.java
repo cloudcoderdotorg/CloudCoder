@@ -60,4 +60,7 @@ public enum PageId {
 	
 	/** Quiz administration page. */
 	QUIZ,
+	
+	/** View a selected user's submissions for a given problem. */
+	USER_PROBLEM_SUBMISSIONS,
 }

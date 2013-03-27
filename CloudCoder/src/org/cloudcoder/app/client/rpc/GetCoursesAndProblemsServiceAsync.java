@@ -20,11 +20,13 @@ package org.cloudcoder.app.client.rpc;
 import org.cloudcoder.app.shared.model.Course;
 import org.cloudcoder.app.shared.model.CourseAndCourseRegistration;
 import org.cloudcoder.app.shared.model.Module;
+import org.cloudcoder.app.shared.model.NamedTestResult;
 import org.cloudcoder.app.shared.model.OperationResult;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemAndSubmissionReceipt;
 import org.cloudcoder.app.shared.model.ProblemAndTestCaseList;
 import org.cloudcoder.app.shared.model.Quiz;
+import org.cloudcoder.app.shared.model.SubmissionReceipt;
 import org.cloudcoder.app.shared.model.TestCase;
 import org.cloudcoder.app.shared.model.User;
 import org.cloudcoder.app.shared.model.UserAndSubmissionReceipt;
@@ -42,9 +44,6 @@ public interface GetCoursesAndProblemsServiceAsync {
 
 	void getProblemAndSubscriptionReceipts(Course course, User forUser, Module module,
 			AsyncCallback<ProblemAndSubmissionReceipt[]> callback);
-
-//	void getProblemAndSubscriptionReceipts(Course course, User user,
-//			AsyncCallback<ProblemAndSubmissionReceipt[]> callback);
 
 	void getBestSubmissionReceipts(Problem problem, int section,
 			AsyncCallback<UserAndSubmissionReceipt[]> callback);
@@ -80,5 +79,11 @@ public interface GetCoursesAndProblemsServiceAsync {
 			AsyncCallback<Module> callback);
 
 	void getSectionsForCourse(Course course, AsyncCallback<Integer[]> callback);
+
+	void getAllSubmissionReceiptsForUser(Problem problem, User user,
+			AsyncCallback<SubmissionReceipt[]> callback);
+
+	void getTestResultsForSubmission(Problem problem, SubmissionReceipt receipt,
+			AsyncCallback<NamedTestResult[]> callback);
 
 }

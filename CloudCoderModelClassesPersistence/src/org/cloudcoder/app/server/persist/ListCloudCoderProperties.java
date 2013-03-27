@@ -8,6 +8,7 @@ import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.cloudcoder.app.server.persist.util.ConfigurationUtil;
 import org.cloudcoder.daemon.Util;
 
 public class ListCloudCoderProperties

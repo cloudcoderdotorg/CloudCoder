@@ -5,8 +5,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.sql.Connection;
 
-import org.cloudcoder.app.server.persist.ConfigurationUtil;
-import org.cloudcoder.app.server.persist.DBUtil;
+import org.cloudcoder.app.server.persist.util.ConfigurationUtil;
+import org.cloudcoder.app.server.persist.util.DBUtil;
 import org.junit.Test;
 import static org.junit.Assert.*;
 

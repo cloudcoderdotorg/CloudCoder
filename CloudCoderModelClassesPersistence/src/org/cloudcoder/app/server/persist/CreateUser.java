@@ -4,6 +4,9 @@ import java.sql.Connection;
 import java.util.Properties;
 import java.util.Scanner;
 
+import org.cloudcoder.app.server.persist.util.ConfigurationUtil;
+import org.cloudcoder.app.server.persist.util.DBUtil;
+
 public class CreateUser {
 	public static void main(String[] args) throws Exception {
 		Scanner keyboard = new Scanner(System.in);

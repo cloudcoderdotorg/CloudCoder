@@ -34,8 +34,8 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.cloudcoder.app.server.persist.ConfigurationUtil;
-import org.cloudcoder.app.server.persist.DBUtil;
+import org.cloudcoder.app.server.persist.util.ConfigurationUtil;
+import org.cloudcoder.app.server.persist.util.DBUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -15,17 +15,27 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package org.cloudcoder.app.client.model;
+package org.cloudcoder.app.shared.model;
 
-import org.cloudcoder.app.shared.model.User;
 
 /**
- * A {@link User} selected in a user interface.
+ * A selected {@link User}.
+ * For example, this class can be used to indicate which
+ * user is selected in a user interface showing a list of users.
  * 
  * @author David Hovemeyer
  */
-public class UserSelection {
-	private final User user;
+public class UserSelection implements ActivityObject {
+	private static final long serialVersionUID = 1L;
+
+	private User user;
+	
+	/**
+	 * Default constructor.
+	 */
+	public UserSelection() {
+		
+	}
 
 	/**
 	 * Constructor.
@@ -33,6 +43,15 @@ public class UserSelection {
 	 * @param user the selected user
 	 */
 	public UserSelection(User user) {
+		this.user = user;
+	}
+	
+	/**
+	 * Set the user.
+	 * 
+	 * @param user the user to set
+	 */
+	public void setUser(User user) {
 		this.user = user;
 	}
 	
