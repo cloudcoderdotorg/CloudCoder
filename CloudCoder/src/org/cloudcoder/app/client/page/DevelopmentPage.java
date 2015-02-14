@@ -69,6 +69,7 @@ import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.logical.shared.SelectionEvent;
 import com.google.gwt.event.logical.shared.SelectionHandler;
+import com.google.gwt.user.client.Event;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
@@ -78,6 +79,9 @@ import com.google.gwt.user.client.ui.DialogBox;
 import com.google.gwt.user.client.ui.LayoutPanel;
 import com.google.gwt.user.client.ui.SplitLayoutPanel;
 import com.google.gwt.user.client.ui.TabLayoutPanel;
+import com.google.gwt.user.client.ui.ListBox;
+import com.google.gwt.event.dom.client.*; 
+import com.gwtext.client.widgets.Editor;
 
 import edu.ycp.cs.dh.acegwt.client.ace.AceAnnotationType;
 import edu.ycp.cs.dh.acegwt.client.ace.AceEditor;
@@ -151,13 +155,14 @@ public class DevelopmentPage extends CloudCoderPage {
 		private CompilerDiagnosticListView compilerDiagnosticListView;
 		private List<IResultsTabPanelWidget> resultsTabPanelWidgetList;
 		private Button visualizeButton;
+		private ListBox listBox;
 
 		private AceEditor aceEditor;
 		private Timer flushPendingChangeEventsTimer;
 		private Mode mode;
 		private Timer checkPendingSubmissionTimer;
 		private Runnable onCleanCallback;
-		private String[] testCaseNames;
+  		private String[] testCaseNames;
 
 		public UI() {
 			// The top-level panel holds just the north panel (which is fixed height)
@@ -171,6 +176,44 @@ public class DevelopmentPage extends CloudCoderPage {
 			northLayoutPanel.add(problemNameAndBriefDescriptionView);
 			northLayoutPanel.setWidgetTopHeight(problemNameAndBriefDescriptionView, 0.0, Unit.PX, ProblemNameAndBriefDescriptionView.HEIGHT_PX, Unit.PX);
 			northLayoutPanel.setWidgetLeftRight(problemNameAndBriefDescriptionView, 0.0, Unit.PX, BUTTONS_PANEL_WIDTH_PX, Unit.PX);
+			listBox = new ListBox();
+			listBox.addItem("AMBIANCE");
+            listBox.addItem("CHAOS");
+            listBox.addItem("CHROME");
+            listBox.addItem("CLOUDS");
+            listBox.addItem("CLOUDS_MIDNIGHT");
+            listBox.addItem("COBALT");
+            listBox.addItem("CRIMSON_EDITOR");
+            listBox.addItem("DAWN");
+            listBox.addItem("DREAMWEAVER");
+            listBox.addItem("ECLIPSE");
+            listBox.addItem("GITHUB");
+            listBox.addItem("IDLE_FINGERS");
+            listBox.addItem("KATZENMILCH");
+            listBox.addItem("KR_THEME");
+            listBox.addItem("KR");
+            listBox.addItem("KUROIR");
+            listBox.addItem("MERBIVORE");
+            listBox.addItem("MERBIVORE_SOFT");
+            listBox.addItem("MONO_INDUSTRIAL");
+            listBox.addItem("MONOKAI");
+            listBox.addItem("PASTEL_ON_DARK");
+            listBox.addItem("SOLARIZED_DARK");
+            listBox.addItem("SOLARIZED_LIGHT");
+            listBox.addItem("TERMINAL");
+            listBox.addItem("TEXTMATE");
+            listBox.addItem("TOMORROW_NIGHT_BLUE");
+            listBox.addItem("TOMORROW_NIGHT_BRIGHT");
+            listBox.addItem("TOMORROW_NIGHT_EIGHTIES");
+            listBox.addItem("TOMORROW_NIGHT");
+            listBox.addItem("TOMORROW");
+            listBox.addItem("TWILIGHT");
+            listBox.addItem("VIBRANT_INK");
+            listBox.addItem("XCODE");
+			northLayoutPanel.add(listBox);
+			northLayoutPanel.setWidgetTopHeight(listBox,0.0,Unit.PX,30.0,Unit.PX);
+			northLayoutPanel.setWidgetRightWidth(listBox,180.0,Unit.PX,120.0,Unit.PX);
+			
 			pageNavPanel = new PageNavPanel();
 			northLayoutPanel.add(pageNavPanel);
 			northLayoutPanel.setWidgetTopHeight(pageNavPanel, 0.0, Unit.PX, ProblemNameAndBriefDescriptionView.HEIGHT_PX, Unit.PX);
@@ -262,7 +305,7 @@ public class DevelopmentPage extends CloudCoderPage {
 			final Problem problem = session.get(Problem.class);
 			
 			// If this is a Python problem add the Visualize! button
-			if (problem.getProblemType() == ProblemType.PYTHON_FUNCTION) {
+			if (problem.getProblemType() == ProblemType.JAVA_PROGRAM || problem.getProblemType() == ProblemType.PYTHON_FUNCTION) {
 				createVisualizeButton();
 			}
 
@@ -626,7 +669,6 @@ public class DevelopmentPage extends CloudCoderPage {
 			editorLayoutPanel.add(aceEditor);
 			aceEditor.startEditor();
 			aceEditor.setFontSize("14px");
-			
 			// based on programming language used in the Problem,
 			// choose an editor mode
 			AceEditorMode editorMode = ViewUtil.getModeForLanguage(language);
@@ -635,11 +677,23 @@ public class DevelopmentPage extends CloudCoderPage {
 				editorMode = AceEditorMode.JAVA;
 			}
 			aceEditor.setMode(editorMode);
-			
-			aceEditor.setTheme(AceEditorTheme.VIBRANT_INK);
+			listBox.addChangeHandler(new ChangeHandler()
+			{
+				public void onChange(ChangeEvent ce)
+				{
+					int i = listBox.getSelectedIndex();
+					String name =listBox.getValue(i);
+					if(i>=0)
+					{
+						aceEditor.setTheme(AceEditorTheme.valueOf(name));
+						Window.alert("Theme: " + listBox.getValue(i));
+					}
+					
+				}
+				
+			});
 			aceEditor.setShowPrintMargin(false);
 		}
-
 		private void addEditorChangeEventHandler(final Session session, final Problem problem) {
 			final User user = session.get(User.class);
 			final ChangeList changeList = session.get(ChangeList.class);
