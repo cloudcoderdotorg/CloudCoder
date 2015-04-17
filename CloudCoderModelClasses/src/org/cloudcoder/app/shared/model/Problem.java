@@ -220,9 +220,19 @@ public class Problem extends ProblemData implements IProblem, IModelObject<Probl
 		.finishDelta();
 	
 	/**
+	 * Description of fields (schema version 12).
+	 * This version incorporates schema changes from version 8
+	 * of {@link IProblemData}'s schema.
+	 */
+	public static final ModelObjectSchema<IProblem> SCHEMA_V12 =
+			ModelObjectSchema.basedOn(SCHEMA_V11)
+			.addDeltasFrom(ProblemData.SCHEMA_V8)
+			.finishDelta();
+	
+	/**
 	 * Description of fields (current schema version).
 	 */
-	public static final ModelObjectSchema<IProblem> SCHEMA = SCHEMA_V11;
+	public static final ModelObjectSchema<IProblem> SCHEMA = SCHEMA_V12;
 	
 	/**
 	 * Number of fields.

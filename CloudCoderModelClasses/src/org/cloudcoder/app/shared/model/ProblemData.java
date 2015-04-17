@@ -50,6 +50,7 @@ public class ProblemData implements Serializable, IProblemData {
 	private String parentHash;
 	private String externalLibraryUrl;
 	private String externalLibraryMD5;
+	private String evaluator;
 
 	// Schema version 0 fields
 	
@@ -156,6 +157,14 @@ public class ProblemData implements Serializable, IProblemData {
 		public String get(IProblemData obj) { return obj.getExternalLibraryMD5(); }
 	};
 	
+	// Schema version 8 fields
+
+	public static final ModelObjectField<IProblemData, String> EVALUATOR =
+			new ModelObjectField<IProblemData, String>("evaluator", String.class, 2000, ModelObjectIndexType.NONE, ModelObjectField.LITERAL) {
+		public void set(IProblemData obj, String value) { obj.setEvaluator(value); }
+		public String get(IProblemData obj) { return obj.getEvaluator(); }
+	};
+	
 	/**
 	 * Description of fields (version 0 schema).
 	 */
@@ -228,11 +237,18 @@ public class ProblemData implements Serializable, IProblemData {
 	 */
 	public static final ModelObjectSchema<IProblemData> SCHEMA_V7 = ModelObjectSchema.basedOn(SCHEMA_V6)
 		.finishDelta();
+	
+	/**
+	 * Description of fields (schema version 8).
+	 */
+	public static final ModelObjectSchema<IProblemData> SCHEMA_V8 = ModelObjectSchema.basedOn(SCHEMA_V7)
+		.addAfter(EXTERNAL_LIBRARY_MD5, EVALUATOR)
+		.finishDelta();
 
 	/**
 	 * Description of fields (current schema).
 	 */
-	public static final ModelObjectSchema<IProblemData> SCHEMA = SCHEMA_V7;
+	public static final ModelObjectSchema<IProblemData> SCHEMA = SCHEMA_V8;
 
 	/**
 	 * Constructor.
@@ -336,6 +352,22 @@ public class ProblemData implements Serializable, IProblemData {
 	 */
 	public boolean hasSkeleton() {
 		return skeleton != null;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.cloudcoder.app.shared.model.ProblemData#setEvaluator(java.lang.String)
+	 */
+	@Override
+	public void setEvaluator(String evaluator) {
+		this.evaluator = evaluator;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.cloudcoder.app.shared.model.ProblemData#getEvaluator()
+	 */
+	@Override
+	public String getEvaluator() {
+		return evaluator;
 	}
 
 	/* (non-Javadoc)
@@ -484,6 +516,7 @@ public class ProblemData implements Serializable, IProblemData {
 		this.parentHash = other.parentHash;
 		this.externalLibraryUrl = other.externalLibraryUrl;
 		this.externalLibraryMD5 = other.externalLibraryMD5;
+		this.evaluator = other.evaluator;
 	}
 	
 	@Override
@@ -505,7 +538,8 @@ public class ProblemData implements Serializable, IProblemData {
 				&& ModelObjectUtil.equals(this.license, other.license)
 				&& ModelObjectUtil.equals(this.parentHash, other.parentHash)
 				&& ModelObjectUtil.equals(this.externalLibraryUrl, other.externalLibraryUrl)
-				&& ModelObjectUtil.equals(this.externalLibraryMD5, other.externalLibraryMD5);
+				&& ModelObjectUtil.equals(this.externalLibraryMD5, other.externalLibraryMD5)
+				&& ModelObjectUtil.equals(this.evaluator, other.evaluator);
 	}
 
 	/*

@@ -84,9 +84,11 @@ public class HashProblemAndTestCaseData<
 		updateString(problemData.getLicense().toString());
 		*/
 		
-		// Digest external library URL and MD5 if they are present
+		// Digest external library URL, MD5 and problem evaluator if they are present
 		updateStringIfNonEmpty(problemData.getExternalLibraryUrl());
 		updateStringIfNonEmpty(problemData.getExternalLibraryMD5());
+		
+		updateStringIfNonEmpty(problemData.getEvaluator());
 	}
 
 	private void hashTestCaseData(ITestCaseData testCaseData) {

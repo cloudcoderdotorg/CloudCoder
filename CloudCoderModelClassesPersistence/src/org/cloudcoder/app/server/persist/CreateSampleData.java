@@ -105,6 +105,7 @@ public class CreateSampleData {
 		problemData.setParentHash("");
 		problemData.setExternalLibraryUrl("");
 		problemData.setExternalLibraryMD5("");
+		problemData.setEvaluator("");
 	}
 	
 	public static void populateSampleCFunctionProblem(IProblem problem, int courseId) {

@@ -74,6 +74,27 @@ public class ViewUtil {
 		// unknown Language
 		return null;
 	}
+	
+	/**
+	 * Determine wherther custom evaluators can be used for {@link Language}.
+	 * 
+	 * @param language the Language
+	 * @return the AceEditorMode for the Language, or null if the Language is not known
+	 */
+	public static boolean isEvaluatorUsedForLanguage(Language language) {
+		switch (language) {
+		case PYTHON:
+			return true;
+		case JAVA:
+		case C:
+		case CPLUSPLUS:
+		case RUBY:
+			return false;
+		}
+		
+		// unknown Language
+		return false;
+	}
 
 	/**
 	 * Create a Grid instance with a "loading" animated gif

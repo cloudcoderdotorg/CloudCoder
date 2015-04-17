@@ -70,7 +70,18 @@ public class AddPythonFunctionScaffoldingBuildStep implements IBuildStep {
 		String programText = programSource.getProgramText();
 		test.append(programText + "\n");
 		programTextLength=StringUtil.countLines(programText);
-		int spaces=getIndentationIncrementFromPythonCode(programText);
+		
+		// Add code for evaluator
+		String evalText = problem.getEvaluator();
+		if(evalText.trim().isEmpty()) {
+			// Default evaluator if no evaluator is given
+			evalText = "def _eval(_input, _expected):\n" +
+					   "  _output=" + problem.getTestname() + "(*_input)\n" +
+					   "  _result=(_expected == _output) if (type(_output) != float and type(_expected) != float) else (math.fabs(_output-_expected) < 0.00001)\n" +
+					   "  return (_result, _output)\n";
+		}
+		
+		test.append(evalText + "\n");
 
 		for (TestCase t : testCaseList) {
 			// each test case is a function that invokes the function being tested
@@ -92,11 +103,8 @@ public class AddPythonFunctionScaffoldingBuildStep implements IBuildStep {
 			// the test case passed, and a String containing the 
 			// actual output.  
 			//
-			test.append(indent(spaces)+"_output="+problem.getTestname() + 
-					"(" +t.getInput()+ ")\n");
-			test.append(indent(spaces)+"_expected=" + t.getOutput() + "\n");
-			test.append(indent(spaces)+"_result=(_expected == _output) if (type(_output) != float and type(_expected) != float) else (math.fabs(_output-_expected) < 0.00001)\n");
-			test.append(indent(spaces)+"return (_result, _output)\n");
+			String in = t.getInput();
+			test.append("  return _eval((" + in + (in.trim().isEmpty() ? "" : ",") + "), " + t.getOutput() + ")\n");
 		}
 		
 		// Convert to string, determine epilogue length
@@ -106,18 +114,5 @@ public class AddPythonFunctionScaffoldingBuildStep implements IBuildStep {
 		
 		// Done!
 		return new ProgramSource(result, prologueLength, epilogueLength);
-	}
-
-	private int getIndentationIncrementFromPythonCode(String programText) {
-		//TODO: Figure out the indentation scheme of the student submitted programTest
-		return 2;
-	}
-
-	private String indent(int n) {
-		StringBuilder b=new StringBuilder();
-		for (int i=0; i<n; i++) {
-			b.append(' ');
-		}
-		return b.toString();
 	}
 }

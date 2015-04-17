@@ -89,6 +89,17 @@ public abstract class EditProblemAdapter implements IProblem {
 	}
 
 	@Override
+	public void setEvaluator(String evaluator) {
+		delegate.setEvaluator(evaluator);
+		onChange();
+	}
+
+	@Override
+	public String getEvaluator() {
+		return delegate.getEvaluator();
+	}
+
+	@Override
 	public void setSchemaVersion(int schemaVersion) {
 		delegate.setSchemaVersion(schemaVersion);
 		onChange();

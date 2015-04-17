@@ -31,6 +31,7 @@ import org.cloudcoder.app.client.view.EditDateField;
 import org.cloudcoder.app.client.view.EditDateTimeField;
 import org.cloudcoder.app.client.view.EditEnumField;
 import org.cloudcoder.app.client.view.EditModelObjectField;
+import org.cloudcoder.app.client.view.EditOptionalStringFieldWithAceEditor;
 import org.cloudcoder.app.client.view.EditStringField;
 import org.cloudcoder.app.client.view.EditStringFieldWithAceEditor;
 import org.cloudcoder.app.client.view.PageNavPanel;
@@ -277,6 +278,39 @@ public class EditProblemPage extends CloudCoderPage {
 					};
 			skeletonEditor.setEditorTheme(AceEditorTheme.VIBRANT_INK);
 			problemFieldEditorList.add(skeletonEditor);
+			
+			// In the editor for the evaluator, we keep the editor mode in sync
+			// with the problem type, like for the skeleton.
+			EditOptionalStringFieldWithAceEditor<IProblem> evaluatorEditor =
+					new EditOptionalStringFieldWithAceEditor<IProblem>("Evaluator code", ProblemData.EVALUATOR) {
+						@Override
+						public void update() {
+							setLanguage();
+							super.update();
+							setReadOnly();
+						}
+						@Override
+						public void onModelObjectChange() {
+							setLanguage();
+							setReadOnly();
+						}
+						private void setLanguage() {
+							AceEditorMode editorMode = ViewUtil.getModeForLanguage(getModelObject().getProblemType().getLanguage());
+							setEditorMode(editorMode);
+						}
+						private void setReadOnly() {
+							if(ViewUtil.isEvaluatorUsedForLanguage(getModelObject().getProblemType().getLanguage())) {
+								super.setEditorReadOnly(false);
+								super.setEditorTheme(AceEditorTheme.VIBRANT_INK);
+							} else {
+								super.setEditorReadOnly(true);
+								super.setEditorTheme(AceEditorTheme.SOLARIZED_DARK);
+							}
+						}
+						
+					};
+			evaluatorEditor.setEditorTheme(AceEditorTheme.VIBRANT_INK);
+			problemFieldEditorList.add(evaluatorEditor);
 			
 			// We don't need an editor for schema version - problems/testcases are
 			// automatically converted to the latest version when they are imported.
