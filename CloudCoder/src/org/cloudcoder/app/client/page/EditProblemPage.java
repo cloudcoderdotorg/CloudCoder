@@ -282,34 +282,29 @@ public class EditProblemPage extends CloudCoderPage {
 			// In the editor for the evaluator, we keep the editor mode in sync
 			// with the problem type, like for the skeleton.
 			EditOptionalStringFieldWithAceEditor<IProblem> evaluatorEditor =
-					new EditOptionalStringFieldWithAceEditor<IProblem>("Evaluator code", ProblemData.EVALUATOR) {
+					new EditOptionalStringFieldWithAceEditor<IProblem>("Evaluator code", "Use custom evaluator", ProblemData.EVALUATOR) {
 						@Override
 						public void update() {
-							setLanguage();
 							super.update();
-							setReadOnly();
+							setLanguage();
 						}
 						@Override
 						public void onModelObjectChange() {
 							setLanguage();
-							setReadOnly();
 						}
 						private void setLanguage() {
 							AceEditorMode editorMode = ViewUtil.getModeForLanguage(getModelObject().getProblemType().getLanguage());
 							setEditorMode(editorMode);
-						}
-						private void setReadOnly() {
+							
 							if(ViewUtil.isEvaluatorUsedForLanguage(getModelObject().getProblemType().getLanguage())) {
-								super.setEditorReadOnly(false);
-								super.setEditorTheme(AceEditorTheme.VIBRANT_INK);
+								setEnabled(true);
 							} else {
-								super.setEditorReadOnly(true);
-								super.setEditorTheme(AceEditorTheme.SOLARIZED_DARK);
+								setEnabled(false);
 							}
 						}
 						
 					};
-			evaluatorEditor.setEditorTheme(AceEditorTheme.VIBRANT_INK);
+			evaluatorEditor.setEditorThemes(AceEditorTheme.VIBRANT_INK, AceEditorTheme.SOLARIZED_DARK);
 			problemFieldEditorList.add(evaluatorEditor);
 			
 			// We don't need an editor for schema version - problems/testcases are

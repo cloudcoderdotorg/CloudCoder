@@ -21,6 +21,9 @@ package org.cloudcoder.app.client.view;
 import org.cloudcoder.app.shared.model.ModelObjectField;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.event.logical.shared.ValueChangeEvent;
+import com.google.gwt.event.logical.shared.ValueChangeHandler;
+import com.google.gwt.user.client.ui.CheckBox;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
@@ -39,11 +42,12 @@ public class EditOptionalStringFieldWithAceEditor<ModelObjectType>
 		extends EditModelObjectField<ModelObjectType, String> {
 	
 	private class UI extends EditModelObjectFieldUI {
+		private CheckBox checkBox;
 		private AceEditor editor;
 		private boolean editorStarted;
 		private AceEditorMode currentMode;
 
-		public UI() {
+		public UI(String checkboxLabel) {
 			FlowPanel panel = new FlowPanel();
 			panel.setStyleName("cc-fieldEditor", true);
 			
@@ -53,8 +57,27 @@ public class EditOptionalStringFieldWithAceEditor<ModelObjectType>
 			
 			panel.add(getErrorLabel());
 
-			editor = new AceEditor();
+			this.checkBox = new CheckBox(checkboxLabel);
+
+			this.editor = new AceEditor();
 			editor.setSize("600px", "300px");
+			
+			checkBox.addValueChangeHandler(new ValueChangeHandler<Boolean>() {
+				
+				@Override
+				public void onValueChange(ValueChangeEvent<Boolean> event) {
+					if(event.getValue()) {
+						editor.setReadOnly(false);
+						editor.setTheme(editorEnabledTheme);
+					} else {
+						editor.setReadOnly(true);
+						editor.setTheme(editorDisabledTheme);
+					}
+					
+				}
+			});
+			
+			panel.add(checkBox);
 			panel.add(editor);
 			editorStarted = false;
 			
@@ -71,7 +94,15 @@ public class EditOptionalStringFieldWithAceEditor<ModelObjectType>
 				editor.setMode(editorMode);
 				currentMode = editorMode;
 			}
-			editor.setTheme(editorTheme);
+			
+			resetEditorTheme();
+			
+			if(checkBox.getValue()) {
+				editor.setReadOnly(false);
+			} else {
+				editor.setReadOnly(true);
+			}
+			
 			editor.setFontSize("14px");
 			editorStarted = true;
 		}
@@ -79,8 +110,8 @@ public class EditOptionalStringFieldWithAceEditor<ModelObjectType>
 		/**
 		 * @param editorReadOnly whether the editor should be read-only now
 		 */
-		public void resetEditorReadOnly() {
-			editor.setReadOnly(editorReadOnly);
+		public void resetEnabled() {
+			checkBox.setEnabled(enabled);
 		}
 
 		public void setText(String text) {
@@ -89,6 +120,14 @@ public class EditOptionalStringFieldWithAceEditor<ModelObjectType>
 
 		public String getText() {
 			return editor.getText();
+		}
+
+		public void setCheckBox(boolean value) {
+			checkBox.setValue(value, true);
+		}
+
+		public boolean getCheckBox() {
+			return checkBox.getValue();
 		}
 
 		public void resetEditorMode() {
@@ -100,15 +139,22 @@ public class EditOptionalStringFieldWithAceEditor<ModelObjectType>
 		}
 
 		public void resetEditorTheme() {
-			if (editorTheme != null) {
-				editor.setTheme(editorTheme);
+			if(getCheckBox()) {
+				if (editorEnabledTheme != null) {
+					editor.setTheme(editorEnabledTheme);
+				}
+			} else {
+				if (editorDisabledTheme != null) {
+					editor.setTheme(editorDisabledTheme);
+				}
 			}
 		}
 	}
 
 	private AceEditorMode editorMode;
-	private AceEditorTheme editorTheme;
-	private boolean editorReadOnly = false;
+	private AceEditorTheme editorEnabledTheme;
+	private AceEditorTheme editorDisabledTheme;
+	private boolean enabled = true;
 	private UI ui;
 
 	/**
@@ -117,9 +163,9 @@ public class EditOptionalStringFieldWithAceEditor<ModelObjectType>
 	 * @param desc human-readable description of field being edited
 	 * @param field the {@link ModelObjectField} being edited
 	 */
-	public EditOptionalStringFieldWithAceEditor(String desc, ModelObjectField<? super ModelObjectType, String> field) {
+	public EditOptionalStringFieldWithAceEditor(String desc, String checkboxLabel, ModelObjectField<? super ModelObjectType, String> field) {
 		super(desc, field);
-		this.ui = new UI();
+		this.ui = new UI(checkboxLabel);
 	}
 	
 	/**
@@ -139,22 +185,25 @@ public class EditOptionalStringFieldWithAceEditor<ModelObjectType>
 	 * 
 	 * @param editorTheme the editorTheme to set
 	 */
-	public void setEditorTheme(AceEditorTheme editorTheme) {
-		this.editorTheme = editorTheme;
+	public void setEditorThemes(AceEditorTheme editorEnabledTheme, AceEditorTheme editorDisabledTheme) {
+		this.editorEnabledTheme = editorEnabledTheme;
+		this.editorDisabledTheme = editorDisabledTheme;
 		if (ui.isEditorStarted()) {
 			ui.resetEditorTheme();
 		}
 	}
 	
-	/**
-	 * Set the editor theme.
-	 * 
-	 * @param editorTheme the editorTheme to set
-	 */
-	public void setEditorReadOnly(boolean editorReadOnly) {
-		this.editorReadOnly = editorReadOnly;
-		if (ui.isEditorStarted()) {
-			ui.resetEditorReadOnly();
+	public void setEnabled(boolean enabled) {
+		if(this.enabled != enabled) {
+			this.enabled = enabled;
+			ui.resetEnabled();
+			if(enabled) {
+				if(!ui.getText().trim().isEmpty()) {
+					ui.setCheckBox(true);
+				}
+			} else {
+				ui.setCheckBox(false);
+			}
 		}
 	}
 	
@@ -171,7 +220,13 @@ public class EditOptionalStringFieldWithAceEditor<ModelObjectType>
 	 */
 	@Override
 	public void commit() {
-		String text = ui.getText();
+		String text;
+		if(ui.getCheckBox()) {
+			text = ui.getText();
+		} else {
+			text = "";
+		}
+		
 		if (text.length() > getModelObjectField().getSize()) {
 			setCommitError(true);
 			ui.setError("Value cannot be longer than " + getModelObjectField().getSize() + " characters");
@@ -190,6 +245,10 @@ public class EditOptionalStringFieldWithAceEditor<ModelObjectType>
 			ui.startEditor();
 		}
 		
+		String field = getField();
 		ui.setText(getField());
+		if(!field.isEmpty()) {
+			ui.setCheckBox(true);
+		}
 	}
 }
