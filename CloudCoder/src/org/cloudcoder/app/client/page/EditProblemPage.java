@@ -23,12 +23,13 @@ import java.util.List;
 import org.cloudcoder.app.client.model.PageId;
 import org.cloudcoder.app.client.model.PageStack;
 import org.cloudcoder.app.client.model.Session;
-import org.cloudcoder.app.client.model.StatusMessage; 
+import org.cloudcoder.app.client.model.StatusMessage;
 import org.cloudcoder.app.client.rpc.RPC;
 import org.cloudcoder.app.client.view.ChoiceDialogBox;
 import org.cloudcoder.app.client.view.EditBooleanField;
 import org.cloudcoder.app.client.view.EditDateField;
 import org.cloudcoder.app.client.view.EditDateTimeField;
+import org.cloudcoder.app.client.view.EditDummyButton;
 import org.cloudcoder.app.client.view.EditEnumField;
 import org.cloudcoder.app.client.view.EditModelObjectField;
 import org.cloudcoder.app.client.view.EditOptionalStringFieldWithAceEditor;
@@ -51,6 +52,7 @@ import org.cloudcoder.app.shared.model.ProblemData;
 import org.cloudcoder.app.shared.model.ProblemLicense;
 import org.cloudcoder.app.shared.model.ProblemType;
 import org.cloudcoder.app.shared.model.TestCase;
+import org.cloudcoder.app.shared.util.EvaluatorUtil;
 import org.cloudcoder.app.shared.util.SubscriptionRegistrar;
 
 import com.google.gwt.core.shared.GWT;
@@ -96,6 +98,7 @@ public class EditProblemPage extends CloudCoderPage {
 		private Button addTestCaseButton;
 		private FlowPanel addTestCaseButtonPanel;
 		private ProblemAndTestCaseList problemAndTestCaseListOrig;
+		EditOptionalStringFieldWithAceEditor<IProblem> evaluatorEditor;
 		
 		public UI() {
 			this.dockLayoutPanel = new DockLayoutPanel(Unit.PX);
@@ -281,8 +284,8 @@ public class EditProblemPage extends CloudCoderPage {
 			
 			// In the editor for the evaluator, we keep the editor mode in sync
 			// with the problem type, like for the skeleton.
-			EditOptionalStringFieldWithAceEditor<IProblem> evaluatorEditor =
-					new EditOptionalStringFieldWithAceEditor<IProblem>("Evaluator code", "Use custom evaluator", ProblemData.EVALUATOR) {
+			evaluatorEditor =
+					new EditOptionalStringFieldWithAceEditor<IProblem>("Evaluator code (only Python)", "Use custom evaluator", ProblemData.EVALUATOR) {
 						@Override
 						public void update() {
 							super.update();
@@ -296,7 +299,7 @@ public class EditProblemPage extends CloudCoderPage {
 							AceEditorMode editorMode = ViewUtil.getModeForLanguage(getModelObject().getProblemType().getLanguage());
 							setEditorMode(editorMode);
 							
-							if(ViewUtil.isEvaluatorUsedForLanguage(getModelObject().getProblemType().getLanguage())) {
+							if(EvaluatorUtil.isEvaluatorUsedForProblemType(getModelObject().getProblemType())) {
 								setEnabled(true);
 							} else {
 								setEnabled(false);
@@ -307,6 +310,35 @@ public class EditProblemPage extends CloudCoderPage {
 			evaluatorEditor.setEditorThemes(AceEditorTheme.VIBRANT_INK, AceEditorTheme.SOLARIZED_DARK);
 			problemFieldEditorList.add(evaluatorEditor);
 			
+			EditDummyButton<IProblem, String> defaultEvaluatorButton =
+					new EditDummyButton<IProblem, String>("Reset to default evaluator", ProblemData.EVALUATOR) {
+						@Override
+						public void onButtonClick() {
+							setField(EvaluatorUtil.getDefaultEvaluator(getModelObject()));
+							evaluatorEditor.update();
+						}
+
+						@Override
+						public void update() {
+							super.update();
+							setLanguage();
+						}
+						
+						@Override
+						public void onModelObjectChange() {
+							setLanguage();
+						}
+						
+						private void setLanguage() {
+							if(EvaluatorUtil.isEvaluatorUsedForProblemType(getModelObject().getProblemType())) {
+								setEnabled(true);
+							} else {
+								setEnabled(false);
+							}
+						}
+					};
+
+			problemFieldEditorList.add(defaultEvaluatorButton);
 			// We don't need an editor for schema version - problems/testcases are
 			// automatically converted to the latest version when they are imported.
 			

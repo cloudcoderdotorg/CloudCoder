@@ -24,7 +24,6 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.user.client.ui.CheckBox;
-import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.Label;
@@ -34,9 +33,9 @@ import edu.ycp.cs.dh.acegwt.client.ace.AceEditorMode;
 import edu.ycp.cs.dh.acegwt.client.ace.AceEditorTheme;
 
 /**
- * Edit a string field of a model object using an {@link AceEditor}.
+ * Edit an optional string field of a model object using an {@link AceEditor}.
  * 
- * @author David Hovemeyer
+ * @author Andras Eisenberger
  */
 public class EditOptionalStringFieldWithAceEditor<ModelObjectType>
 		extends EditModelObjectField<ModelObjectType, String> {
@@ -161,6 +160,7 @@ public class EditOptionalStringFieldWithAceEditor<ModelObjectType>
 	 * Constructor.
 	 * 
 	 * @param desc human-readable description of field being edited
+	 * @param checkboxLabel label to display next to checkbox
 	 * @param field the {@link ModelObjectField} being edited
 	 */
 	public EditOptionalStringFieldWithAceEditor(String desc, String checkboxLabel, ModelObjectField<? super ModelObjectType, String> field) {
@@ -193,6 +193,10 @@ public class EditOptionalStringFieldWithAceEditor<ModelObjectType>
 		}
 	}
 	
+	/**
+	 * @param enabled whether the editor should be enabled. Also unticks the
+	 * checkbox when disabled.
+	 */
 	public void setEnabled(boolean enabled) {
 		if(this.enabled != enabled) {
 			this.enabled = enabled;

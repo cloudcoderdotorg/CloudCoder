@@ -23,6 +23,7 @@ import java.util.Properties;
 import org.cloudcoder.app.shared.model.Problem;
 import org.cloudcoder.app.shared.model.ProblemType;
 import org.cloudcoder.app.shared.model.TestCase;
+import org.cloudcoder.app.shared.util.EvaluatorUtil;
 import org.cloudcoder.builder2.model.BuilderSubmission;
 import org.cloudcoder.builder2.model.IBuildStep;
 import org.cloudcoder.builder2.model.InternalBuilderException;
@@ -75,10 +76,7 @@ public class AddPythonFunctionScaffoldingBuildStep implements IBuildStep {
 		String evalText = problem.getEvaluator();
 		if(evalText.trim().isEmpty()) {
 			// Default evaluator if no evaluator is given
-			evalText = "def _eval(_input, _expected):\n" +
-					   "  _output=" + problem.getTestname() + "(*_input)\n" +
-					   "  _result=(_expected == _output) if (type(_output) != float and type(_expected) != float) else (math.fabs(_output-_expected) < 0.00001)\n" +
-					   "  return (_result, _output)\n";
+			evalText = EvaluatorUtil.getDefaultPythonFunctionEvaluator(problem);
 		}
 		
 		test.append(evalText + "\n");
