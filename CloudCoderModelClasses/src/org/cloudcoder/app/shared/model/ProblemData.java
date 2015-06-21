@@ -561,5 +561,6 @@ public class ProblemData implements Serializable, IProblemData {
 		empty.setTimestampUtc(System.currentTimeMillis());
 		empty.setLicense(ProblemLicense.NOT_REDISTRIBUTABLE);
 		empty.setParentHash("");
+		empty.setEvaluator("");
 	}
 }
