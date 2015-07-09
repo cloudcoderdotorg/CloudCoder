@@ -2,6 +2,7 @@
 // Copyright (C) 2011-2013, Jaime Spacco <jspacco@knox.edu>
 // Copyright (C) 2011-2013, David H. Hovemeyer <david.hovemeyer@gmail.com>
 // Copyright (C) 2013, York College of Pennsylvania
+// Copyright (C) 2015, Eisenberger Andras <csirkeee@gmail.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -67,6 +68,16 @@ public interface IProblemData {
 	 * @return the skeleton
 	 */
 	public abstract String getSkeleton();
+
+	/**
+	 * @param evaluator the evaluator to set
+	 */
+	public abstract void setEvaluator(String evaluator);
+
+	/**
+	 * @return the evaluator, the code used to evaluate tests for a submission
+	 */
+	public abstract String getEvaluator();
 
 	/**
 	 * Set the schema version.

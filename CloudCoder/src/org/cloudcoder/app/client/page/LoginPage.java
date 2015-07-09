@@ -176,7 +176,7 @@ public class LoginPage extends CloudCoderPage {
 	
 	/**
 	 * Default constructor.
-	 * Will take the user to the {@link CoursesAndProblemsPage2}
+	 * Will take the user to the {@link CoursesAndProblemsPage3}
 	 * upon a successful login.
 	 */
 	public LoginPage() {

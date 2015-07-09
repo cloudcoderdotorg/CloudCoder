@@ -62,6 +62,7 @@ public class ProblemBuilder {
 		problem.setTimestampUtc(0L);
 		problem.setLicense(ProblemLicense.NOT_REDISTRIBUTABLE);
 		problem.setParentHash("");
+		problem.setEvaluator("");
 		
 		// None of the Problem-specific fields are significant
 		// Important: the builder must ignore the problem id.

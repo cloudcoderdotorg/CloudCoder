@@ -21,8 +21,8 @@ http://repo1.maven.org/maven2/commons-io/commons-io/2.1/commons-io-2.1.jar
   CloudCoderLoadTester/lib/commons-io-2.1.jar
   CloudCoderLogging/lib/commons-io-2.1.jar
   CloudCoderAnalysis/lib/commons-io-2.1.jar
-http://repo1.maven.org/maven2/org/python/jython-standalone/2.5.3/jython-standalone-2.5.3.jar
-  CloudCoderBuilder2/lib/jython-standalone-2.5.3.jar
+http://repo1.maven.org/maven2/org/python/jython-standalone/2.7.0/jython-standalone-2.7.0.jar
+  CloudCoderBuilder2/lib/jython-standalone-2.7.0.jar
 https://s3.amazonaws.com/org.cloudcoder.daemon.binaries/daemon-${daemon_version}.jar
   CloudCoderJetty/lib/daemon/daemon-${daemon_version}.jar
   CloudCoderBuilder2/lib/daemon-${daemon_version}.jar

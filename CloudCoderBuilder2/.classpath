@@ -17,7 +17,7 @@
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/CloudCoderModelClassesJSON"/>
-	<classpathentry kind="lib" path="lib/jython-standalone-2.5.3.jar"/>
+	<classpathentry kind="lib" path="lib/jython-standalone-2.7.0.jar"/>
 	<classpathentry kind="lib" path="lib/daemon-0.7.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
